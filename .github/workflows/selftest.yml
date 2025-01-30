@@ -1,0 +1,24 @@
+---
+# Using the pre-commit framework (https://pre-commit.com/) to enforce formatting
+# for TOML, YAML, and Python files, as well as to lint Python scripts.
+#
+# The hooks are configured in .pre-commit-config.yaml. While integration with
+# the Git repository is possible, it is **not** required; pre-commit is simply
+# used as a convenient way to run these checks.
+name: selftest
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Format
+      run: |
+        pipx run -q --python python3 pre-commit run --all

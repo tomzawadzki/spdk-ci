@@ -1,0 +1,43 @@
+---
+default_language_version:
+  python: python3
+
+repos:
+# This is for CIJOE configuration files
+- repo: https://github.com/pappasam/toml-sort
+  rev: v0.24.2
+  hooks:
+  - id: toml-sort
+    name: TOML-format
+    args: [--all]
+    files: \.toml$
+
+# This is for CIJOE and GitHUB Action Workflow files
+- repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+  rev: 0.2.3
+  hooks:
+  - id: yamlfmt
+    name: YAML-format
+    args:
+    - '--mapping=2'
+    - '--sequence=2'
+    - '--offset=0'
+    - '--width=120'
+    - '--preserve-quotes'
+    types: [file]
+    files: \.(yaml|yml)$
+
+# This is for formating and linting Python code
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.9.4
+  hooks:
+  - id: ruff
+    name: Python-lint-ruff
+    args: [--fix]
+
+# This is for type-checking of Python code
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.14.1
+  hooks:
+  - id: mypy
+    name: Python-lint-mypy
