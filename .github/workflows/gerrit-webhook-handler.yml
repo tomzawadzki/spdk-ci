@@ -1,0 +1,17 @@
+name: SPDK per-patch tests
+
+# TODO: Add pull_request target to enable self-testing, now that we've commited
+# to using pull requests for spdk-ci development process.
+on:
+  repository_dispatch:
+    types:
+      - per-patch-event
+
+jobs:
+  common-tests:
+    uses: ./.github/workflows/spdk-common-tests.yml
+    with:
+      # "Client payload" is all of the information Gerrit webhooks sends out.
+      client_payload: ${{ toJson(github.event.client_payload) }}
+    secrets: inherit
+  # Add more jobs below if needed.
