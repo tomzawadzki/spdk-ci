@@ -1,0 +1,126 @@
+---
+name: per_patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'URL of SPDK Repository on Gerrit'
+        default: 'https://review.spdk.io/gerrit/spdk/spdk'
+        type: string
+
+      branch:
+        description: 'The branch with changes e.g. "changes/xx/yyyyyy/zz"'
+        type: string
+        required: true
+
+jobs:
+  source-archive:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/refenv/cijoe-docker:v0.9.48
+
+    steps:
+    - name: Checkout SPDK repository mirror from GitHUB
+      uses: actions/checkout@v4
+      with:
+        repository: spdk/spdk
+        fetch-depth: 0
+        path: spdk
+
+    - name: Fetch patchset from SPDK repository on Gerrit
+      run: |
+        cd spdk
+        git fetch "${{ github.event.inputs.repository }}" "${{ github.event.inputs.branch }}"
+        git checkout -b "${{ github.event.inputs.branch }}" FETCH_HEAD
+        git submodule update --init --recursive
+        git --no-pager log -1
+        git rev-parse --abbrev-ref HEAD
+
+    - name: Create a tarball of the repository
+      run: |
+        cd spdk
+        tar -czf /tmp/repository.tar.gz .
+
+    - name: Upload the repository as an artifact
+      uses: actions/upload-artifact@v4.4.0
+      with:
+        name: repository
+        path: /tmp/repository.tar.gz
+
+  autorun:
+    runs-on: ubuntu-latest
+    needs: source-archive
+    timeout-minutes: 35
+    env:
+      REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/repository.tar.gz
+    strategy:
+      matrix:
+        workflow: [autorun_unittest, autorun_nvme]
+    container:
+      image: ghcr.io/refenv/cijoe-docker:v0.9.48
+      options: --device=/dev/kvm
+
+    steps:
+    - name: Setup PATH
+      run: |
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Checkout CI repository
+      uses: actions/checkout@v4.1.7
+      with:
+        path: ci
+
+    - name: Download the SPDK repository
+      uses: actions/download-artifact@v4.1.8
+      with:
+        name: repository
+
+    - name: Extract the SPDK repository
+      run: |
+        tar xzf repository.tar.gz --strip 1
+
+    - name: qemu-guest, provision
+      run: |
+        cd ci/cijoe
+        cijoe guest_initialize guest_start guest_check tgz_transfer tgz_unpack \
+        --monitor \
+        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --workflow workflows/autorun_in_qemu.yaml \
+        --output report_${{ matrix.workflow }}_prep_guest
+
+    - name: qemu-guest, ${{ matrix.workflow }}
+      run: |
+        cd ci/cijoe
+        cijoe ${{ matrix.workflow }} \
+        --monitor \
+        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --workflow workflows/autorun_in_qemu.yaml \
+        --output report_${{ matrix.workflow }}
+
+    - name: qemu-guest, cleanup
+      if: always()
+      run: |
+        cd ci/cijoe
+        cijoe output_listing retrieve_autorun_output guest_shutdown \
+        --monitor \
+        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --workflow workflows/autorun_in_qemu.yaml \
+        --output report_${{ matrix.workflow }}_cleanup
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4.4.0
+      if: always()
+      with:
+        path: /tmp/autorun_output
+        name: ${{ matrix.workflow }}_artifacts
+
+    - name: Upload Report
+      uses: actions/upload-artifact@v4.4.0
+      if: always()
+      with:
+        path: |
+          ci/cijoe/report_${{ matrix.workflow }}
+          ci/cijoe/report_${{ matrix.workflow }}_cleanup
+          ci/cijoe/report_${{ matrix.workflow }}_prep_guest
+        name: report-${{ matrix.workflow }}-in-qemu
