@@ -1,5 +1,8 @@
 name: SPDK per-patch common tests
 
+# Workflow intended to run tests which can be executed using standard
+# Github runners, without any hardware-specific dependencies.
+
 on:
   workflow_call:
     inputs:
