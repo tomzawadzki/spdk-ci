@@ -38,7 +38,7 @@ jobs:
           # For demonstration purposes, as not to set any actual vote and only comment.
           VOTE=0
 
-          curl -X POST https://review.spdk.io/gerrit/a/changes/${{ fromJson(inputs.client_payload).change.number }}/revisions/${{ fromJson(inputs.client_payload).patchSet.number }}/review \
+          curl -L -X POST https://review.spdk.io/gerrit/a/changes/${{ fromJson(inputs.client_payload).change.number }}/revisions/${{ fromJson(inputs.client_payload).patchSet.number }}/review \
           --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
           --header "Content-Type: application/json" \
           --data "{'message': '$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID', 'labels': {'Verified': $VOTE}}" \
