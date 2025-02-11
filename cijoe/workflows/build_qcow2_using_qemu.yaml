@@ -1,0 +1,84 @@
+---
+doc: |
+  Create a .qcow2 image using cloud-init and SPDK pkgdep.sh / autotest_setup.sh
+
+  In greater detail, then this workflow utilize the following tech
+
+  * qemu
+  * cloud-init
+  * cijoe
+
+  The workflow can re-use scripts built-in / bundled with the default cijoe
+  installation, which delegates most of command-line calls into scripts. As an
+  overview, the following is done
+
+  * Cloud-init and shutdown
+  * Start the guest again -- check hostname, update and install git + pipx
+  * Transfer SPDK source to guest and unpack it
+  * Run pkgdep.sh and autotest_setup.sh to install dependencies
+
+  Afterwards, then the following must be taken care of, either manually or by
+  some other tool or script.
+
+  * Convert the image (with compression)
+    - qemu-img convert boot.img /tmp/fedora-41-x86_64.qcow2 -O qcow2 -c
+
+  * Upload it to publically available storage
+
+steps:
+- name: diskimage_from_cloudimage
+  uses: system_imaging.diskimage_from_cloudimage
+  with:
+    pattern: "fedora-40-x86_64"
+
+- name: guest_initialize
+  uses: qemu.guest_initialize
+  with:
+    guest_name: generic-bios-kvm-x86_64
+    system_image_name: fedora-40-x86_64
+
+- name: guest_start
+  uses: qemu.guest_start
+  with:
+    guest_name: generic-bios-kvm-x86_64
+
+- name: guest_check
+  run: |
+    hostname
+    uname -a
+    df -h
+    growpart /dev/vda 4 || true
+    btrfs filesystem resize 10G / || true
+    df -h
+
+- name: guest_update
+  run: |
+    dnf update -y
+    dnf install -y git perl-JSON-PP
+    dnf autoremove -y
+    dnf clean all -y
+
+- name: guest_info
+  uses: linux.sysinfo
+
+- name: tgz_transfer
+  uses: core.put
+  with:
+    src: "{{ local.env.REPOSITORY_TARBALL_PATH }}"
+    dst: /tmp/repository.tar.gz
+
+- name: tgz_unpack
+  run: |
+    mkdir /tmp/spdk
+    tar xzf /tmp/repository.tar.gz -C /tmp/spdk
+    rm /tmp/repository.tar.gz
+
+- name: pkgdep_and_autotest_setup
+  run: |
+    /tmp/spdk/scripts/pkgdep.sh -a
+    INSTALL_FLAMEGRAPH=true INSTALL_FIO=true INSTALL_NVMECLI=true /tmp/spdk/test/common/config/autotest_setup.sh --install-deps --upgrade --test-conf="lcov"
+
+- name: guest_shutdown
+  run: |
+    sync
+    systemctl poweroff
