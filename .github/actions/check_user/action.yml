@@ -1,0 +1,29 @@
+name: 'Check user against team membership'
+description: ''
+
+inputs:
+  client_payload:
+    description: 'JSON from Gerrit patch set event'
+    required: true
+    default: ''
+
+env:
+  username: ${{ fromJson(inputs.client_payload).patchSet.uploader.username }}
+  org: 'spdk'
+  team: 'Contributors'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check if user is a team member
+      uses: tspascoal/get-user-teams-membership@v3
+      id: checkUserMember
+      with:
+        username: ${{ env.username }}
+        organization: ${{ env.org }}
+        team: ${{ env.team }}
+    - name: User is not a team member
+      if: ${{ steps.checkUserMember.outputs.isTeamMember == 'false' }}
+      run: |
+        exit 1
+      shell: bash
