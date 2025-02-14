@@ -14,6 +14,16 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
+      # Required to use locally defined actions
+      - name: Checkout the spdk-ci repo locally
+        uses: actions/checkout@v4
+      - name: Prepare SPDK repo by checking out from Gerrit
+        uses: ./.github/actions/checkout_gerrit
+        with:
+          gerrit_ref: ${{ fromJson(inputs.client_payload).patchSet.ref }}
+          spdk_path: './spdk'
+      - name: Log the current state
+        run: git -C ./spdk log --pretty=oneline -n 5
       # Placeholder for the actual tests. Replace in future PRs.
       - name: Hello world
         run: |
