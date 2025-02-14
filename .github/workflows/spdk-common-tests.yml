@@ -4,6 +4,13 @@ name: SPDK per-patch common tests
 # Github runners, without any hardware-specific dependencies.
 
 on:
+  workflow_dispatch:
+    inputs:
+      gerrit_ref:
+        description: 'Gerrit refspec to test following refs/changes/${change_number: -2}/${change_number}/${patch_set} format'
+        required: false
+        type: string
+        default: ''
   workflow_call:
     inputs:
       client_payload:
@@ -16,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       client_payload: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) || '' }}
+      gerrit_ref: ${{ inputs.gerrit_ref }}
       spdk_path: './spdk'
     steps:
       # Required to use locally defined actions
@@ -24,7 +32,7 @@ jobs:
       - name: Prepare SPDK repo by checking out from Gerrit
         uses: ./.github/actions/checkout_gerrit
         with:
-          gerrit_ref: ${{ env.client_payload != '' && env.client_payload.patchSet.ref || '' }}
+          gerrit_ref: ${{ env.client_payload != '' && env.client_payload.patchSet.ref || env.gerrit_ref }}
           spdk_path: ${{ env.spdk_path }}
       - name: Log the current state
         run: git -C ${{ env.spdk_path }} log --pretty=oneline -n 5
