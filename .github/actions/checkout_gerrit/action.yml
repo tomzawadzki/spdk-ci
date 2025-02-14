@@ -1,3 +1,4 @@
+---
 name: 'Checkout from Gerrit'
 description: 'Checkout SPDK, using provided patch set or master'
 
@@ -18,22 +19,22 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout the spdk repo from GitHub
-      uses: actions/checkout@v4
-      with:
-        repository: spdk/spdk
-        ref: ${{ inputs.spdk_branch }}
-        submodules: recursive
-        fetch-tags: true
-        path: ${{ inputs.spdk_path }}
-    - name: Fetch the specific change from Gerrit
-      if: ${{ inputs.gerrit_ref != '' }}  # Skip if only pulling from GitHub
-      run: |
-        git -C ${{ inputs.spdk_path }} fetch https://review.spdk.io/spdk/spdk ${{ inputs.gerrit_ref }} &&
-        git -C ${{ inputs.spdk_path }} checkout FETCH_HEAD &&
-        git -C ${{ inputs.spdk_path }} submodule update --init
-      shell: bash
-    - name: Log the last few commits
-      run: |
-        git -C ${{ inputs.spdk_path }} log --pretty=oneline -n 5
-      shell: bash
+  - name: Checkout the spdk repo from GitHub
+    uses: actions/checkout@v4
+    with:
+      repository: spdk/spdk
+      ref: ${{ inputs.spdk_branch }}
+      submodules: recursive
+      fetch-tags: true
+      path: ${{ inputs.spdk_path }}
+  - name: Fetch the specific change from Gerrit
+    if: ${{ inputs.gerrit_ref != '' }}    # Skip if only pulling from GitHub
+    run: |
+      git -C ${{ inputs.spdk_path }} fetch https://review.spdk.io/spdk/spdk ${{ inputs.gerrit_ref }} &&
+      git -C ${{ inputs.spdk_path }} checkout FETCH_HEAD &&
+      git -C ${{ inputs.spdk_path }} submodule update --init
+    shell: bash
+  - name: Log the last few commits
+    run: |
+      git -C ${{ inputs.spdk_path }} log --pretty=oneline -n 5
+    shell: bash

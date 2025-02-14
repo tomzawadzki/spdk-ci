@@ -1,3 +1,4 @@
+---
 name: SPDK per-patch tests
 
 on:
@@ -5,7 +6,7 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types:
-      - per-patch-event
+    - per-patch-event
 
 jobs:
   common-tests:
