@@ -20,7 +20,7 @@ runs:
   using: 'composite'
   steps:
   - name: Checkout the spdk repo from GitHub
-    uses: actions/checkout@v4
+    uses: actions/checkout@v4.1.7
     with:
       repository: spdk/spdk
       ref: ${{ inputs.spdk_branch }}
