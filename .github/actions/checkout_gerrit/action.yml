@@ -27,14 +27,27 @@ runs:
       submodules: recursive
       fetch-tags: true
       path: ${{ inputs.spdk_path }}
+  - name: Start summary
+    run: |
+      echo "### Change Information" >> $GITHUB_STEP_SUMMARY
+    shell: bash
   - name: Fetch the specific change from Gerrit
     if: ${{ inputs.gerrit_ref != '' }}    # Skip if only pulling from GitHub
+    working-directory: ${{ inputs.spdk_path }}
     run: |
-      git -C ${{ inputs.spdk_path }} fetch https://review.spdk.io/spdk/spdk ${{ inputs.gerrit_ref }} &&
-      git -C ${{ inputs.spdk_path }} checkout FETCH_HEAD &&
-      git -C ${{ inputs.spdk_path }} submodule update --init
+      git fetch https://review.spdk.io/spdk/spdk ${{ inputs.gerrit_ref }} &&
+      git checkout FETCH_HEAD &&
+      git submodule update --init
+      echo "- [SPDK Repository] Gerrit: ${{ inputs.gerrit_ref }}" >> $GITHUB_STEP_SUMMARY
     shell: bash
-  - name: Log the last few commits
+  - name: Add summary for GitHub repo
+    if: ${{ inputs.gerrit_ref == '' }}
     run: |
-      git -C ${{ inputs.spdk_path }} log --pretty=oneline -n 5
+      echo "- [SPDK Repository] GitHub: ${{ inputs.spdk_branch }}" >> $GITHUB_STEP_SUMMARY
+    shell: bash
+  - name: Add Information on the SPDK repository state
+    working-directory: ${{ inputs.spdk_path }}
+    run: |
+      CURRENT_REF=$(git log --pretty=oneline --abbrev-commit -n 1)
+      echo "- Ref: $CURRENT_REF" >> $GITHUB_STEP_SUMMARY
     shell: bash

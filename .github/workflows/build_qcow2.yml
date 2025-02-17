@@ -52,14 +52,6 @@ jobs:
         path: spdk
         ref: ${{ github.event.inputs.spdk_repos_ref }}
 
-    - name: Add Information on the SPDK repository state
-      run: |
-        CURRENT_REF=$(git -C spdk rev-parse --short HEAD)  # Gets the short commit hash as the ref
-        REPO_URL="https://github.com/${{ github.repository_owner }}/${{ vars.SPDK_REPOS_NAME }}/commit/$CURRENT_REF"
-        echo "### Change Information" >> $GITHUB_STEP_SUMMARY
-        echo "- Using pkgdeb.sh and autotest_setup.sh from [SPDK Repository]($REPO_URL)" >> $GITHUB_STEP_SUMMARY
-        echo "- Ref: $CURRENT_REF" >> $GITHUB_STEP_SUMMARY
-
     - name: Create a tarball, of the repository, to preserve file permissions
       run: |
         tar -C spdk -czf ./repository.tar.gz .
