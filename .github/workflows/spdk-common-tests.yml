@@ -23,7 +23,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      client_payload: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) || '' }}
+      client_payload: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) != '' || '' }}
       gerrit_ref: ${{ inputs.gerrit_ref }}
       spdk_path: './spdk'
     steps:
