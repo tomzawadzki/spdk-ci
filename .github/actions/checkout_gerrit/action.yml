@@ -45,6 +45,11 @@ runs:
     run: |
       echo "- [SPDK Repository] GitHub: ${{ inputs.spdk_branch }}" >> $GITHUB_STEP_SUMMARY
     shell: bash
+  - name: Unshallow SPDK repository
+    working-directory: ${{ inputs.spdk_path }}
+    run: |
+      git fetch --unshallow --recurse-submodules=no
+    shell: bash
   - name: Add Information on the SPDK repository state
     working-directory: ${{ inputs.spdk_path }}
     run: |
