@@ -4,11 +4,6 @@ name: per_patch
 on:
   workflow_dispatch:
     inputs:
-      repository:
-        description: 'URL of SPDK Repository on Gerrit'
-        default: 'https://review.spdk.io/gerrit/spdk/spdk'
-        type: string
-
       branch:
         description: 'The branch with changes e.g. "changes/xx/yyyyyy/zz"'
         type: string
@@ -21,21 +16,14 @@ jobs:
       image: ghcr.io/refenv/cijoe-docker:v0.9.50
 
     steps:
-    - name: Checkout SPDK repository mirror from GitHUB
+      # Required to use locally defined actions
+    - name: Checkout the spdk-ci repo locally
       uses: actions/checkout@v4.1.7
+    - name: Prepare SPDK repo by checking out from Gerrit
+      uses: ./.github/actions/checkout_gerrit
       with:
-        repository: spdk/spdk
-        fetch-depth: 0
-        path: spdk
-
-    - name: Fetch patchset from SPDK repository on Gerrit
-      run: |
-        cd spdk
-        git fetch "${{ github.event.inputs.repository }}" "${{ github.event.inputs.branch }}"
-        git checkout -b "${{ github.event.inputs.branch }}" FETCH_HEAD
-        git submodule update --init --recursive
-        git --no-pager log -1
-        git rev-parse --abbrev-ref HEAD
+        gerrit_ref: ${{ github.event.inputs.branch }}
+        spdk_path: spdk
 
     - name: Create a tarball of the repository
       run: |
