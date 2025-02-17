@@ -36,7 +36,6 @@ steps:
   run: |
     mkdir /opt/spdk
     tar xzf /tmp/repository.tar.gz -C /opt/spdk
-    find /opt/spdk
     git config --global --add safe.directory /opt/spdk
 
 - name: autorun_unittest
