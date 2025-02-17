@@ -35,10 +35,6 @@ jobs:
       with:
         gerrit_ref: ${{ env.client_payload != '' && env.client_payload.patchSet.ref || env.gerrit_ref }}
         spdk_path: ${{ env.spdk_path }}
-      # Placeholder for the actual tests. Replace in future PRs.
-    - name: Hello world
-      run: |
-        echo "Hello!"
     outputs:
       client_payload: ${{ env.client_payload }}
 
