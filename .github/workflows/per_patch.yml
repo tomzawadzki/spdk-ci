@@ -18,7 +18,7 @@ jobs:
   source-archive:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/refenv/cijoe-docker:v0.9.48
+      image: ghcr.io/refenv/cijoe-docker:v0.9.50
 
     steps:
     - name: Checkout SPDK repository mirror from GitHUB
@@ -58,7 +58,7 @@ jobs:
       matrix:
         workflow: [autorun_unittest, autorun_nvme]
     container:
-      image: ghcr.io/refenv/cijoe-docker:v0.9.48
+      image: ghcr.io/refenv/cijoe-docker:v0.9.50
       options: --device=/dev/kvm
 
     steps:
