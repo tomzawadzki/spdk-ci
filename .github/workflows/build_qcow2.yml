@@ -124,17 +124,13 @@ jobs:
         qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img fedora_40_x86_64.qcow2 -O qcow2 -c
         ls -lha fedora_40_x86_64.qcow2
 
-#
-# This relies on the following secrets: S3_KEY, S3_SECRET, S3_ENDPOINT_URL
-#
-#    - name: Transfer to S3 Compatible Storage
-#      env:
-#        S3_KEY: ${{ secrets.S3_KEY }}
-#        S3_SECRET: ${{ secrets.S3_SECRET }}
-#        S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
-#        S3_BUCKET: spdk-community-ci
-#      run: |
-#        ./ci/s3_file_upload.py fedora_40_x86_64.qcow2 \
-#        --bucket "$S3_BUCKET" \
-#        --endpoint-url "$S3_ENDPOINT_URL" \
-#        --object-key "system/fedora_40_x86_64.qcow2"
+    - name: Store Qcow2 build artifacts
+      uses: actions/upload-artifact@v4.4.0
+      if: always()
+      with:
+        name: qcow2-build-artifacts
+        compression-level: 0
+        overwrite: true
+        path: |
+          ci/cijoe/cijoe-output
+          fedora_40_x86_64.qcow2
