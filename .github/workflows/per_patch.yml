@@ -5,7 +5,26 @@ on:
   workflow_call:
 
 jobs:
+  get_qcow:
+    runs-on: ubuntu-latest
+    env:
+      artifact_name: "qcow2-build-artifacts"
+    steps:
+    - name: Select latest qcow2 artifact
+      id: get_artifact_id
+      # TODO: implement actual pagination
+      # TODO: make it a composite action for reuse
+      run: |
+        ARTIFACT_ID=$(curl -L --user ${{ github.actor }}:${{ github.token }} \
+        --header "Accept: application/vnd.github.v3+json" \
+        "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?name=${{ env.artifact_name }}&per_page=100" \
+        | jq -r '.artifacts | map(select(.name == "qcow2-build-artifacts")) | sort_by(.updated_at) | .[-1].workflow_run.id')
+        echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
+    outputs:
+      artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
+
   autorun:
+    needs: get_qcow
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -39,12 +58,10 @@ jobs:
 
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
-      # TODO: run_id is hardocded, for now.
-      # In future it'd be best to dynamically fetch latest successful build.
       with:
         name: qcow2-build-artifacts
         github-token: ${{ github.token }}
-        run-id: 13388420961
+        run-id: ${{ needs.get_qcow.outputs.artifact_id }}
 
     - name: qemu-guest, provision
       run: |
