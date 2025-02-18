@@ -118,11 +118,8 @@ jobs:
 
     - name: Change image format and compress
       run: |
-        ls -lha $HOME/guests/generic-bios-kvm-x86_64/
         for i in $(seq 1 60); do test -f "$HOME/guests/generic-bios-kvm-x86_64/guest.pid" || break; sleep 1; done
-        ls -lha $HOME/guests/generic-bios-kvm-x86_64/
         qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img fedora_40_x86_64.qcow2 -O qcow2 -c
-        ls -lha fedora_40_x86_64.qcow2
 
     - name: Store Qcow2 build artifacts
       uses: actions/upload-artifact@v4.4.0
