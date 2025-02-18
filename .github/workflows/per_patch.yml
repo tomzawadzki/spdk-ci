@@ -36,6 +36,15 @@ jobs:
       run: |
         tar xzf repository.tar.gz --strip 1
 
+    - name: Download VM Qcow2 image artifact
+      uses: actions/download-artifact@v4.1.8
+      # TODO: run_id is hardocded, for now.
+      # In future it'd be best to dynamically fetch latest successful build.
+      with:
+        name: qcow2-build-artifacts
+        github-token: ${{ github.token }}
+        run-id: 13388420961
+
     - name: qemu-guest, provision
       run: |
         cd ci/cijoe

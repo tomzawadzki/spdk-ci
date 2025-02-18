@@ -51,4 +51,4 @@ cloud.path = "{{ local.env.HOME }}/system_imaging/cloud/Fedora-Cloud-Base-Generi
 cloud.metadata_path = "{{ resources.auxiliary['system_imaging.cloudinit-linux-common-metadata'] }}"
 cloud.userdata_path = "{{ resources.auxiliary['system_imaging.cloudinit-linux-common-userdata'] }}"
 
-disk.path = "{{ local.env.HOME }}/system_imaging/disk/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2"
+disk.path = "/__w/spdk-ci/spdk-ci/fedora_40_x86_64.qcow2"
