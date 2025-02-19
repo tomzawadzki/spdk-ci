@@ -32,23 +32,30 @@ steps:
     src: "{{ local.env.REPOSITORY_TARBALL_PATH }}"
     dst: /tmp/repository.tar.gz
 
+- name: ci_tgz_transfer
+  uses: core.put
+  with:
+    src: "{{ local.env.CI_REPOSITORY_TARBALL_PATH }}"
+    dst: /tmp/ci_repository.tar.gz
+
 - name: tgz_unpack
   run: |
-    mkdir /opt/spdk
+    mkdir -p /opt/{spdk,ci}
     tar xzf /tmp/repository.tar.gz -C /opt/spdk
+    tar xzf /tmp/ci_repository.tar.gz -C /opt/ci
     git config --global --add safe.directory /opt/spdk
+    git config --global --add safe.directory /opt/ci
 
 - name: autorun_unittest
   run: |
     mkdir -p /opt/output/unittest
-    echo "SPDK_TEST_UNITTEST=1" > /tmp/auto.conf
+    cp /opt/ci/cijoe/configs/autorun_configs/unittest.conf /tmp/auto.conf
     output_dir=/opt/output/unittest /opt/spdk/autorun.sh /tmp/auto.conf
 
 - name: autorun_nvme
   run: |
     mkdir -p /opt/output/nvme
-    echo "SPDK_RUN_FUNCTIONAL_TEST=1" > /tmp/auto.conf
-    echo "SPDK_TEST_NVME=1" >> /tmp/auto.conf
+    cp /opt/ci/cijoe/configs/autorun_configs/nvme.conf /tmp/auto.conf
     output_dir=/opt/output/nvme /opt/spdk/autorun.sh /tmp/auto.conf
 
 - name: output_listing
