@@ -32,31 +32,27 @@ steps:
     src: "{{ local.env.REPOSITORY_TARBALL_PATH }}"
     dst: /tmp/repository.tar.gz
 
-- name: ci_tgz_transfer
+- name: ci_configs_transfer
   uses: core.put
   with:
-    src: "{{ local.env.CI_REPOSITORY_TARBALL_PATH }}"
-    dst: /tmp/ci_repository.tar.gz
+    src: "{{ local.env.CI_CFGS_REPOSITORY_PATH }}"
+    dst: /opt/configs
 
 - name: tgz_unpack
   run: |
-    mkdir -p /opt/{spdk,ci}
+    mkdir -p /opt/spdk
     tar xzf /tmp/repository.tar.gz -C /opt/spdk
-    tar xzf /tmp/ci_repository.tar.gz -C /opt/ci
     git config --global --add safe.directory /opt/spdk
-    git config --global --add safe.directory /opt/ci
 
 - name: autorun_unittest
   run: |
     mkdir -p /opt/output/unittest
-    cp /opt/ci/cijoe/configs/autorun_configs/unittest.conf /tmp/auto.conf
-    output_dir=/opt/output/unittest /opt/spdk/autorun.sh /tmp/auto.conf
+    output_dir=/opt/output/unittest /opt/spdk/autorun.sh /opt/configs/unittest.conf
 
 - name: autorun_nvme
   run: |
     mkdir -p /opt/output/nvme
-    cp /opt/ci/cijoe/configs/autorun_configs/nvme.conf /tmp/auto.conf
-    output_dir=/opt/output/nvme /opt/spdk/autorun.sh /tmp/auto.conf
+    output_dir=/opt/output/nvme /opt/spdk/autorun.sh /opt/configs/nvme.conf
 
 - name: output_listing
   run: |

@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 35
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/repository.tar.gz
-      CI_REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/ci_repository.tar.gz
+      CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
     strategy:
       matrix:
         workflow: [autorun_unittest, autorun_nvme]
@@ -27,10 +27,6 @@ jobs:
       uses: actions/checkout@v4.1.7
       with:
         path: ci
-
-    - name: Tarball CI repository
-      run: |
-        tar -C ci -czf ci_repository.tar.gz .
 
     - name: Download the SPDK repository
       uses: actions/download-artifact@v4.1.8
@@ -53,7 +49,7 @@ jobs:
     - name: qemu-guest, provision
       run: |
         cd ci/cijoe
-        cijoe guest_initialize guest_start guest_check tgz_transfer ci_tgz_transfer tgz_unpack \
+        cijoe guest_initialize guest_start guest_check tgz_transfer ci_configs_transfer tgz_unpack \
         --monitor \
         --config configs/qemuhost-with-guest-fedora-40.toml \
         --workflow workflows/autorun_in_qemu.yaml \
