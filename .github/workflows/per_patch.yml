@@ -26,11 +26,12 @@ jobs:
   autorun:
     needs: get_qcow
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/repository.tar.gz
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
     strategy:
+      fail-fast: false
       matrix:
         workflow:
         - autorun_unittest
