@@ -19,13 +19,14 @@ on:
         type: string
         default: ''
 
+env:
+  spdk_path: './spdk'
 jobs:
   checkout_spdk:
     runs-on: ubuntu-latest
     env:
       is_called: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) != '' || false }}
       gerrit_ref: ${{ inputs.gerrit_ref }}
-      spdk_path: './spdk'
     steps:
       # Required to use locally defined actions
     - name: Checkout the spdk-ci repo locally
@@ -48,6 +49,54 @@ jobs:
   tests:
     needs: checkout_spdk
     uses: ./.github/workflows/per_patch.yml
+
+  summary:
+    # 22.04 used on purpose; it has lcov+gcov versions that are compatible with what
+    # is used in cijoe's Fedora 40 images. Using lcov+gcov from ubuntu-latest results
+    # in warnings and/or failures.
+    runs-on: ubuntu-22.04
+    needs:
+    - tests
+    steps:
+    - name: Download the SPDK repository
+      uses: actions/download-artifact@v4.1.8
+      with:
+        name: repository
+        path: ${{ github.workspace }}/spdk
+
+    - name: Download artifact tarballs
+      uses: actions/download-artifact@v4.1.8
+      with:
+        pattern: 'autorun_*_artifacts'
+
+    - name: Show artifacts
+      run: |
+        tar xf ${{ env.spdk_path }}/repository.tar.gz -C ${{ env.spdk_path }}
+
+        # TODO: either use an official lcov image or create our own
+        # TODO: get rid of pandas dependency in spdk/autorun_post.py.
+        #       It's ~1GB with all it's dependecies, which is an overkill for
+        #       a few table operations.
+        sudo apt-get update && sudo apt-get install -y lcov python3-pandas
+
+        # Favourite part <3
+        # lcov when registers /opt/spdk/** paths for files when running in Qemu
+        # spawned by cijoe. But the working directory and paths are different
+        # in this step so need to replace them.
+        # TODO: This should be an option in autorun_post.py script itself.
+        sed -i -e "s#^SF:/[^/]*/spdk/#SF:$PWD/spdk/#" */cov_total.info
+
+        spdk/autorun_post.py -s -d ./ -r ./spdk
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4.4.0
+      with:
+        name: _autorun_summary_output
+        path: |
+          doc
+          coverage
+          ut_coverage
+          post_process
 
   report:
     # Only run if it was triggered by Gerrit event, with JSON for it
