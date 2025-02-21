@@ -164,6 +164,83 @@ steps:
     mkdir -p /opt/output/zns-vm-autotest
     output_dir=/opt/output/zns-vm-autotest /opt/spdk/autorun.sh /opt/configs/zns-vm-autotest.conf
 
+- name: packaging-docker-autotest
+  run: |
+    mkdir -p /opt/output/packaging-docker-autotest
+    output_dir=/opt/output/packaging-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "/opt/configs/packaging-docker-autotest.conf"
+    build_packaging
+
+- name: release-build-clang-docker-autotest
+  run: |
+    mkdir -p /opt/output/release-build-clang-docker-autotest
+    output_dir=/opt/output/release-build-clang-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "/opt/configs/release-build-clang-docker-autotest.conf"
+    export CC=/usr/bin/clang CXX=/usr/bin/clang++
+
+- name: release-build-main-docker-autotest
+  run: |
+    mkdir -p /opt/output/release-build-main-docker-autotest
+    output_dir=/opt/output/release-build-main-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "/opt/configs/release-build-main-docker-autotest.conf"
+    build_release
+
+- name: scan-build-docker-autotest
+  run: |
+    mkdir -p /opt/output/scan-build-docker-autotest
+    output_dir=/opt/output/scan-build-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "/opt/configs/scan-build-docker-autotest.conf"
+    ocf_precompile
+    scanbuild_make
+
+- name: unittest-valgrind-docker-autotest
+  run: |
+    mkdir -p /opt/output/unittest-valgrind-docker-autotest
+    output_dir=/opt/output/unittest-valgrind-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "/opt/configs/unittest-valgrind-docker-autotest.conf"
+    ocf_precompile
+    unittest_build
+    /opt/spdk/test/unit/unittest.sh
+
+- name: unittest-clang-docker-autotest
+  run: |
+    mkdir -p /opt/output/unittest-clang-docker-autotest
+    output_dir=/opt/output/unittest-clang-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "/opt/configs/unittest-clang-docker-autotest.conf"
+    export CC=/usr/bin/clang CXX=/usr/bin/clang++
+
+- name: unittest-main-docker-autotest
+  run: |
+    mkdir -p /opt/output/unittest-main-docker-autotest
+    output_dir=/opt/output/unittest-main-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "/opt/configs/unittest-main-docker-autotest.conf"
+    ocf_precompile
+    unittest_build
+    /opt/spdk/test/unit/unittest.sh
+
+- name: build-files-docker-autotest
+  run: |
+    touch empty.conf
+    mkdir -p /opt/output/build-files-docker-autotest
+    output_dir=/opt/output/build-files-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "./empty.conf"
+    build_files
+    dpdk_pci_api
+
+- name: check-format-docker-autotest
+  run: |
+    touch empty.conf
+    mkdir -p /opt/output/check-format-docker-autotest
+    output_dir=/opt/output/check-format-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "./empty.conf"
+    CHECK_FORMAT_ONLY_DIFF=yes check_format
+
+- name: check-so-deps-docker-autotest
+  run: |
+    touch empty.conf
+    mkdir -p /opt/output/check-so-deps-docker-autotest
+    output_dir=/opt/output/check-so-deps-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "./empty.conf"
+    ocf_precompile
+    SPDK_ABI_DIR=/opt/spdk-abi check_so_deps # TODO: pull spdk-abi repo
+
+- name: doc-docker-autotest
+  run: |
+    touch empty.conf
+    mkdir -p /opt/output/doc-docker-autotest
+    output_dir=/opt/output/doc-docker-autotest rootdir=/opt/spdk source "/opt/spdk/test/common/autobuild_common.sh" "./empty.conf"
+    build_doc
+
 - name: output_listing
   run: |
     ls /opt
