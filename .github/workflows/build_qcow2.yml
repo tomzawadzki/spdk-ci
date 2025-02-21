@@ -33,6 +33,11 @@ on:
         description: 'Branch/tag/ref of SPDK repository'
         required: true
         default: 'master'
+  push:
+    branches: ["main"]
+    paths:
+    - 'cijoe/configs/qemuhost-with-guest-fedora-40.toml'
+    - 'cijoe/workflows/build_qcow2_using_qemu.yaml'
 
 jobs:
 
