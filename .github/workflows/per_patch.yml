@@ -35,6 +35,28 @@ jobs:
         workflow:
         - autorun_unittest
         - autorun_nvme
+        - autobuild-external-vm-autotest
+        - blobfs-phy-autotest
+        - crypto-phy-autotest
+        - freebsd-vm-autotest
+        - iscsi-uring-vm-autotest
+        - iscsi-vm-autotest
+        - lvol-vm-autotest
+        - nvme-cmb-pmr-vm-autotest
+        - nvme-phy-autotest
+        - nvme-vm-autotest
+        - nvmf-phy-autotest
+        - nvmf-tcp-phy-autotest
+        - nvmf-tcp-uring-vm-autotest
+        - nvmf-tcp-vm-autotest
+        - rocky9-vm-autotest
+        - short-fuzz-phy-autotest
+        - ubuntu22-vm-autotest
+        - ubuntu24-vg-autotest
+        - vfio-user-phy-autotest
+        - vhost-initiator-vm-autotest
+        - vhost-phy-autotest
+        - zns-vm-autotest
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.50
       options: --device=/dev/kvm

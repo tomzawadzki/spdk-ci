@@ -54,6 +54,116 @@ steps:
     mkdir -p /opt/output/nvme
     output_dir=/opt/output/nvme /opt/spdk/autorun.sh /opt/configs/nvme.conf
 
+- name: autobuild-external-vm-autotest
+  run: |
+    mkdir -p /opt/output/autobuild-external-vm-autotest
+    output_dir=/opt/output/autobuild-external-vm-autotest /opt/spdk/autorun.sh /opt/configs/autobuild-external-vm-autotest.conf
+
+- name: blobfs-phy-autotest
+  run: |
+    mkdir -p /opt/output/blobfs-phy-autotest
+    output_dir=/opt/output/blobfs-phy-autotest /opt/spdk/autorun.sh /opt/configs/blobfs-phy-autotest.conf
+
+- name: crypto-phy-autotest
+  run: |
+    mkdir -p /opt/output/crypto-phy-autotest
+    output_dir=/opt/output/crypto-phy-autotest /opt/spdk/autorun.sh /opt/configs/crypto-phy-autotest.conf
+
+- name: freebsd-vm-autotest
+  run: |
+    mkdir -p /opt/output/freebsd-vm-autotest
+    output_dir=/opt/output/freebsd-vm-autotest /opt/spdk/autorun.sh /opt/configs/freebsd-vm-autotest.conf
+
+- name: iscsi-uring-vm-autotest
+  run: |
+    mkdir -p /opt/output/iscsi-uring-vm-autotest
+    output_dir=/opt/output/iscsi-uring-vm-autotest /opt/spdk/autorun.sh /opt/configs/iscsi-uring-vm-autotest.conf
+
+- name: iscsi-vm-autotest
+  run: |
+    mkdir -p /opt/output/iscsi-vm-autotest
+    output_dir=/opt/output/iscsi-vm-autotest /opt/spdk/autorun.sh /opt/configs/iscsi-vm-autotest.conf
+
+- name: lvol-vm-autotest
+  run: |
+    mkdir -p /opt/output/lvol-vm-autotest
+    output_dir=/opt/output/lvol-vm-autotest /opt/spdk/autorun.sh /opt/configs/lvol-vm-autotest.conf
+
+- name: nvme-cmb-pmr-vm-autotest
+  run: |
+    mkdir -p /opt/output/nvme-cmb-pmr-vm-autotest
+    output_dir=/opt/output/nvme-cmb-pmr-vm-autotest /opt/spdk/autorun.sh /opt/configs/nvme-cmb-pmr-vm-autotest.conf
+
+- name: nvme-phy-autotest
+  run: |
+    mkdir -p /opt/output/nvme-phy-autotest
+    output_dir=/opt/output/nvme-phy-autotest /opt/spdk/autorun.sh /opt/configs/nvme-phy-autotest.conf
+
+- name: nvme-vm-autotest
+  run: |
+    mkdir -p /opt/output/nvme-vm-autotest
+    output_dir=/opt/output/nvme-vm-autotest /opt/spdk/autorun.sh /opt/configs/nvme-vm-autotest.conf
+
+- name: nvmf-phy-autotest
+  run: |
+    mkdir -p /opt/output/nvmf-phy-autotest
+    output_dir=/opt/output/nvmf-phy-autotest /opt/spdk/autorun.sh /opt/configs/nvmf-phy-autotest.conf
+
+- name: nvmf-tcp-phy-autotest
+  run: |
+    mkdir -p /opt/output/nvmf-tcp-phy-autotest
+    output_dir=/opt/output/nvmf-tcp-phy-autotest /opt/spdk/autorun.sh /opt/configs/nvmf-tcp-phy-autotest.conf
+
+- name: nvmf-tcp-uring-vm-autotest
+  run: |
+    mkdir -p /opt/output/nvmf-tcp-uring-vm-autotest
+    output_dir=/opt/output/nvmf-tcp-uring-vm-autotest /opt/spdk/autorun.sh /opt/configs/nvmf-tcp-uring-vm-autotest.conf
+
+- name: nvmf-tcp-vm-autotest
+  run: |
+    mkdir -p /opt/output/nvmf-tcp-vm-autotest
+    output_dir=/opt/output/nvmf-tcp-vm-autotest /opt/spdk/autorun.sh /opt/configs/nvmf-tcp-vm-autotest.conf
+
+- name: rocky9-vm-autotest
+  run: |
+    mkdir -p /opt/output/rocky9-vm-autotest
+    output_dir=/opt/output/rocky9-vm-autotest /opt/spdk/autorun.sh /opt/configs/rocky9-vm-autotest.conf
+
+- name: short-fuzz-phy-autotest
+  run: |
+    mkdir -p /opt/output/short-fuzz-phy-autotest
+    output_dir=/opt/output/short-fuzz-phy-autotest /opt/spdk/autorun.sh /opt/configs/short-fuzz-phy-autotest.conf
+
+- name: ubuntu22-vm-autotest
+  run: |
+    mkdir -p /opt/output/ubuntu22-vm-autotest
+    output_dir=/opt/output/ubuntu22-vm-autotest /opt/spdk/autorun.sh /opt/configs/ubuntu22-vm-autotest.conf
+
+- name: ubuntu24-vg-autotest
+  run: |
+    mkdir -p /opt/output/ubuntu24-vg-autotest
+    output_dir=/opt/output/ubuntu24-vg-autotest /opt/spdk/autorun.sh /opt/configs/ubuntu24-vg-autotest.conf
+
+- name: vfio-user-phy-autotest
+  run: |
+    mkdir -p /opt/output/vfio-user-phy-autotest
+    output_dir=/opt/output/vfio-user-phy-autotest /opt/spdk/autorun.sh /opt/configs/vfio-user-phy-autotest.conf
+
+- name: vhost-initiator-vm-autotest
+  run: |
+    mkdir -p /opt/output/vhost-initiator-vm-autotest
+    output_dir=/opt/output/vhost-initiator-vm-autotest /opt/spdk/autorun.sh /opt/configs/vhost-initiator-vm-autotest.conf
+
+- name: vhost-phy-autotest
+  run: |
+    mkdir -p /opt/output/vhost-phy-autotest
+    output_dir=/opt/output/vhost-phy-autotest /opt/spdk/autorun.sh /opt/configs/vhost-phy-autotest.conf
+
+- name: zns-vm-autotest
+  run: |
+    mkdir -p /opt/output/zns-vm-autotest
+    output_dir=/opt/output/zns-vm-autotest /opt/spdk/autorun.sh /opt/configs/zns-vm-autotest.conf
+
 - name: output_listing
   run: |
     ls /opt
