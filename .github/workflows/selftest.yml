@@ -22,3 +22,9 @@ jobs:
     - name: Format
       run: |
         pipx run -q --python python3 pre-commit run --all
+
+    - name: Print formatting changes
+      if: ${{ failure() }}
+      run: |
+        git --no-pager diff
+        exit 1
