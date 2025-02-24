@@ -21,7 +21,7 @@ jobs:
 
     - name: Format
       run: |
-        pipx run -q --python python3 pre-commit run --all
+        pipx run --python python3 pre-commit run --all
 
     - name: Print formatting changes
       if: ${{ failure() }}
