@@ -1,0 +1,20 @@
+---
+doc: |
+  Build docker image from qcow2
+  =============================
+
+  For each qcow2 matching the "pattern" in the configuration file:
+
+    system-imaging.images.{pattern}.disk.path
+
+  For example:
+
+    system-imaging.images.fedora-40-x86_64.disk.path
+
+  Then a Docker image is created. See the script for details.
+
+steps:
+- name: dockerimage_from_diskimage
+  uses: system_imaging.dockerimage_from_diskimage
+  with:
+    pattern: "*fedora*x86_64*"
