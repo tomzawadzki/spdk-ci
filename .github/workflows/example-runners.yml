@@ -1,0 +1,78 @@
+---
+name: example
+
+# Example workflow for self-hosted runners
+on:
+  # Runs when triggered manually via GitHub Actions page
+  workflow_dispatch:
+    inputs:
+      # Can use specific Gerrit refspec, otherwise pull latest SPDK master
+      gerrit_ref:
+        description: 'Gerrit refspec to test following refs/changes/XX/YYYYY/Z format'
+        required: false
+        type: string
+        default: ''
+      # Following are bools to define which jobs to run
+      hello_world:
+        type: boolean
+        default: true
+      hello_container:
+        type: boolean
+        default: false
+      contenerized_autorun:
+        type: boolean
+        default: false
+      bare_autorun:
+        type: boolean
+        default: false
+
+jobs:
+  hello_world:
+    # This job can run on any type of runner, no requirements
+    runs-on: example_runner
+    if: ${{ inputs.hello_world }}
+    steps:
+    - run: echo "Howdy, Pardner !"
+
+  hello_container:
+    # This job can run on any type of runner, requires docker to be present
+    runs-on: example_runner
+    container:
+      image: registry.fedoraproject.org/fedora-minimal:41
+    if: ${{ inputs.hello_container }}
+    steps:
+    - run: echo "Top of the morning to you !"
+
+  contenerized_autorun:
+    # This job can run on any type of runner, requires docker to be present.
+    # Nested virtualization has to be supported.
+    # Container image has all depedencies to start a VM and steer the test execution.
+    # Meanwhile the VM has an image prepared to execute autorun.sh.
+    if: ${{ inputs.contenerized_autorun }}
+    # Note lack of runs-on here. We are calling a workflow, rather than just creating a job.
+    # So we need to apply correct labels in those jobs.
+    # See 'example_runner' label in per_patch.yml
+    uses: ./.github/workflows/spdk-common-tests.yml
+
+  bare_autorun:
+    # This job can run on any type of runner, requires the enviroment to be
+    # already prepared from pkgdep.sh and autotest_setup.sh.
+    runs-on: example_runner
+    if: ${{ inputs.bare_autorun }}
+    env:
+      gerrit_ref: ${{ inputs.gerrit_ref }}
+      spdk_path: './spdk'
+    steps:
+      # Required to use locally defined actions
+    - name: Checkout the spdk-ci repo locally
+      uses: actions/checkout@v4
+    - name: Checkout SPDK repo from Gerrit
+      uses: ./.github/actions/checkout_gerrit
+      with:
+        gerrit_ref: ${{ env.gerrit_ref }}
+        spdk_path: ${{ env.spdk_path }}
+    - name: autorun_unittest
+      run: |
+        mkdir -p ./output/unittest
+        echo "SPDK_TEST_UNITTEST=1" > ./auto.conf
+        output_dir=./output/unittest ./spdk/autorun.sh ./auto.conf
