@@ -29,10 +29,10 @@ name: build_qcow2
 on:
   workflow_dispatch:
     inputs:
-      spdk_repos_ref:
-        description: 'Branch/tag/ref of SPDK repository'
-        required: true
-        default: 'master'
+      gerrit_ref:
+        description: 'Reference to specific Gerrit patch set'
+        required: false
+        default: ''
 
 jobs:
 
@@ -49,7 +49,7 @@ jobs:
     - name: Checkout SPDK repository via GitHUB
       uses: ./.github/actions/checkout_gerrit
       with:
-        spdk_branch: ${{ github.event.inputs.spdk_repos_ref }}
+        gerrit_ref: ${{ github.event.inputs.gerrit_ref }}
         spdk_path: spdk
 
     - name: Create a tarball, of the repository, to preserve file permissions
