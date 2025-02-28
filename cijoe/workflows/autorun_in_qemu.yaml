@@ -44,6 +44,12 @@ steps:
     src: "{{ local.env.CI_CFGS_REPOSITORY_PATH }}"
     dst: /opt/configs
 
+- name: vm_test_image_transfer
+  uses: core.put
+  with:
+    src: "{{ local.env.VM_TEST_IMAGE }}"
+    dst: /opt/spdk_test_image.qcow2
+
 - name: tgz_unpack
   run: |
     mkdir -p /opt/spdk
