@@ -45,6 +45,7 @@ jobs:
         - build-files-container-autotest
         - scan-build-container-autotest
         - check-so-deps-container-autotest
+        - vfio-user-vm-autotest
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.50
       options: --device=/dev/kvm
