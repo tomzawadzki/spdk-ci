@@ -60,6 +60,11 @@ steps:
     mkdir -p /opt/output
     output_dir=/opt/output /opt/spdk/autorun.sh /opt/configs/nvme.conf
 
+- name: vfio-user_autotest
+  run: |
+    mkdir -p /opt/output
+    VM_IMAGE=/opt/spdk_test_image.qcow2 output_dir=/opt/output /opt/spdk/autorun.sh /opt/configs/vfio-user_autotest.conf
+
 - name: output_listing
   run: |
     ls /opt
