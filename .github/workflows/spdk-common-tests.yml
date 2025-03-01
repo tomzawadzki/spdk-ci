@@ -11,7 +11,7 @@ on:
         description: 'Gerrit refspec to test following refs/changes/${change_number: -2}/${change_number}/${patch_set} format'
         required: false
         type: string
-        default: ''
+        default: 'refs/changes/64/25664/5'
   workflow_call:
     inputs:
       client_payload:
