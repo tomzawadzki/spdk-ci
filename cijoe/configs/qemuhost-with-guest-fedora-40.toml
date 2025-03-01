@@ -26,7 +26,7 @@ path = "{{ local.env.HOME }}/guests/generic-bios-kvm-x86_64"
 system_label = "x86_64"
 
 # Keyword arguments: joined onto the form: "-cpu host -smp 4 -m 4" etc.
-system_args.kwa = {cpu = "host", smp = 8, m = "12G", accel = "kvm"}
+system_args.kwa = {cpu = "host", smp = 12, m = "12G", accel = "kvm"}
 
 # Raw arguments: passed without modification to qemu-system-{arch}
 system_args.raw = """\
