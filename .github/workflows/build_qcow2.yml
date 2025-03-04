@@ -29,7 +29,7 @@ name: build_qcow2
 on:
   workflow_dispatch:
     inputs:
-          gerrit_ref:
+      gerrit_ref:
         description: 'Reference to specific Gerrit patch set'
         required: false
         default: ''
