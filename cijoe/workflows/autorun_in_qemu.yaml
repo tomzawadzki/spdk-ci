@@ -60,6 +60,10 @@ steps:
   run: |
     rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/check-format-container-autotest.conf && check_format
 
+- name: release-build-gcc-container-autotest
+  run: |
+    rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/release-build-gcc-container-autotest.conf && build_release
+
 - name: output_listing
   run: |
     ls /opt
