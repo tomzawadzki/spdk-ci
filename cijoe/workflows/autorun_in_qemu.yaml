@@ -32,6 +32,12 @@ steps:
     src: "{{ local.env.REPOSITORY_TARBALL_PATH }}"
     dst: /tmp/repository.tar.gz
 
+- name: abi_transfer
+  uses: core.put
+  with:
+    src: "{{ local.env.ABI_TARBALL_PATH }}"
+    dst: /tmp/abi.tar.gz
+
 - name: ci_configs_transfer
   uses: core.put
   with:
@@ -42,6 +48,8 @@ steps:
   run: |
     mkdir -p /opt/spdk
     tar xzf /tmp/repository.tar.gz -C /opt/spdk
+    mkdir -p /opt/spdk-abi
+    tar xzf /tmp/abi.tar.gz -C /opt/spdk-abi
     git config --global --add safe.directory '*'
 
 - name: output_create
@@ -75,6 +83,10 @@ steps:
 - name: scan-build-container-autotest
   run: |
     rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/scan-build-container-autotest.conf && ocf_precompile && scanbuild_make
+
+- name: check-so-deps-container-autotest
+  run: |
+    rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/check-so-deps-container-autotest.conf && ocf_precompile && SPDK_ABI_DIR=/opt/spdk-abi check_so_deps
 
 - name: output_listing
   run: |

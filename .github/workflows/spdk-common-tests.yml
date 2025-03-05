@@ -43,6 +43,21 @@ jobs:
       with:
         name: repository
         path: repository.tar.gz
+
+    - name: Checkout the spdk-abi repo
+      uses: actions/checkout@v4.1.7
+      with:
+        repository: 'spdk/spdk-abi'
+        path: './spdk-abi'
+        fetch-depth: '0'
+        fetch-tags: 'true'
+    - name: Create abi tarball
+      run: tar -C './spdk-abi' -czf abi.tar.gz .
+    - name: Upload the abi tarball as an artifact
+      uses: actions/upload-artifact@v4.4.0
+      with:
+        name: abi
+        path: abi.tar.gz
     outputs:
       is_called: ${{ env.is_called }}
 
