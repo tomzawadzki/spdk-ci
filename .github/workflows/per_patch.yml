@@ -38,6 +38,7 @@ jobs:
         - check-format-container-autotest
         - release-build-gcc-container-autotest
         - doc-container-autotest
+        - build-files-container-autotest
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.50
       options: --device=/dev/kvm
