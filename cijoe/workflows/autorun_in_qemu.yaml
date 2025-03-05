@@ -48,13 +48,13 @@ steps:
   run: |
     mkdir -p /opt/output
 
-- name: autorun_unittest
-  run: |
-    /opt/spdk/autorun.sh /opt/configs/unittest.conf
-
 - name: autorun_nvme
   run: |
     /opt/spdk/autorun.sh /opt/configs/nvme.conf
+
+- name: unittest-gcc-container-autotest
+  run: |
+    rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/unittest-gcc-container-autotest.conf && ocf_precompile && unittest_build && ./test/unit/unittest.sh
 
 - name: output_listing
   run: |
