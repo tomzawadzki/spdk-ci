@@ -72,6 +72,10 @@ steps:
   run: |
     rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/empty.conf && build_files && dpdk_pci_api
 
+- name: scan-build-container-autotest
+  run: |
+    rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/scan-build-container-autotest.conf && ocf_precompile && scanbuild_make
+
 - name: output_listing
   run: |
     ls /opt
