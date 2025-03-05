@@ -32,6 +32,7 @@ jobs:
       ABI_TARBALL_PATH: ${{ github.workspace }}/abi.tar.gz
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
     strategy:
+      fail-fast: false
       matrix:
         workflow:
         - autorun_nvme
