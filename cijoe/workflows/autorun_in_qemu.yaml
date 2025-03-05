@@ -46,13 +46,13 @@ steps:
 
 - name: autorun_unittest
   run: |
-    mkdir -p /opt/output/unittest
-    output_dir=/opt/output/unittest /opt/spdk/autorun.sh /opt/configs/unittest.conf
+    mkdir -p /opt/output
+    output_dir=/opt/output /opt/spdk/autorun.sh /opt/configs/unittest.conf
 
 - name: autorun_nvme
   run: |
-    mkdir -p /opt/output/nvme
-    output_dir=/opt/output/nvme /opt/spdk/autorun.sh /opt/configs/nvme.conf
+    mkdir -p /opt/output
+    output_dir=/opt/output /opt/spdk/autorun.sh /opt/configs/nvme.conf
 
 - name: output_listing
   run: |

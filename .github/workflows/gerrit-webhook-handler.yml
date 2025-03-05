@@ -3,6 +3,9 @@ name: SPDK per-patch tests
 
 on:
   pull_request:
+    paths-ignore:
+    - '.github/workflows/selftest.yml'
+    - '.github/workflows/build_qcow2.yml'
   workflow_dispatch:
   repository_dispatch:
     types:
