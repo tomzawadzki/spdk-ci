@@ -44,15 +44,17 @@ steps:
     tar xzf /tmp/repository.tar.gz -C /opt/spdk
     git config --global --add safe.directory /opt/spdk
 
-- name: autorun_unittest
+- name: output_create
   run: |
     mkdir -p /opt/output
-    output_dir=/opt/output /opt/spdk/autorun.sh /opt/configs/unittest.conf
+
+- name: autorun_unittest
+  run: |
+    /opt/spdk/autorun.sh /opt/configs/unittest.conf
 
 - name: autorun_nvme
   run: |
-    mkdir -p /opt/output
-    output_dir=/opt/output /opt/spdk/autorun.sh /opt/configs/nvme.conf
+    /opt/spdk/autorun.sh /opt/configs/nvme.conf
 
 - name: output_listing
   run: |
