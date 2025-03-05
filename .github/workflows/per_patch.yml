@@ -35,6 +35,7 @@ jobs:
         workflow:
         - autorun_nvme
         - unittest-gcc-container-autotest
+        - check-format-container-autotest
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.50
       options: --device=/dev/kvm
