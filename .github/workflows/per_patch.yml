@@ -35,7 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         workflow:
-        - autorun_nvme
+        - nvme-vm-autotest
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.50
       options: --device=/dev/kvm
