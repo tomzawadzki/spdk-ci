@@ -82,7 +82,7 @@ jobs:
     - name: Download artifact tarballs
       uses: actions/download-artifact@v4.1.8
       with:
-        pattern: 'autorun_*_artifacts'
+        pattern: '*_artifacts'
 
     - name: Show artifacts
       run: |
