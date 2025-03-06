@@ -42,7 +42,7 @@ steps:
   run: |
     mkdir -p /opt/spdk
     tar xzf /tmp/repository.tar.gz -C /opt/spdk
-    git config --global --add safe.directory /opt/spdk
+    git config --global --add safe.directory '*'
 
 - name: output_create
   run: |
