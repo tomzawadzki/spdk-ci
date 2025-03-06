@@ -56,9 +56,9 @@ steps:
   run: |
     mkdir -p /opt/output
 
-- name: autorun_nvme
+- name: nvme-vm-autotest
   run: |
-    /opt/spdk/autorun.sh /opt/configs/nvme.conf
+    /opt/spdk/autorun.sh /opt/configs/nvme-vm-autotest.conf
 
 - name: raid-vm-autotest
   run: |

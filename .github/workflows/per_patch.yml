@@ -34,7 +34,7 @@ jobs:
     strategy:
       matrix:
         workflow:
-        - autorun_nvme
+        - nvme-vm-autotest
         - raid-vm-autotest
         - unittest-gcc-container-autotest
         - check-format-container-autotest
