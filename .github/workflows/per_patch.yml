@@ -26,7 +26,7 @@ jobs:
   autorun:
     needs: get_qcow
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/repository.tar.gz
       ABI_TARBALL_PATH: ${{ github.workspace }}/abi.tar.gz
