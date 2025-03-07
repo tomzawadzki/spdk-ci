@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       is_called: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) != '' || false }}
-      gerrit_ref: ${{ inputs.gerrit_ref }}
+      gerrit_ref: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload).patchSet.ref || inputs.gerrit_ref }}
     steps:
       # Required to use locally defined actions
     - name: Checkout the spdk-ci repo locally
@@ -34,7 +34,7 @@ jobs:
     - name: Prepare SPDK repo by checking out from Gerrit
       uses: ./.github/actions/checkout_gerrit
       with:
-        gerrit_ref: ${{ env.client_payload != '' && env.client_payload.patchSet.ref || env.gerrit_ref }}
+        gerrit_ref: ${{ env.gerrit_ref }}
         spdk_path: ${{ env.spdk_path }}
     - name: Create repository tarball
       run: tar -C ${{ env.spdk_path }} -czf repository.tar.gz .
