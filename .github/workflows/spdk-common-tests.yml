@@ -93,14 +93,6 @@ jobs:
         #       It's ~1GB with all it's dependecies, which is an overkill for
         #       a few table operations.
         sudo apt-get update && sudo apt-get install -y lcov python3-pandas
-
-        # Favourite part <3
-        # lcov when registers /opt/spdk/** paths for files when running in Qemu
-        # spawned by cijoe. But the working directory and paths are different
-        # in this step so need to replace them.
-        # TODO: This should be an option in autorun_post.py script itself.
-        sed -i -e "s#^SF:/[^/]*/spdk/#SF:$PWD/spdk/#" */cov_total.info
-
         spdk/autorun_post.py -s -d ./ -r ./spdk
 
     - name: Upload artifacts
