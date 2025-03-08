@@ -36,6 +36,7 @@ jobs:
         workflow:
         - nvme-vm-autotest
         - raid-vm-autotest
+        - bdev-vm-autotest
         - unittest-gcc-container-autotest
         - check-format-container-autotest
         - release-build-gcc-container-autotest

@@ -64,6 +64,10 @@ steps:
   run: |
     /opt/spdk/autorun.sh /opt/configs/raid-vm-autotest.conf
 
+- name: bdev-vm-autotest
+  run: |
+    /opt/spdk/autorun.sh /opt/configs/bdev-vm-autotest.conf
+
 - name: unittest-gcc-container-autotest
   run: |
     rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/unittest-gcc-container-autotest.conf && ocf_precompile && unittest_build && ./test/unit/unittest.sh
