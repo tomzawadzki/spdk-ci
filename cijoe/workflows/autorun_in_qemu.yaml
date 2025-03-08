@@ -68,6 +68,14 @@ steps:
   run: |
     /opt/spdk/autorun.sh /opt/configs/bdev-vm-autotest.conf
 
+- name: nvmf-tcp-vm-autotest
+  run: |
+    /opt/spdk/autorun.sh /opt/configs/nvmf-tcp-vm-autotest.conf
+
+- name: nvmf-tcp-uring-vm-autotest
+  run: |
+    /opt/spdk/autorun.sh /opt/configs/nvmf-tcp-uring-vm-autotest.conf
+
 - name: unittest-gcc-container-autotest
   run: |
     rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/unittest-gcc-container-autotest.conf && ocf_precompile && unittest_build && ./test/unit/unittest.sh
