@@ -36,6 +36,7 @@ on:
   push:
     branches: ["main"]
     paths:
+    - '.github/workflows/build_qcow2.yml'
     - 'cijoe/configs/qemuhost-with-guest-fedora-40.toml'
     - 'cijoe/workflows/build_qcow2_using_qemu.yaml'
 
