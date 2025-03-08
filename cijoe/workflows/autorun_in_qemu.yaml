@@ -52,11 +52,6 @@ steps:
     tar xzf /tmp/abi.tar.gz -C /opt/spdk-abi
     git config --global --add safe.directory '*'
 
-- name: raid-vg-autotest
-  run: |
-    mkdir -p /opt/output/raid-vg-autotest
-    output_dir=/opt/output/raid-vg-autotest /opt/spdk/autorun.sh /opt/configs/raid-vg-autotest.conf
-
 - name: output_create
   run: |
     mkdir -p /opt/output
@@ -64,6 +59,10 @@ steps:
 - name: autorun_nvme
   run: |
     /opt/spdk/autorun.sh /opt/configs/nvme.conf
+
+- name: raid-vm-autotest
+  run: |
+    /opt/spdk/autorun.sh /opt/configs/raid-vm-autotest.conf
 
 - name: unittest-gcc-container-autotest
   run: |
