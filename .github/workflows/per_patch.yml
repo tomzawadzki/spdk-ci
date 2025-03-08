@@ -71,8 +71,17 @@ jobs:
         tar xzf repository.tar.gz --strip 1
         tar xzf abi.tar.gz --strip 1
 
+    - name: Restore qcow2 image from cache
+      id: restore-qcow2
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          fedora_40_x86_64.qcow2
+        key: fedora_40_x86_64
+
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
+      if: ${{ hashFiles('fedora_40_x86_64.qcow2') == '' }}
       with:
         name: qcow2-build-artifacts
         github-token: ${{ github.token }}

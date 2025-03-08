@@ -126,3 +126,11 @@ jobs:
         path: |
           ci/cijoe/cijoe-output
           fedora_40_x86_64.qcow2
+
+    - name: Cache qcow2 image
+      id: cache-qcow2
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          fedora_40_x86_64.qcow2
+        key: fedora_40_x86_64
