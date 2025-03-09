@@ -76,7 +76,9 @@ steps:
 - name: pkgdep_and_autotest_setup
   run: |
     /tmp/spdk/scripts/pkgdep.sh -a
-    /tmp/spdk/test/common/config/autotest_setup.sh --install-deps --upgrade --test-conf="lcov,flamegraph,fio,nvmecli"
+    mkdir /tmp/git_repos
+    /tmp/spdk/test/common/config/autotest_setup.sh --install-deps --upgrade --dir-git="/tmp/git_repos" --test-conf="lcov,flamegraph,fio,nvmecli"
+    rm -r /tmp/git_repos
 
 - name: guest_shutdown
   run: |
