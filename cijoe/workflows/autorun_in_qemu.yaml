@@ -52,6 +52,11 @@ steps:
     tar xzf /tmp/abi.tar.gz -C /opt/spdk-abi
     git config --global --add safe.directory '*'
 
+- name: raid-vg-autotest
+  run: |
+    mkdir -p /opt/output/raid-vg-autotest
+    output_dir=/opt/output/raid-vg-autotest /opt/spdk/autorun.sh /opt/configs/raid-vg-autotest.conf
+
 - name: output_create
   run: |
     mkdir -p /opt/output
