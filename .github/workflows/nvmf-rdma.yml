@@ -1,0 +1,45 @@
+---
+name: nvmf-rdma-test
+
+# Uses self hosted runner supporting RDMA hardware (label=rdma-vm)
+on:
+  # Runs when triggered manually via GitHub Actions page
+  workflow_dispatch:
+    inputs:
+      # Can use specific Gerrit refspec, otherwise pull latest SPDK master
+      gerrit_ref:
+        description: 'Gerrit refspec to test following refs/changes/XX/YYYYY/Z format'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  mhae-jit:
+    runs-on: [rdma-vm]
+    env:
+      gerrit_ref: ${{ inputs.gerrit_ref }}
+      spdk_path: './spdk'
+    steps:
+      # Required to use locally defined actions
+    - name: Checkout the spdk-ci repo locally
+      uses: actions/checkout@v4
+    - name: Checkout SPDK repo from Gerrit
+      uses: ./.github/actions/checkout_gerrit
+      with:
+        gerrit_ref: ${{ env.gerrit_ref }}
+        spdk_path: ${{ env.spdk_path }}
+    - name: autorun-nvmf
+      run: |
+        pwd
+        cd spdk
+        mkdir -p ./output
+        cat > funtest.conf << EOF
+        SPDK_RUN_FUNCTIONAL_TEST=1
+        SPDK_TEST_UNITTEST=0
+        SPDK_TEST_NVMF=1
+        SPDK_TEST_NVMF_TRANSPORT="rdma"
+        HUGEMEM=2048
+        # Set up the DEPENDENCY_DIR
+        DEPENDENCY_DIR=/home/vagrant
+        EOF
+        ./autorun.sh ./funtest.conf
