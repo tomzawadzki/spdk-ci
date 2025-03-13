@@ -1,7 +1,7 @@
 ---
 name: nvmf-rdma-test
 
-# Uses self hosted runner supporting RDMA hardware (label=rdma-vm)
+# Example workflow for self-hosted runners
 on:
   # Runs when triggered manually via GitHub Actions page
   workflow_dispatch:
@@ -14,8 +14,8 @@ on:
         default: ''
 
 jobs:
-  mhae-jit:
-    runs-on: [rdma-vm]
+  hpe-nvmf-rdma:
+    runs-on: [hpe-rdma-vm]
     env:
       gerrit_ref: ${{ inputs.gerrit_ref }}
       spdk_path: './spdk'
@@ -30,16 +30,21 @@ jobs:
         spdk_path: ${{ env.spdk_path }}
     - name: autorun-nvmf
       run: |
-        pwd
-        cd spdk
-        mkdir -p ./output
         cat > funtest.conf << EOF
         SPDK_RUN_FUNCTIONAL_TEST=1
-        SPDK_TEST_UNITTEST=0
         SPDK_TEST_NVMF=1
         SPDK_TEST_NVMF_TRANSPORT="rdma"
-        HUGEMEM=2048
-        # Set up the DEPENDENCY_DIR
-        DEPENDENCY_DIR=/home/vagrant
+        SPDK_TEST_NVMF_NICS=mlx5
+        NET_TYPE=phy
+        SPDK_RUN_ASAN=0
+        SPDK_RUN_UBSAN=1
         EOF
-        ./autorun.sh ./funtest.conf
+        # SRIOV hack (but does not work with in-box driver)
+        # sed -i 's/0xa2d6/0x101e/g' test/nvmf/common.sh
+        ./spdk/autorun.sh ./funtest.conf
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4.4.0
+      if: always()
+      with:
+        path: ./output
+        name: nvmf-rdma-vm_artifacts
