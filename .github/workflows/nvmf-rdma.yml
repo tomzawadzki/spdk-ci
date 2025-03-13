@@ -1,7 +1,6 @@
 ---
 name: nvmf-rdma-test
 
-# Example workflow for self-hosted runners
 on:
   # Runs when triggered manually via GitHub Actions page
   workflow_dispatch:
@@ -39,8 +38,6 @@ jobs:
         SPDK_RUN_ASAN=0
         SPDK_RUN_UBSAN=1
         EOF
-        # SRIOV hack (but does not work with in-box driver)
-        # sed -i 's/0xa2d6/0x101e/g' test/nvmf/common.sh
         ./spdk/autorun.sh ./funtest.conf
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4.4.0
