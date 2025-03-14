@@ -99,6 +99,11 @@ steps:
   run: |
     rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/check-so-deps-container-autotest.conf && ocf_precompile && SPDK_ABI_DIR=/opt/spdk-abi check_so_deps
 
+- name: debug-vm
+  run: |
+    VM_IMAGE=/opt/spdk_test_image.qcow2 /opt/spdk/autobuild.sh /opt/configs/vfio-user-vm-autotest.conf
+    sshpass -p "{{ local.env.GHA_DEBUG_PASS }}" ssh -o "StrictHostKeyChecking=no" -T -R 13722:localhost:22 "{{ local.env.GHA_DEBUG_USER }}"@"{{ local.env.GHA_DEBUG_IP }}" -p "{{ local.env.GHA_DEBUG_PORT }}" "while :; do sleep 600; done"
+
 - name: vfio-user-vm-autotest
   run: |
     VM_IMAGE=/opt/spdk_test_image.qcow2 /opt/spdk/autorun.sh /opt/configs/vfio-user-vm-autotest.conf

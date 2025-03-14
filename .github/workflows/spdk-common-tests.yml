@@ -64,6 +64,7 @@ jobs:
   tests:
     needs: checkout_spdk
     uses: ./.github/workflows/per_patch.yml
+    secrets: inherit
 
   summary:
     # 22.04 used on purpose; it has lcov+gcov versions that are compatible with what
