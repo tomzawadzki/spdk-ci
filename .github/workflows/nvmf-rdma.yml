@@ -2,12 +2,9 @@
 name: nvmf-rdma-test
 
 on:
-  # Runs when triggered manually via GitHub Actions page
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      # Can use specific Gerrit refspec, otherwise pull latest SPDK master
-      gerrit_ref:
-        description: 'Gerrit refspec to test following refs/changes/XX/YYYYY/Z format'
+      client_payload:
         required: false
         type: string
         default: ''
@@ -16,7 +13,7 @@ jobs:
   hpe-nvmf-rdma:
     runs-on: [hpe-rdma-vm]
     env:
-      gerrit_ref: ${{ inputs.gerrit_ref }}
+      gerrit_ref: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload).patchSet.ref || inputs.gerrit_ref }}
       spdk_path: './spdk'
     steps:
       # Required to use locally defined actions
