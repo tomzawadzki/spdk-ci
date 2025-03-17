@@ -28,16 +28,9 @@ from pathlib import Path
 from cijoe.qemu.wrapper import Guest
 
 
-def qemu_nvme_args(nvme_img_root):
-    """
-    Returns list of drive-args and a string of qemu-arguments
-
-    @returns drives, args
-    """
-
-    lbads = 12
-
-    def subsystem(id, nqn=None, aux={}):
+class QemuNvme:
+    @staticmethod
+    def generate_subsystem(id, nqn=None, aux={}):
         """
         Generate a subsystem configuration
         @param id Identifier, could be something like 'subsys0'
@@ -55,9 +48,9 @@ def qemu_nvme_args(nvme_img_root):
             ",".join(["nvme-subsys"] + [f"{k}={v}" for k, v in args.items()]),
         ]
 
-    def controller(
-        id, serial, mdts, downstream_bus, upstream_bus, controller_slot, subsystem=None
-    ):
+
+    @staticmethod
+    def generate_controller(id, serial, mdts, downstream_bus, upstream_bus, controller_slot, subsystem=None):
         args = {
             "id": id,
             "serial": serial,
@@ -76,7 +69,9 @@ def qemu_nvme_args(nvme_img_root):
             ",".join(["nvme"] + [f"{k}={v}" for k, v in args.items()]),
         ]
 
-    def namespace(controller_id, nsid, aux={}):
+
+    @staticmethod
+    def generate_namespace(controller_id, nsid, lbads, nvme_img_root, aux={}):
         """Returns qemu-arguments for a namespace configuration"""
 
         drive_id = f"{controller_id}n{nsid}"
@@ -88,7 +83,7 @@ def qemu_nvme_args(nvme_img_root):
             "discard": "on",
             "detect-zeroes": "unmap",
         }
-        # drives.append(drive1)
+
         controller_namespace = {
             "id": drive_id,
             "drive": drive_id,
@@ -108,6 +103,17 @@ def qemu_nvme_args(nvme_img_root):
             ),
         ]
 
+
+def qemu_nvme_args(nvme_img_root):
+    """
+    Returns list of drive-args, a string of qemu-arguments and drive size for each namespace
+
+    @returns drives, args, drive_size
+    """
+
+    lbads = 12
+    drive_size = "8G"
+
     drives = []
 
     # NVMe configuration arguments
@@ -124,12 +130,12 @@ def qemu_nvme_args(nvme_img_root):
     controller_id1 = "nvme0"
     controller_bus1 = "pcie_downstream_port1"
     controller_slot1 = 1
-    nvme += controller(
+    nvme += QemuNvme.generate_controller(
         controller_id1, "deadbeef", 7, controller_bus1, upstream_bus, controller_slot1
     )
 
     # Nvme0n1 - NVM namespace
-    drive1, qemu_nvme_dev1 = namespace(controller_id1, 1)
+    drive1, qemu_nvme_dev1 = QemuNvme.generate_namespace(controller_id1, 1, lbads, nvme_img_root)
     nvme += qemu_nvme_dev1
     drives.append(drive1)
 
@@ -145,7 +151,7 @@ def qemu_nvme_args(nvme_img_root):
         "zoned.numzrwa": 256,
     }
 
-    drive2, qemu_nvme_dev2 = namespace(controller_id1, 2, zoned_attributes)
+    drive2, qemu_nvme_dev2 = QemuNvme.generate_namespace(controller_id1, 2, lbads, nvme_img_root, zoned_attributes)
     nvme += qemu_nvme_dev2
     drives.append(drive2)
 
@@ -153,12 +159,12 @@ def qemu_nvme_args(nvme_img_root):
     controller_id2 = "nvme1"
     controller_bus2 = "pcie_downstream_port2"
     controller_slot2 = 2
-    nvme += controller(
+    nvme += QemuNvme.generate_controller(
         controller_id2, "adcdbeef", 7, controller_bus2, upstream_bus, controller_slot2
     )
 
     # Nvme1n1 - Namespace with NVM command-set
-    drive3, qemu_nvme_dev3 = namespace(controller_id2, 1)
+    drive3, qemu_nvme_dev3 = QemuNvme.generate_namespace(controller_id2, 1, lbads, nvme_img_root)
     nvme += qemu_nvme_dev3
     drives.append(drive3)
 
@@ -166,12 +172,12 @@ def qemu_nvme_args(nvme_img_root):
     controller_id3 = "nvme2"
     controller_bus3 = "pcie_downstream_port3"
     controller_slot3 = 3
-    nvme += controller(
+    nvme += QemuNvme.generate_controller(
         controller_id3, "beefcace", 0, controller_bus3, upstream_bus, controller_slot3
     )
 
     # Nvme2n1 - NVM namespace
-    drive4, qemu_nvme_dev4 = namespace(controller_id3, 1)
+    drive4, qemu_nvme_dev4 = QemuNvme.generate_namespace(controller_id3, 1, lbads, nvme_img_root)
     nvme += qemu_nvme_dev4
     drives.append(drive4)
 
@@ -182,26 +188,26 @@ def qemu_nvme_args(nvme_img_root):
     controller_id5 = "nvme4"
     controller_bus5 = "pcie_downstream_port5"
     controller_slot5 = 5
-    nvme += controller(
+    nvme += QemuNvme.generate_controller(
         controller_id5, "feebdaed", 7, controller_bus5, upstream_bus, controller_slot5
     )
 
     # Nvme4n1 - NVM namespace with PI type 1
-    drv_pi1, qemu_nvme_dev_pi1 = namespace(controller_id5, 1, {"ms": 8, "pi": 1})
+    drv_pi1, qemu_nvme_dev_pi1 = QemuNvme.generate_namespace(controller_id5, 1, lbads, nvme_img_root, {"ms": 8, "pi": 1})
     nvme += qemu_nvme_dev_pi1
     drives.append(drv_pi1)
 
     # Nvme4n2 - NVM namespace with PI type 2
-    drv_pi2, qemu_nvme_dev_pi2 = namespace(controller_id5, 2, {"ms": 8, "pi": 2})
+    drv_pi2, qemu_nvme_dev_pi2 = QemuNvme.generate_namespace(controller_id5, 2, lbads, nvme_img_root, {"ms": 8, "pi": 2})
     nvme += qemu_nvme_dev_pi2
     drives.append(drv_pi2)
 
     # Nvme4n3 - NVM namespace with PI type 3
-    drv_pi3, qemu_nvme_dev_pi3 = namespace(controller_id5, 3, {"ms": 8, "pi": 3})
+    drv_pi3, qemu_nvme_dev_pi3 = QemuNvme.generate_namespace(controller_id5, 3, lbads, nvme_img_root, {"ms": 8, "pi": 3})
     nvme += qemu_nvme_dev_pi3
     drives.append(drv_pi3)
 
-    return drives, nvme
+    return drives, nvme, drive_size
 
 
 def main(args, cijoe, step):
@@ -214,11 +220,9 @@ def main(args, cijoe, step):
 
     guest = Guest(cijoe, cijoe.config, guest_name)
 
-    drive_size = "8G"
-
     nvme_img_root = Path(step.get("with", {}).get("nvme_img_root", guest.guest_path))
 
-    drives, nvme_args = qemu_nvme_args(nvme_img_root)
+    drives, nvme_args, drive_size = qemu_nvme_args(nvme_img_root)
 
     # Check that the backing-storage exists, create them if they do not
     for drive in drives:
