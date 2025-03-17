@@ -24,7 +24,7 @@
 # 2. Collect artifacts produced during execution.
 # 3. Integrate with third-party services, such as S3.
 #
-name: build_qcow2
+name: SPDK-CI build VM image
 
 on:
   workflow_dispatch:

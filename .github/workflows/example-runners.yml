@@ -1,5 +1,5 @@
 ---
-name: example
+name: SPDK-CI example for self-hosted runners
 
 # Example workflow for self-hosted runners
 on:

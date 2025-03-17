@@ -1,5 +1,5 @@
 ---
-name: per_patch
+name: SPDK per-patch common jobs
 
 on:
   workflow_call:
