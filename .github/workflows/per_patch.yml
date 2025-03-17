@@ -48,7 +48,7 @@ jobs:
           nvme_setup: "ftl"
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/repository.tar.gz
-      ABI_TARBALL_PATH: ${{ github.workspace }}/abi.tar.gz
+      ABI_TARBALL_PATH: ${{ github.workspace }}/spdk-abi.tar.gz
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
       NVME_SETUP: ${{ matrix.nvme_setup }}
     container:
@@ -73,12 +73,12 @@ jobs:
     - name: Download the SPDK ABI repository
       uses: actions/download-artifact@v4.1.8
       with:
-        name: abi
+        name: repo-spdk-abi
 
     - name: Extract the SPDK repository
       run: |
         tar xzf repository.tar.gz --strip 1
-        tar xzf abi.tar.gz --strip 1
+        tar xzf spdk-abi.tar.gz --strip 1
 
     - name: Restore qcow2 image from cache
       id: restore-qcow2

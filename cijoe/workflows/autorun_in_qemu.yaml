@@ -37,7 +37,7 @@ steps:
   uses: core.put
   with:
     src: "{{ local.env.ABI_TARBALL_PATH }}"
-    dst: /tmp/abi.tar.gz
+    dst: /tmp/spdk-abi.tar.gz
 
 - name: ci_configs_transfer
   uses: core.put
@@ -50,7 +50,7 @@ steps:
     mkdir -p /opt/spdk
     tar xzf /tmp/repository.tar.gz -C /opt/spdk
     mkdir -p /opt/spdk-abi
-    tar xzf /tmp/abi.tar.gz -C /opt/spdk-abi
+    tar xzf /tmp/spdk-abi.tar.gz -C /opt/spdk-abi
     git config --global --add safe.directory '*'
 
 - name: output_create
