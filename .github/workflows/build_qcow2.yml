@@ -110,7 +110,7 @@ jobs:
       if: always()
       with:
         path: ci/cijoe/cijoe-output
-        name: cloudinit-report
+        name: cijoe-cloudinit-report
 
     - name: Change image format and compress
       run: |

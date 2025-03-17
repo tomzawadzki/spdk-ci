@@ -82,7 +82,7 @@ jobs:
     - name: Download artifact tarballs
       uses: actions/download-artifact@v4.1.8
       with:
-        pattern: '*_artifacts'
+        pattern: 'common-job-*'
 
     - name: Show artifacts
       run: |
@@ -98,7 +98,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4.4.0
       with:
-        name: _autorun_summary_output
+        name: _autorun_summary
         path: |
           doc
           coverage

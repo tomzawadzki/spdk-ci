@@ -128,7 +128,7 @@ jobs:
       if: always()
       with:
         path: /tmp/autorun_output
-        name: ${{ matrix.workflow }}_artifacts
+        name: common-job-${{ matrix.workflow }}
 
     - name: Upload Report
       uses: actions/upload-artifact@v4.4.0
@@ -138,4 +138,4 @@ jobs:
           ci/cijoe/report_${{ matrix.workflow }}
           ci/cijoe/report_${{ matrix.workflow }}_cleanup
           ci/cijoe/report_${{ matrix.workflow }}_prep_guest
-        name: report-${{ matrix.workflow }}-in-qemu
+        name: common-cijoe-${{ matrix.workflow }}
