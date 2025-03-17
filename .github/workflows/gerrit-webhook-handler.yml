@@ -12,7 +12,7 @@ on:
     - per-patch-event
 
 jobs:
-  common-tests:
+  common:
     uses: ./.github/workflows/spdk-common-tests.yml
     with:
       # "Client payload" is all of the information Gerrit webhooks sends out.
@@ -23,7 +23,7 @@ jobs:
   # Summary should be last job, please make sure to include yours in 'needs'.
   summary:
     if: ${{ always() }}
-    needs: [common-tests]
+    needs: [common]
     uses: ./.github/workflows/summary.yml
     with:
       client_payload: ${{ toJson(github.event.client_payload) }}

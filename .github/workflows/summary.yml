@@ -12,7 +12,7 @@ on:
 env:
   spdk_path: './spdk'
 jobs:
-  summary:
+  merge_outputs:
     # 22.04 used on purpose; it has lcov+gcov versions that are compatible with what
     # is used in cijoe's Fedora 40 images. Using lcov+gcov from ubuntu-latest results
     # in warnings and/or failures.
@@ -54,7 +54,7 @@ jobs:
     # Only run if it was triggered by Gerrit event, with JSON for it
     if: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) != '' || false }}
     runs-on: ubuntu-latest
-    needs: summary
+    needs: merge_outputs
     steps:
     - name: Report results
       run: |

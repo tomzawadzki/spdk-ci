@@ -5,7 +5,7 @@ on:
   workflow_call:
 
 jobs:
-  get_qcow:
+  select_vm_image:
     runs-on: ubuntu-latest
     env:
       artifact_name: "vm-image-fedora_40_x86_64"
@@ -24,7 +24,8 @@ jobs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
   autorun:
-    needs: get_qcow
+    name: ${{ matrix.workflow }}
+    needs: select_vm_image
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -93,7 +94,7 @@ jobs:
       with:
         name: vm-image-fedora_40_x86_64
         github-token: ${{ github.token }}
-        run-id: ${{ needs.get_qcow.outputs.artifact_id }}
+        run-id: ${{ needs.select_vm_image.outputs.artifact_id }}
 
     - name: qemu-guest, provision
       run: |
