@@ -20,6 +20,7 @@ steps:
   uses: qemu_guest_start_custom_nvme
   with:
     guest_name: generic-bios-kvm-x86_64
+    nvme_setup: "{{ local.env.NVME_SETUP }}"
 
 - name: guest_check
   run: |
@@ -63,6 +64,10 @@ steps:
 - name: raid-vm-autotest
   run: |
     /opt/spdk/autorun.sh /opt/configs/raid-vm-autotest.conf
+
+- name: ftl-vm-autotest
+  run: |
+    /opt/spdk/autorun.sh /opt/configs/ftl-vm-autotest.conf
 
 - name: bdev-vm-autotest
   run: |

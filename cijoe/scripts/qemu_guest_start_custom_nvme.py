@@ -270,9 +270,19 @@ def main(args, cijoe, step):
 
     guest = Guest(cijoe, cijoe.config, guest_name)
 
+    nvme_setup = step.get("with", {}).get("nvme_setup", None)
+    if nvme_setup is None:
+        nvme_setup = "default"
+
+    nvme_setups = {
+        "default": qemu_nvme_args,
+        "ftl": qemu_ftl_nvme_args
+    }
+
     nvme_img_root = Path(step.get("with", {}).get("nvme_img_root", guest.guest_path))
 
-    drives, nvme_args, drive_size = qemu_nvme_args(nvme_img_root)
+    nvme_setup = nvme_setups[nvme_setup]
+    drives, nvme_args, drive_size = nvme_setup(nvme_img_root)
 
     # Check that the backing-storage exists, create them if they do not
     for drive in drives:

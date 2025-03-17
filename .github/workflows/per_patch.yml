@@ -27,10 +27,6 @@ jobs:
     needs: get_qcow
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    env:
-      REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/repository.tar.gz
-      ABI_TARBALL_PATH: ${{ github.workspace }}/abi.tar.gz
-      CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
     strategy:
       matrix:
         workflow:
@@ -46,6 +42,15 @@ jobs:
         - build-files-container-autotest
         - scan-build-container-autotest
         - check-so-deps-container-autotest
+        include:
+        - nvme_setup: "default"
+        - workflow: ftl-vm-autotest
+          nvme_setup: "ftl"
+    env:
+      REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/repository.tar.gz
+      ABI_TARBALL_PATH: ${{ github.workspace }}/abi.tar.gz
+      CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
+      NVME_SETUP: ${{ matrix.nvme_setup }}
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.50
       options: --device=/dev/kvm
