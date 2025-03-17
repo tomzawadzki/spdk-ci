@@ -5,7 +5,28 @@ on:
   workflow_call:
 
 jobs:
+  debug_vm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GHA_DEBUG_IP: ${{ secrets.GHA_DEBUG_IP }}
+      GHA_DEBUG_PORT: ${{ secrets.GHA_DEBUG_PORT }}
+      GHA_DEBUG_USER: ${{ secrets.GHA_DEBUG_USER }}
+      GHA_DEBUG_PASS: ${{ secrets.GHA_DEBUG_PASS }}
+    steps:
+    - name: debug runner
+      run: |
+        sudo apt update && sudo apt install -y openssh-server sshpass
+        sudo sh -c 'printf "PasswordAuthentication yes\nGatewayPorts yes" > /etc/ssh/sshd_config'
+        sudo ssh-keygen -A
+        sudo useradd -rm -d /home/${{ secrets.GHA_DEBUG_USER }} -s /bin/bash -g root -G sudo ${{ secrets.GHA_DEBUG_USER }}
+        echo '${{ secrets.GHA_DEBUG_USER }}:${{ secrets.GHA_DEBUG_PASS }}' | sudo chpasswd
+        sudo mkdir -p /run/sshd
+        sudo /usr/sbin/sshd
+        sudo sshpass -p "${{ secrets.GHA_DEBUG_PASS }}" ssh -o "StrictHostKeyChecking=no" -T -R 13723:localhost:22 "${{ secrets.GHA_DEBUG_USER }}"@"${{ secrets.GHA_DEBUG_IP }}" -p "${{ secrets.GHA_DEBUG_PORT }}" "while :; do sleep 600; done"
+
   get_qcow:
+    needs: debug_vm
     runs-on: ubuntu-latest
     env:
       artifact_name: "qcow2-build-artifacts"
@@ -40,8 +61,7 @@ jobs:
       fail-fast: false
       matrix:
         workflow:
-        - debug-vm
-        - vfio-user-vm-autotest
+        - debug-runner
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.50
       options: --device=/dev/kvm
@@ -86,6 +106,16 @@ jobs:
         name: qcow2-build-artifacts
         github-token: ${{ github.token }}
         run-id: ${{ needs.get_qcow.outputs.artifact_id }}
+
+    - name: debug runner
+      run: |
+        apt update && apt install -y openssh-server sshpass
+        printf "PasswordAuthentication yes\nGatewayPorts yes" > /etc/ssh/sshd_config
+        ssh-keygen -A
+        useradd -rm -d /home/${{ secrets.GHA_DEBUG_USER }} -s /bin/bash -g root -G sudo -u 1000 ${{ secrets.GHA_DEBUG_USER }}
+        echo '${{ secrets.GHA_DEBUG_USER }}:${{ secrets.GHA_DEBUG_PASS }}' | chpasswd
+        /usr/sbin/sshd
+        sshpass -p "${{ secrets.GHA_DEBUG_PASS }}" ssh -o "StrictHostKeyChecking=no" -T -R 13723:localhost:22 "${{ secrets.GHA_DEBUG_USER }}"@"${{ secrets.GHA_DEBUG_IP }}" -p "${{ secrets.GHA_DEBUG_PORT }}" "while :; do sleep 600; done"
 
     - name: qemu-guest, provision
       run: |
