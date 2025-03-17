@@ -60,13 +60,13 @@ jobs:
 
     - name: Create a tarball, of the repository, to preserve file permissions
       run: |
-        tar -C spdk -czf ./repository.tar.gz .
+        tar -C spdk -czf ./spdk.tar.gz .
 
     - name: Upload the repository as an artifact
       uses: actions/upload-artifact@v4.4.0
       with:
-        name: repository
-        path: repository.tar.gz
+        name: repo-spdk
+        path: spdk.tar.gz
 
   build-qcow2:
     needs: source-archive
@@ -80,7 +80,7 @@ jobs:
         --security-opt apparmor=unconfined
 
     env:
-      REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/repository.tar.gz
+      REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
 
     concurrency:
       group: build_qcow2
@@ -90,7 +90,7 @@ jobs:
     - name: Download the repository
       uses: actions/download-artifact@v4.1.8
       with:
-        name: repository
+        name: repo-spdk
 
     - name: Checkout CI repository
       uses: actions/checkout@v4.1.7

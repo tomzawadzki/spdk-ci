@@ -37,12 +37,12 @@ jobs:
         gerrit_ref: ${{ env.gerrit_ref }}
         spdk_path: ${{ env.spdk_path }}
     - name: Create repository tarball
-      run: tar -C ${{ env.spdk_path }} -czf repository.tar.gz .
+      run: tar -C ${{ env.spdk_path }} -czf spdk.tar.gz .
     - name: Upload the repository tarball as an artifact
       uses: actions/upload-artifact@v4.4.0
       with:
-        name: repository
-        path: repository.tar.gz
+        name: repo-spdk
+        path: spdk.tar.gz
 
     - name: Checkout the spdk-abi repo
       uses: actions/checkout@v4.1.7
@@ -76,7 +76,7 @@ jobs:
     - name: Download the SPDK repository
       uses: actions/download-artifact@v4.1.8
       with:
-        name: repository
+        name: repo-spdk
         path: ${{ github.workspace }}/spdk
 
     - name: Download artifact tarballs
@@ -86,7 +86,7 @@ jobs:
 
     - name: Show artifacts
       run: |
-        tar xf ${{ env.spdk_path }}/repository.tar.gz -C ${{ env.spdk_path }}
+        tar xf ${{ env.spdk_path }}/spdk.tar.gz -C ${{ env.spdk_path }}
 
         # TODO: either use an official lcov image or create our own
         # TODO: get rid of pandas dependency in spdk/autorun_post.py.

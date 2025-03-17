@@ -65,13 +65,13 @@ steps:
   uses: core.put
   with:
     src: "{{ local.env.REPOSITORY_TARBALL_PATH }}"
-    dst: /tmp/repository.tar.gz
+    dst: /tmp/spdk.tar.gz
 
 - name: tgz_unpack
   run: |
     mkdir /tmp/spdk
-    tar xzf /tmp/repository.tar.gz -C /tmp/spdk
-    rm /tmp/repository.tar.gz
+    tar xzf /tmp/spdk.tar.gz -C /tmp/spdk
+    rm /tmp/spdk.tar.gz
 
 - name: pkgdep_and_autotest_setup
   run: |

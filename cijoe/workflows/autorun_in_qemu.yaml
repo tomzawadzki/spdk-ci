@@ -31,7 +31,7 @@ steps:
   uses: core.put
   with:
     src: "{{ local.env.REPOSITORY_TARBALL_PATH }}"
-    dst: /tmp/repository.tar.gz
+    dst: /tmp/spdk.tar.gz
 
 - name: abi_transfer
   uses: core.put
@@ -48,7 +48,7 @@ steps:
 - name: tgz_unpack
   run: |
     mkdir -p /opt/spdk
-    tar xzf /tmp/repository.tar.gz -C /opt/spdk
+    tar xzf /tmp/spdk.tar.gz -C /opt/spdk
     mkdir -p /opt/spdk-abi
     tar xzf /tmp/spdk-abi.tar.gz -C /opt/spdk-abi
     git config --global --add safe.directory '*'
