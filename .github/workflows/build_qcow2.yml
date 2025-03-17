@@ -119,19 +119,14 @@ jobs:
 
     - name: Store Qcow2 build artifacts
       uses: actions/upload-artifact@v4.4.0
-      if: always()
       with:
-        name: qcow2-build-artifacts
+        name: vm-image-fedora_40_x86_64
         compression-level: 0
-        overwrite: true
-        path: |
-          ci/cijoe/cijoe-output
-          fedora_40_x86_64.qcow2
+        path: fedora_40_x86_64.qcow2
 
     - name: Cache qcow2 image
       id: cache-qcow2
       uses: actions/cache/save@v4
       with:
-        path: |
-          fedora_40_x86_64.qcow2
-        key: fedora_40_x86_64
+        path: fedora_40_x86_64.qcow2
+        key: vm-image-fedora_40_x86_64

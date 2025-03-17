@@ -8,7 +8,7 @@ jobs:
   get_qcow:
     runs-on: ubuntu-latest
     env:
-      artifact_name: "qcow2-build-artifacts"
+      artifact_name: "vm-image-fedora_40_x86_64"
     steps:
     - name: Select latest qcow2 artifact
       id: get_artifact_id
@@ -18,7 +18,7 @@ jobs:
         ARTIFACT_ID=$(curl -L --user ${{ github.actor }}:${{ github.token }} \
         --header "Accept: application/vnd.github.v3+json" \
         "https://api.github.com/repos/${{ github.repository }}/actions/artifacts?name=${{ env.artifact_name }}&per_page=100" \
-        | jq -r '.artifacts | map(select(.name == "qcow2-build-artifacts")) | sort_by(.updated_at) | .[-1].workflow_run.id')
+        | jq -r '.artifacts | map(select(.name == "${{ env.artifact_name }}")) | sort_by(.updated_at) | .[-1].workflow_run.id')
         echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
     outputs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
@@ -84,15 +84,14 @@ jobs:
       id: restore-qcow2
       uses: actions/cache/restore@v4
       with:
-        path: |
-          fedora_40_x86_64.qcow2
-        key: fedora_40_x86_64
+        path: fedora_40_x86_64.qcow2
+        key: vm-image-fedora_40_x86_64
 
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
       if: ${{ hashFiles('fedora_40_x86_64.qcow2') == '' }}
       with:
-        name: qcow2-build-artifacts
+        name: vm-image-fedora_40_x86_64
         github-token: ${{ github.token }}
         run-id: ${{ needs.get_qcow.outputs.artifact_id }}
 
