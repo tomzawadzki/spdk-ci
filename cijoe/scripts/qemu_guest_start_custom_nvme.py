@@ -210,6 +210,56 @@ def qemu_nvme_args(nvme_img_root):
     return drives, nvme, drive_size
 
 
+def qemu_ftl_nvme_args(nvme_img_root):
+    """
+    Returns list of drive-args, a string of qemu-arguments and drive size for each namespace
+
+    @returns drives, args, drive_size
+    """
+
+    lbads = 12
+    drive_size = "20G"
+
+    drives = []
+    nvme = []
+    nvme += ["-device", "pcie-root-port,id=pcie_root_port1,chassis=1,slot=1"]
+
+    upstream_bus = "pcie_upstream_port1"
+    nvme += ["-device", f"x3130-upstream,id={upstream_bus},bus=pcie_root_port1"]
+
+    #
+    # Nvme0 - Base device for FTL
+    #
+    controller_id1 = "nvme0"
+    controller_bus1 = "pcie_downstream_port1"
+    controller_slot1 = 1
+    nvme += QemuNvme.generate_controller(
+        controller_id1, "deadbeef", 0, controller_bus1, upstream_bus, controller_slot1
+    )
+
+    # Nvme0n1 - NVM namespace
+    drive1, qemu_nvme_dev1 = QemuNvme.generate_namespace(controller_id1, 1, lbads, nvme_img_root)
+    nvme += qemu_nvme_dev1
+    drives.append(drive1)
+
+    #
+    # Nvme1 - Cache device for FTL
+    #
+    controller_id2 = "nvme1"
+    controller_bus2 = "pcie_downstream_port2"
+    controller_slot2 = 2
+    nvme += QemuNvme.generate_controller(
+        controller_id2, "deadbeee", 0, controller_bus2, upstream_bus, controller_slot2
+    )
+
+    # Nvme1n1 - NVM namespace
+    drive2, qemu_nvme_dev2 = QemuNvme.generate_namespace(controller_id2, 1, lbads, nvme_img_root, {"ms": 64})
+    nvme += qemu_nvme_dev2
+    drives.append(drive2)
+
+    return drives, nvme, drive_size
+
+
 def main(args, cijoe, step):
     """Start a qemu guest"""
 
