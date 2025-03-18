@@ -9,8 +9,6 @@ on:
         type: string
         default: ''
 
-env:
-  spdk_path: './spdk'
 jobs:
   merge_outputs:
     # 22.04 used on purpose; it has lcov+gcov versions that are compatible with what
@@ -22,7 +20,7 @@ jobs:
       uses: actions/download-artifact@v4.1.8
       with:
         name: repo-spdk
-        path: ${{ github.workspace }}/spdk
+        path: ./spdk
 
     - name: Download artifact tarballs
       uses: actions/download-artifact@v4.1.8
@@ -31,14 +29,14 @@ jobs:
 
     - name: Show artifacts
       run: |
-        tar xf ${{ env.spdk_path }}/spdk.tar.gz -C ${{ env.spdk_path }}
+        tar xf ./spdk/spdk.tar.gz -C ./spdk
 
         # TODO: either use an official lcov image or create our own
         # TODO: get rid of pandas dependency in spdk/autorun_post.py.
         #       It's ~1GB with all it's dependecies, which is an overkill for
         #       a few table operations.
         sudo apt-get update && sudo apt-get install -y lcov python3-pandas
-        spdk/autorun_post.py -s -d ./ -r ./spdk
+        ./spdk/autorun_post.py -s -d ./ -r ./spdk
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4.4.0
