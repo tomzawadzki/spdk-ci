@@ -124,6 +124,23 @@ jobs:
         compression-level: 0
         path: fedora_40_x86_64.qcow2
 
+  cache-qcow2:
+    needs: build-qcow2
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download VM Qcow2 image artifact
+      uses: actions/download-artifact@v4.1.8
+      with:
+        name: vm-image-fedora_40_x86_64
+
+    - name: Delete previous cache
+      run: |
+        gh extension install actions/gh-actions-cache
+        gh actions-cache delete "vm-image-fedora_40_x86_64" --repo ${{ github.repository }} --confirm
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Cache qcow2 image
       id: cache-qcow2
       uses: actions/cache/save@v4
