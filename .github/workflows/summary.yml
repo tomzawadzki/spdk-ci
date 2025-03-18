@@ -51,7 +51,7 @@ jobs:
         #       It's ~1GB with all it's dependecies, which is an overkill for
         #       a few table operations.
         sudo apt-get update && sudo apt-get install -y lcov python3-pandas
-        ./spdk/autorun_post.py -s -d ./_autorun_summary -r ./spdk
+        ./spdk/autorun_post.py -d ./_autorun_summary -r ./spdk
         echo "result=success" >> "$GITHUB_OUTPUT"
 
     - name: Upload artifacts
@@ -80,8 +80,7 @@ jobs:
             vote="1"
             message="Build successful. "
         fi
-        # For demonstration purposes, as not to set any actual vote and only comment.
-        vote=0
+
         message+="Results: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         echo "vote=$vote" >> $GITHUB_OUTPUT
         echo "message=$message" >> $GITHUB_OUTPUT
