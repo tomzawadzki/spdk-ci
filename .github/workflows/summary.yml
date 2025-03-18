@@ -26,6 +26,7 @@ jobs:
       uses: actions/download-artifact@v4.1.8
       with:
         pattern: 'common-job-*'
+        path: ./_autorun_summary
 
     - name: Show artifacts
       run: |
@@ -36,17 +37,13 @@ jobs:
         #       It's ~1GB with all it's dependecies, which is an overkill for
         #       a few table operations.
         sudo apt-get update && sudo apt-get install -y lcov python3-pandas
-        ./spdk/autorun_post.py -s -d ./ -r ./spdk
+        ./spdk/autorun_post.py -s -d ./_autorun_summary -r ./spdk
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4.4.0
       with:
         name: _autorun_summary
-        path: |
-          doc
-          coverage
-          ut_coverage
-          post_process
+        path: _autorun_summary
 
   report:
     # Only run if it was triggered by Gerrit event, with JSON for it
