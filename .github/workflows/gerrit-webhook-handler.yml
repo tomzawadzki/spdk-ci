@@ -27,4 +27,5 @@ jobs:
     uses: ./.github/workflows/summary.yml
     with:
       client_payload: ${{ toJson(github.event.client_payload) }}
+      result: ${{ needs.common.result }}
     secrets: inherit

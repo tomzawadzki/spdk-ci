@@ -8,6 +8,10 @@ on:
         required: false
         type: string
         default: ''
+      result:
+        required: true
+        type: string
+        default: 'failure'
 
 jobs:
   merge_outputs:
@@ -46,27 +50,32 @@ jobs:
         path: _autorun_summary
 
   report:
-    # Only run if it was triggered by Gerrit event, with JSON for it
-    if: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) != '' || false }}
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     needs: merge_outputs
     steps:
+    - name: Vote count from workflows
+      id: vote_count
+      run: |
+        vote="-1"
+        message="Build failed. "
+        if [[ ${{ inputs.result }} == "success" ]]; then
+            vote="1"
+            message="Build successful. "
+        fi
+        # For demonstration purposes, as not to set any actual vote and only comment.
+        vote=0
+        message+="Results: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        echo "vote=$vote" >> $GITHUB_OUTPUT
+        echo "message=$message" >> $GITHUB_OUTPUT
+
     - name: Report results
+      # Only run if it was triggered by Gerrit event, with JSON for it
+      if: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) != '' || false }}
       run: |
         set -e
-
-        # Credits to https://github.com/spdk-community-ci/dispatcher/blob/main/.github/workflows/autorun.yml
-
-        VOTE=-1
-        if [[ "${{ needs.tests.result }}" == "success" ]]; then
-          VOTE=1
-        fi
-
-        # For demonstration purposes, as not to set any actual vote and only comment.
-        VOTE=0
-
         curl -L -X POST https://review.spdk.io/a/changes/${{ fromJson(inputs.client_payload).change.number }}/revisions/${{ fromJson(inputs.client_payload).patchSet.number }}/review \
         --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
         --header "Content-Type: application/json" \
-        --data "{'message': '$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID', 'labels': {'Verified': $VOTE}}" \
+        --data "{'message': '${{ steps.vote_count.outputs.message }}', 'labels': {'Verified': ${{ steps.vote_count.outputs.vote }}}}" \
         --fail-with-body
