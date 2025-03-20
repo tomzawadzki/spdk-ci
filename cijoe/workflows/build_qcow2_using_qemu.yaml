@@ -84,3 +84,9 @@ steps:
   run: |
     sync
     systemctl poweroff
+
+- name: guest_wait
+  uses: qemu.guest_wait_for_termination
+  with:
+    guest_name: generic-bios-kvm-x86_64
+    timeout: 60
