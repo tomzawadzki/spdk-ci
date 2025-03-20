@@ -32,16 +32,8 @@ jobs:
         pattern: 'common-job-*'
         path: ./_autorun_summary
 
-    - name: Show artifacts
-      run: |
-        tar xf ./spdk/spdk.tar.gz -C ./spdk
-
-        # TODO: either use an official lcov image or create our own
-        # TODO: get rid of pandas dependency in spdk/autorun_post.py.
-        #       It's ~1GB with all it's dependecies, which is an overkill for
-        #       a few table operations.
-        sudo apt-get update && sudo apt-get install -y lcov python3-pandas
-        ./spdk/autorun_post.py -s -d ./_autorun_summary -r ./spdk
+    - name: Untar the SPDK repo
+      run: tar xf ./spdk/spdk.tar.gz -C ./spdk
 
     - name: Leave traces of the test run in the artifacts
       run: |
@@ -51,11 +43,25 @@ jobs:
         echo "GitHub run-id: ${{ github.run_id }}" >> $summary
         cat "$summary" >> $GITHUB_STEP_SUMMARY
 
+    - name: Post process artifacts from jobs
+      id: autorun_post
+      run: |
+        # TODO: either use an official lcov image or create our own
+        # TODO: get rid of pandas dependency in spdk/autorun_post.py.
+        #       It's ~1GB with all it's dependecies, which is an overkill for
+        #       a few table operations.
+        sudo apt-get update && sudo apt-get install -y lcov python3-pandas
+        ./spdk/autorun_post.py -s -d ./_autorun_summary -r ./spdk
+        echo "result=success" >> "$GITHUB_OUTPUT"
+
     - name: Upload artifacts
+      if: ${{ always() }}
       uses: actions/upload-artifact@v4.4.0
       with:
         name: _autorun_summary
         path: _autorun_summary
+    outputs:
+      result: ${{ steps.autorun_post.outputs.result }}
 
   report:
     if: ${{ always() }}
@@ -67,7 +73,10 @@ jobs:
       run: |
         vote="-1"
         message="Build failed. "
-        if [[ ${{ inputs.result }} == "success" ]]; then
+
+        # Combine results from jobs and autorun_post.py
+        if [[ "${{ inputs.result }}" == "success" && \
+                "${{ needs.merge_outputs.outputs.result }}" == "success" ]]; then
             vote="1"
             message="Build successful. "
         fi
