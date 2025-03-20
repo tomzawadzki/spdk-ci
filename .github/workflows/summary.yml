@@ -43,6 +43,14 @@ jobs:
         sudo apt-get update && sudo apt-get install -y lcov python3-pandas
         ./spdk/autorun_post.py -s -d ./_autorun_summary -r ./spdk
 
+    - name: Leave traces of the test run in the artifacts
+      run: |
+        summary="./_autorun_summary/github_run_summary"
+        echo "SPDK: $(git -C ./spdk show --pretty=format:"%H %s" -s HEAD)" > $summary
+        echo "SPDK-CI: ${{ github.sha }}" >> $summary
+        echo "GitHub run-id: ${{ github.run_id }}" >> $summary
+        cat "$summary" >> $GITHUB_STEP_SUMMARY
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4.4.0
       with:
@@ -65,16 +73,23 @@ jobs:
         fi
         # For demonstration purposes, as not to set any actual vote and only comment.
         vote=0
-        message+="Results: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        message+="Results: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         echo "vote=$vote" >> $GITHUB_OUTPUT
         echo "message=$message" >> $GITHUB_OUTPUT
+        echo "$message" >> $GITHUB_STEP_SUMMARY
 
     - name: Report results
       # Only run if it was triggered by Gerrit event, with JSON for it
       if: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload) != '' || false }}
       run: |
         set -e
-        curl -L -X POST https://review.spdk.io/a/changes/${{ fromJson(inputs.client_payload).change.number }}/revisions/${{ fromJson(inputs.client_payload).patchSet.number }}/review \
+
+        change_num="${{ fromJson(inputs.client_payload).change.number }}"
+        patch_set="${{ fromJson(inputs.client_payload).patchSet.number }}"
+
+        echo "Gerrit: <https://review.spdk.io/c/spdk/spdk/+/$change_num/$patch_set>" >> $GITHUB_STEP_SUMMARY
+
+        curl -L -X POST https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review \
         --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
         --header "Content-Type: application/json" \
         --data "{'message': '${{ steps.vote_count.outputs.message }}', 'labels': {'Verified': ${{ steps.vote_count.outputs.vote }}}}" \
