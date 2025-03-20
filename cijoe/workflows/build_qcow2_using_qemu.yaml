@@ -42,7 +42,7 @@ steps:
   with:
     guest_name: generic-bios-kvm-x86_64
 
-- name: guest_check
+- name: guest_growparts
   run: |
     hostname
     uname -a
@@ -73,7 +73,7 @@ steps:
     tar xzf /tmp/spdk.tar.gz -C /tmp/spdk
     rm /tmp/spdk.tar.gz
 
-- name: pkgdep_and_autotest_setup
+- name: guest_autotest_setup
   run: |
     /tmp/spdk/scripts/pkgdep.sh -a
     mkdir /tmp/git_repos
