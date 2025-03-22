@@ -137,7 +137,9 @@ jobs:
     - name: Delete previous cache
       run: |
         gh extension install actions/gh-actions-cache
-        gh actions-cache delete "vm-image-fedora_40_x86_64" --repo ${{ github.repository }} --confirm
+        if gh actions-cache list --repo ${{ github.repository }} | grep -q "vm-image-fedora_40_x86_64"; then
+          gh actions-cache delete "vm-image-fedora_40_x86_64" --repo ${{ github.repository }} --confirm
+        fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
