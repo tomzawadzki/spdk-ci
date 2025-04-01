@@ -15,10 +15,9 @@ on:
 
 jobs:
   merge_outputs:
-    # 22.04 used on purpose; it has lcov+gcov versions that are compatible with what
-    # is used in cijoe's Fedora 40 images. Using lcov+gcov from ubuntu-latest results
-    # in warnings and/or failures.
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/spdk-ci:poc
     steps:
     - name: Download the SPDK repository
       uses: actions/download-artifact@v4.1.8
@@ -46,11 +45,6 @@ jobs:
     - name: Post process artifacts from jobs
       id: autorun_post
       run: |
-        # TODO: either use an official lcov image or create our own
-        # TODO: get rid of pandas dependency in spdk/autorun_post.py.
-        #       It's ~1GB with all it's dependecies, which is an overkill for
-        #       a few table operations.
-        sudo apt-get update && sudo apt-get install -y lcov python3-pandas
         ./spdk/autorun_post.py -d ./_autorun_summary -r ./spdk
         echo "result=success" >> "$GITHUB_OUTPUT"
 
