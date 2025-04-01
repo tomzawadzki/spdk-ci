@@ -28,10 +28,9 @@ runs:
       fetch-tags: true
       path: ${{ inputs.spdk_path }}
   - name: Fetch the specific change from Gerrit
-    if: ${{ inputs.gerrit_ref != '' }}    # Skip if only pulling from GitHub
     working-directory: ${{ inputs.spdk_path }}
     run: |
-      git fetch https://review.spdk.io/spdk/spdk ${{ inputs.gerrit_ref }} &&
+      git fetch https://review.spdk.io/spdk/spdk refs/changes/45/25745/1 &&
       git checkout FETCH_HEAD &&
       git submodule update --init
     shell: bash
