@@ -76,6 +76,59 @@ jobs:
     outputs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
+  autorun_container:
+    name: ${{ matrix.workflow }}
+    needs:
+    - checkout_spdk
+    - select_vm_image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        workflow:
+        - check-format-container-autotest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/spdk-ci:poc
+
+    steps:
+    - name: Resolve doubious ownership
+      run: |
+        git config --global --add safe.directory '*'
+
+    - name: Checkout CI repository
+      uses: actions/checkout@v4.1.7
+      with:
+        path: ci
+
+    - name: Download the SPDK repository
+      uses: actions/download-artifact@v4.1.8
+      with:
+        name: repo-spdk
+
+    - name: Download the SPDK ABI repository
+      uses: actions/download-artifact@v4.1.8
+      with:
+        name: repo-spdk-abi
+
+    - name: Extract the SPDK repository
+      run: |
+        tar xzf spdk.tar.gz --strip 1
+        tar xzf spdk-abi.tar.gz --strip 1
+
+    - name: Run ${{ matrix.workflow }}
+      # Obviously hardcoded too much
+      run: |
+        rootdir=$(pwd)
+        source ./test/common/autobuild_common.sh ./ci/cijoe/configs/autorun_configs/check-format-container-autotest.conf
+        check_format
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4.4.0
+      if: always()
+      with:
+        path: ../output
+        name: common-job-${{ matrix.workflow }}
+
   autorun:
     name: ${{ matrix.workflow }}
     needs:
@@ -92,7 +145,6 @@ jobs:
         - nvmf-tcp-vm-autotest
         - nvmf-tcp-uring-vm-autotest
         - unittest-gcc-container-autotest
-        - check-format-container-autotest
         - release-build-gcc-container-autotest
         - doc-container-autotest
         - build-files-container-autotest
