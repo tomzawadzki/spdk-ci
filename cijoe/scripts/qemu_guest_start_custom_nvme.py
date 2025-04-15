@@ -23,9 +23,16 @@ Retargetable: false
 """
 import errno
 import logging as log
+from argparse import ArgumentParser
 from pathlib import Path
 
 from cijoe.qemu.wrapper import Guest
+
+
+def add_args(parser: ArgumentParser):
+    parser.add_argument("--guest_name", type=str, default=None)
+    parser.add_argument("--nvme_img_root", type=str, default=None)
+    parser.add_argument("--nvme_setup", type=str, default=None)
 
 
 class QemuNvme:
@@ -260,18 +267,18 @@ def qemu_ftl_nvme_args(nvme_img_root):
     return drives, nvme, drive_size
 
 
-def main(args, cijoe, step):
+def main(args, cijoe):
     """Start a qemu guest"""
 
-    guest_name = step.get("with", {}).get("guest_name", None)
-    if guest_name is None:
-        log.error("missing step-argument: with.guest_name")
+    guest_name = args.guest_name or cijoe.getconf("qemu.default_guest")
+    if not guest_name:
+        log.error("missing: script-arg(guest_name) or config(qemu.default_guest)")
         return 1
 
     guest = Guest(cijoe, cijoe.config, guest_name)
 
-    nvme_setup = step.get("with", {}).get("nvme_setup", None)
-    if nvme_setup is None:
+    nvme_setup = args.nvme_setup
+    if not nvme_setup:
         nvme_setup = "default"
 
     nvme_setups = {
@@ -279,7 +286,7 @@ def main(args, cijoe, step):
         "ftl": qemu_ftl_nvme_args
     }
 
-    nvme_img_root = Path(step.get("with", {}).get("nvme_img_root", guest.guest_path))
+    nvme_img_root = Path(args.nvme_img_root or guest.guest_path)
 
     nvme_setup = nvme_setups[nvme_setup]
     drives, nvme_args, drive_size = nvme_setup(nvme_img_root)
