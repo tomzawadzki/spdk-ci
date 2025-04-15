@@ -108,7 +108,7 @@ jobs:
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
       NVME_SETUP: ${{ matrix.nvme_setup }}
     container:
-      image: ghcr.io/refenv/cijoe-docker:v0.9.50
+      image: ghcr.io/refenv/cijoe-docker:v0.9.52
       options: --device=/dev/kvm
 
     steps:
@@ -154,30 +154,27 @@ jobs:
     - name: qemu-guest, provision
       run: |
         cd ci/cijoe
-        cijoe guest_initialize guest_start guest_check tgz_transfer abi_transfer ci_configs_transfer tgz_unpack output_create \
-        --monitor \
+        cijoe workflows/autorun_in_qemu.yaml guest_initialize guest_start guest_check tgz_transfer abi_transfer ci_configs_transfer tgz_unpack output_create \
         --config configs/qemuhost-with-guest-fedora-40.toml \
-        --workflow workflows/autorun_in_qemu.yaml \
-        --output report_${{ matrix.workflow }}_prep_guest
+        --output report_${{ matrix.workflow }}_prep_guest \
+        --monitor
 
     - name: qemu-guest, ${{ matrix.workflow }}
       run: |
         cd ci/cijoe
-        cijoe ${{ matrix.workflow }} \
-        --monitor \
+        cijoe workflows/autorun_in_qemu.yaml ${{ matrix.workflow }} \
         --config configs/qemuhost-with-guest-fedora-40.toml \
-        --workflow workflows/autorun_in_qemu.yaml \
-        --output report_${{ matrix.workflow }}
+        --output report_${{ matrix.workflow }} \
+        --monitor
 
     - name: qemu-guest, cleanup
       if: always()
       run: |
         cd ci/cijoe
-        cijoe output_listing retrieve_autorun_output guest_shutdown \
-        --monitor \
+        cijoe workflows/autorun_in_qemu.yaml output_listing retrieve_autorun_output guest_shutdown \
         --config configs/qemuhost-with-guest-fedora-40.toml \
-        --workflow workflows/autorun_in_qemu.yaml \
-        --output report_${{ matrix.workflow }}_cleanup
+        --output report_${{ matrix.workflow }}_cleanup \
+        --monitor
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4.4.0
