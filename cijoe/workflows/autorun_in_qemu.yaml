@@ -122,4 +122,4 @@ steps:
 
 - name: guest_shutdown
   run: |
-    systemctl poweroff
+    systemctl poweroff || systemctl poweroff --force --force || true
