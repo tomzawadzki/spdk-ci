@@ -30,7 +30,7 @@ jobs:
 
   # Summary should be last job, please make sure to include yours in 'needs'.
   summary:
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     needs:
     - common
     - hpe
