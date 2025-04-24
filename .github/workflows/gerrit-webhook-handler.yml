@@ -7,6 +7,11 @@ on:
     - '.github/workflows/selftest.yml'
     - '.github/workflows/build_qcow2.yml'
   workflow_dispatch:
+    inputs:
+      client_payload:
+        required: false
+        type: string
+        default: ''
   repository_dispatch:
     types:
     - per-patch-event
@@ -15,7 +20,7 @@ on:
     - private-state-changed
 
 env:
-  client_payload: ${{ github.event.client_payload || '' }}
+  client_payload: ${{ github.event.client_payload || inputs.client_payload || '' }}
 
 jobs:
   env_vars: # Workaround for https://github.com/actions/runner/issues/2372
