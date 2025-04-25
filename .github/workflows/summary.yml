@@ -97,8 +97,15 @@ jobs:
 
         echo "Gerrit: <https://review.spdk.io/c/spdk/spdk/+/$change_num/$patch_set>" >> $GITHUB_STEP_SUMMARY
 
+        patch_set_date="${{ fromJson(inputs.client_payload).patchSet.createdOn }}"
+        current_date="$(date +%s)"
+        patch_set_turnaround="$(date -d@"$(($current_date - $patch_set_date))" -u +%Hh:%Mm:%Ss)"
+
+        message="${{ steps.vote_count.outputs.message }}"
+        message+="\nTests finished in $patch_set_turnaround after patch set submission."
+
         curl -L -X POST https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review \
         --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
         --header "Content-Type: application/json" \
-        --data "{'message': '${{ steps.vote_count.outputs.message }}', 'labels': {'Verified': ${{ steps.vote_count.outputs.vote }}}}" \
+        --data "{'message': '$message', 'labels': {'Verified': ${{ steps.vote_count.outputs.vote }}}}" \
         --fail-with-body
