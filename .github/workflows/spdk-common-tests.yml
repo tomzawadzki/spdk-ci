@@ -171,9 +171,18 @@ jobs:
       if: always()
       run: |
         cd ci/cijoe
-        cijoe workflows/autorun_in_qemu.yaml output_listing retrieve_autorun_output guest_shutdown \
+        cijoe workflows/autorun_in_qemu.yaml output_listing retrieve_autorun_output \
         --config configs/qemuhost-with-guest-fedora-40.toml \
         --output report_${{ matrix.workflow }}_cleanup \
+        --monitor
+
+    - name: qemu-guest, shutdown
+      if: contains(runner.labels, 'self-hosted') || env.ACT == 'true'
+      run: |
+        cd ci/cijoe
+        cijoe workflows/autorun_in_qemu.yaml guest_shutdown \
+        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --output report_${{ matrix.workflow }}_guest_shutdown \
         --monitor
 
     - name: Upload Artifacts
