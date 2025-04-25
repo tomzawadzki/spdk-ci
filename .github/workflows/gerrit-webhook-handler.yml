@@ -30,15 +30,58 @@ jobs:
     steps:
     - run: echo "Passing workflow env vars to reusable workflows"
 
-  common:
+  patch_set_status:
     needs: env_vars
+    runs-on: ubuntu-latest
+    if: ${{ needs.env_vars.outputs.client_payload }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      change_num: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}
+      patch_set: ${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}
+    steps:
+    - name: Check patch set status
+      run: |
+        set -e
+        set -x
+
+        # Get latest info about a change itself
+        curl -s -X GET "https://review.spdk.io/a/changes/spdk%2Fspdk~${{ env.change_num }}?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT" \
+        --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
+        | tail -n +2 > change.json
+
+        # Do not test any change marked as WIP
+        ready_for_review="$(jq -r '.has_review_started' change.json)"
+        if [[ "$ready_for_review" == "false" ]]; then
+          gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
+        fi
+
+        # Only test latest patch set
+        current_patch_set="$(jq -r '.current_revision_number' change.json)"
+        if [[ "$current_patch_set" -ne ${{ env.patch_set }} ]]; then
+          gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
+        fi
+
+        # Test only changes without a Verified vote already present
+        verified="$(jq -r '.labels.Verified.all[] | select(.username=="${{ secrets.GERRIT_BOT_USER }}").value' change.json)"
+        if [[ "$verified" -ne 0 ]]; then
+          gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
+        fi
+
+  common:
+    if: ${{ !cancelled() }}
+    needs:
+    - env_vars
+    - patch_set_status
     uses: ./.github/workflows/spdk-common-tests.yml
     with:
       # "Client payload" is all of the information Gerrit webhooks sends out.
       client_payload: ${{ needs.env_vars.outputs.client_payload }}
 
   hpe:
-    needs: env_vars
+    if: ${{ !cancelled() }}
+    needs:
+    - env_vars
+    - patch_set_status
     uses: ./.github/workflows/nvmf-rdma.yml
     with:
       client_payload: ${{ needs.env_vars.outputs.client_payload }}
@@ -50,6 +93,7 @@ jobs:
     if: ${{ !cancelled() }}
     needs:
     - env_vars
+    - patch_set_status
     - common
     - hpe
     uses: ./.github/workflows/summary.yml
