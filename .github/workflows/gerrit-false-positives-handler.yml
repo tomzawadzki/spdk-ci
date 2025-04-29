@@ -35,7 +35,22 @@ jobs:
       run: |
         set -x
 
-        # TODO: parse comment for 'false positive: ' pattern, check if GH issue exists
+        spdk_repo="${{ github.repository_owner }}/spdk"
+
+        comment="${{ fromJSON(needs.env_vars.outputs.client_payload).comment }}"
+        # Looking for comment thats only content is "false positive: 123", with a leeway for no spaces or hashtag symbol before number
+        gh_issue="$(echo $comment | grep -Eoi 'Patch Set [0-9]+: false positive:\s*[#]?[0-9]+$' | grep -Eo '[0-9]+$' || true)"
+        if [[ -z "$gh_issue" ]]; then
+          echo "Ignore. Comment does not include false positive phrase."
+          exit 0
+        fi
+
+        # Verify that the issue exists and is open
+        gh_status="$(gh issue -R $spdk_repo view $gh_issue --json state --jq .state || true)"
+        if [[ "$gh_status" != "OPEN" ]]; then
+          echo "Comment points to incorrect GitHub issue."
+          exit 1
+        fi
 
         # Get latest info about a change itself
         curl -s -X GET "https://review.spdk.io/a/changes/spdk%2Fspdk~${{ env.change_num }}?o=DETAILED_ACCOUNTS&o=MESSAGES&o=LABELS&o=SKIP_DIFFSTAT" \
@@ -72,7 +87,11 @@ jobs:
                   | grep "Results: " | tail -1 | grep -Eo 'https://github.com/[a-z0-9./_:-]*')"
         fp_run_id="$(echo $fp_run_url | grep -oP '(?<=runs\/)[0-9]+(?=/)')"
 
-        # TODO: post failed build to GH issue
+        reported_by="${{ fromJSON(needs.env_vars.outputs.client_payload).author.username }}"
+
+        message="Another instance of this failure. Reported by @$reported_by. Log: $fp_run_url"
+        # Special PAT to read/write GH issues is required
+        GH_TOKEN="${{ secrets.GH_ISSUES_PAT }}" gh issue -R "$spdk_repo" comment "$gh_issue" -b "$message"
 
         # Rerun only failed jobs, which will rerun all dependent ones too.
         gh run rerun $fp_run_id --failed -R ${{ github.repository }}
