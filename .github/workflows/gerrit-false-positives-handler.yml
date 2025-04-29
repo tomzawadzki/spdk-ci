@@ -1,0 +1,78 @@
+---
+name: False positive rerun
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_payload:
+        required: false
+        type: string
+        default: ''
+  repository_dispatch:
+    types:
+    - comment-added
+
+env:
+  client_payload: ${{ github.event.client_payload || inputs.client_payload || '' }}
+
+jobs:
+  env_vars: # Workaround for https://github.com/actions/runner/issues/2372
+    runs-on: ubuntu-latest
+    outputs:
+      client_payload: ${{ env.client_payload }}
+    steps:
+    - run: echo "Passing workflow env vars to reusable workflows"
+
+  parse_comment:
+    needs: env_vars
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      change_num: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}
+      patch_set: ${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}
+    steps:
+    - name: Parse for false positive
+      run: |
+        set -x
+
+        # TODO: parse comment for 'false positive: ' pattern, check if GH issue exists
+
+        # Get latest info about a change itself
+        curl -s -X GET "https://review.spdk.io/a/changes/spdk%2Fspdk~${{ env.change_num }}?o=DETAILED_ACCOUNTS&o=MESSAGES&o=LABELS&o=SKIP_DIFFSTAT" \
+        --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
+        | tail -n +2 > change.json
+
+        # Do not test any change marked as WIP
+        ready_for_review="$(jq -r '.has_review_started' change.json)"
+        if [[ "$ready_for_review" == "false" ]]; then
+          echo "Ignore. Comment posted to WIP change."
+          exit 0
+        fi
+
+        # Only test latest patch set
+        current_patch_set="$(jq -r '.current_revision_number' change.json)"
+        if [[ "$current_patch_set" -ne "$patch_set" ]]; then
+          echo "Ignore. Comment posted to old patch set."
+          exit 0
+        fi
+
+        # False positive should be used only on changes that already have a negative Verified vote
+        verified="$(jq -r '.labels.Verified.all[] | select(.username=="${{ secrets.GERRIT_BOT_USER }}").value' change.json)"
+        if [[ "$verified" -eq "-1" ]]; then
+          echo "Ignore. Comment posted with no negative vote from CI."
+          exit 0
+        fi
+
+        # Find workflow to rerun. As a sanity check grab comment meeting following criteria:
+        # most recent failed build comment posted by spdk-bot only on latest patch set
+        # NOTE: Message parsing is very fragile and has to match summary job
+        fp_run_url="$(jq -r '.messages[] | select(.author.username=="${{ secrets.GERRIT_BOT_USER }}")
+                  | select(._revision_number==${{ env.patch_set }})
+                  | select(.message | test("Build failed")) | .message' change.json \
+                  | grep "Results: " | tail -1 | grep -Eo 'https://github.com/[a-z0-9./_:-]*')"
+        fp_run_id="$(echo $fp_run_url | grep -oP '(?<=runs\/)[0-9]+(?=/)')"
+
+        # TODO: post failed build to GH issue
+
+        # Rerun only failed jobs, which will rerun all dependent ones too.
+        gh run rerun $fp_run_id --failed -R ${{ github.repository }}
