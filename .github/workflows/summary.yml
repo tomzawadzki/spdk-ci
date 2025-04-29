@@ -81,7 +81,7 @@ jobs:
             message="Build successful. "
         fi
 
-        message+="Results: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        message+="Results: [${{ github.run_id }}/${{ github.run_attempt }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }})"
         echo "vote=$vote" >> $GITHUB_OUTPUT
         echo "message=$message" >> $GITHUB_OUTPUT
         echo "$message" >> $GITHUB_STEP_SUMMARY
