@@ -26,7 +26,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
             "Accept": "application/vnd.github+json",
         }
         body = {
-            "event_type": "per-patch-event",
+            "event_type": payload["type"],
             "client_payload": payload
         }
 
