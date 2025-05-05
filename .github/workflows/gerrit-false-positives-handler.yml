@@ -48,6 +48,13 @@ jobs:
         # Verify that the issue exists and is open
         gh_status="$(gh issue -R $spdk_repo view $gh_issue --json state --jq .state || true)"
         if [[ "$gh_status" != "OPEN" ]]; then
+          message="Issue #$gh_issue does not exist or is already closed."
+          curl -L -X POST https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review \
+          --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
+          --header "Content-Type: application/json" \
+          --data "{'message': '$message'}" \
+          --fail-with-body
+
           echo "Comment points to incorrect GitHub issue."
           exit 1
         fi
@@ -95,3 +102,10 @@ jobs:
 
         # Rerun only failed jobs, which will rerun all dependent ones too.
         gh run rerun $fp_run_id --failed -R ${{ github.repository }}
+
+        message="Retriggered"
+        curl -L -X POST https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review \
+        --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
+        --header "Content-Type: application/json" \
+        --data "{'message': '$message', 'labels': {'Verified': '0'}}" \
+        --fail-with-body
