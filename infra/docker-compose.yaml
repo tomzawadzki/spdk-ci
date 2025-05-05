@@ -1,0 +1,40 @@
+---
+version: '3.9'
+services:
+  gerrit:
+    image: gerritcodereview/gerrit:3.10.0
+    container_name: gerrit
+    restart: always
+    environment:
+    - CANONICAL_WEB_URL=http://127.0.0.1:8080
+    ports:
+    - "29418:29418"
+    - "8080:8080"
+    networks:
+    - gerrit
+
+  forwarder:
+    image: forwarder:latest
+    build:
+      context: ./forwarder
+      dockerfile: Dockerfile
+    container_name: webhook_forwarder
+    restart: always
+    environment:
+    - GITHUB_TOKEN=${GITHUB_TOKEN}
+    - GITHUB_ACTION_URL=${GITHUB_ACTION_URL}
+    - TEST_MODE=${TEST_MODE}
+    depends_on:
+    - gerrit
+    volumes:
+    - forwarder_logs:/var/log
+    networks:
+    - gerrit
+
+volumes:
+  gerrit_data:
+  forwarder_logs:
+
+networks:
+  gerrit:
+    driver: bridge
