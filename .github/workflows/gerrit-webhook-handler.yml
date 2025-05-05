@@ -10,6 +10,9 @@ on:
   repository_dispatch:
     types:
     - per-patch-event
+    - patchset-created
+    - wip-state-changed
+    - private-state-changed
 
 jobs:
   common:
