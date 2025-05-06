@@ -92,7 +92,7 @@ jobs:
                   | select(._revision_number==${{ env.patch_set }})
                   | select(.message | test("Build failed")) | .message' change.json \
                   | grep "Results: " | tail -1 | grep -Eo 'https://github.com/[a-z0-9./_:-]*')"
-        fp_run_id="$(echo $fp_run_url | grep -oP '(?<=runs\/)[0-9]+(?=/)')"
+        fp_run_id="$(echo $fp_run_url | grep -oP '(?<=runs\/)[0-9]+')"
 
         reported_by="${{ fromJSON(needs.env_vars.outputs.client_payload).author.username }}"
 
