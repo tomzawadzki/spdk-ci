@@ -13,7 +13,7 @@ on:
     - comment-added
 
 env:
-  client_payload: ${{ github.event.client_payload || inputs.client_payload || '' }}
+  client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || inputs.client_payload }}
 
 jobs:
   env_vars: # Workaround for https://github.com/actions/runner/issues/2372

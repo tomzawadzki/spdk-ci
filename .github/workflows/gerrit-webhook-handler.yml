@@ -20,7 +20,8 @@ on:
     - private-state-changed
 
 env:
-  client_payload: ${{ github.event.client_payload || inputs.client_payload || '' }}
+  # TODO: Renable client_payload for workflow_dispatch
+  client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
 
 jobs:
   env_vars: # Workaround for https://github.com/actions/runner/issues/2372
