@@ -31,9 +31,28 @@ services:
     networks:
     - gerrit
 
+  mergable_changes:
+    image: mergable_changes:latest
+    build:
+      context: ./mergable_changes
+      dockerfile: Dockerfile
+    container_name: mergable_changes
+    restart: always
+    environment:
+    - OUTPUT_FILE=${OUTPUT_FILE}
+    - GERRIT_USER_NAME=${GERRIT_USER_NAME}
+    - GERRIT_PASSWORD=${GERRIT_PASSWORD}
+    depends_on:
+    - gerrit
+    volumes:
+    - mergable_changes_logs:/var/log
+    networks:
+    - gerrit
+
 volumes:
   gerrit_data:
   forwarder_logs:
+  mergable_changes_logs:
 
 networks:
   gerrit:
