@@ -192,6 +192,7 @@ def main():
         get_gerrit_changes(gerrit, all_changes)
         for change in all_changes:
             change.check_parents_ready(gerrit, all_changes)
+        all_changes.sort(key=lambda c: c.age, reverse=True)
         write_text_summary(all_changes)
         time.sleep(300)
 
