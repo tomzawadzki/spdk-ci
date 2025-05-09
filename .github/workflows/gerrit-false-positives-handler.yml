@@ -30,82 +30,14 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       change_num: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}
       patch_set: ${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}
+      COMMENT: ${{ fromJSON(needs.env_vars.outputs.client_payload).comment }}
+      AUTHOR: ${{ fromJSON(needs.env_vars.outputs.client_payload).author.username }}
+      REPO: ${{ github.repository_owner }}/spdk
+      GH_REPO: ${{ github.repository }}
+      GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
+      GERRIT_BOT_HTTP_PASSWD: ${{ secrets.GERRIT_BOT_HTTP_PASSWD }}
+      GH_ISSUES_PAT: ${{ secrets.GH_ISSUES_PAT }}
     steps:
+    - uses: actions/checkout@v4
     - name: Parse for false positive
-      run: |
-        set -x
-
-        spdk_repo="${{ github.repository_owner }}/spdk"
-
-        comment="${{ fromJSON(needs.env_vars.outputs.client_payload).comment }}"
-        # Looking for comment thats only content is "false positive: 123", with a leeway for no spaces or hashtag symbol before number
-        gh_issue="$(echo $comment | grep -Eoi 'Patch Set [0-9]+: false positive:\s*[#]?[0-9]+$' | grep -Eo '[0-9]+$' || true)"
-        if [[ -z "$gh_issue" ]]; then
-          echo "Ignore. Comment does not include false positive phrase."
-          exit 0
-        fi
-
-        # Verify that the issue exists and is open
-        gh_status="$(gh issue -R $spdk_repo view $gh_issue --json state --jq .state || true)"
-        if [[ "$gh_status" != "OPEN" ]]; then
-          message="Issue #$gh_issue does not exist or is already closed."
-          curl -L -X POST https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review \
-          --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
-          --header "Content-Type: application/json" \
-          --data "{'message': '$message'}" \
-          --fail-with-body
-
-          echo "Comment points to incorrect GitHub issue."
-          exit 1
-        fi
-
-        # Get latest info about a change itself
-        curl -s -X GET "https://review.spdk.io/a/changes/spdk%2Fspdk~${{ env.change_num }}?o=DETAILED_ACCOUNTS&o=MESSAGES&o=LABELS&o=SKIP_DIFFSTAT" \
-        --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
-        | tail -n +2 > change.json
-
-        # Do not test any change marked as WIP
-        ready_for_review="$(jq -r '.has_review_started' change.json)"
-        if [[ "$ready_for_review" == "false" ]]; then
-          echo "Ignore. Comment posted to WIP change."
-          exit 0
-        fi
-
-        # Only test latest patch set
-        current_patch_set="$(jq -r '.current_revision_number' change.json)"
-        if [[ "$current_patch_set" -ne "$patch_set" ]]; then
-          echo "Ignore. Comment posted to old patch set."
-          exit 0
-        fi
-
-        # False positive should be used only on changes that already have a negative Verified vote
-        verified="$(jq -r '.labels.Verified.all[] | select(.username=="${{ secrets.GERRIT_BOT_USER }}").value' change.json)"
-        if [[ "$verified" != "-1" ]]; then
-          echo "Ignore. Comment posted with no negative vote from CI."
-          exit 0
-        fi
-
-        # Find workflow to rerun. As a sanity check grab comment meeting following criteria:
-        # most recent failed build comment posted by spdk-bot only on latest patch set
-        # NOTE: Message parsing is very fragile and has to match summary job
-        fp_run_url="$(jq -r '.messages[] | select(.author.username=="${{ secrets.GERRIT_BOT_USER }}")
-                  | select(._revision_number==${{ env.patch_set }})
-                  | select(.message | test("Build failed")) | .message' change.json \
-                  | grep "Results: " | tail -1 | grep -Eo 'https://github.com/[a-z0-9./_:-]*')"
-        fp_run_id="$(echo $fp_run_url | grep -oP '(?<=runs\/)[0-9]+')"
-
-        reported_by="${{ fromJSON(needs.env_vars.outputs.client_payload).author.username }}"
-
-        message="Another instance of this failure. Reported by @$reported_by. Log: $fp_run_url"
-        # Special PAT to read/write GH issues is required
-        GH_TOKEN="${{ secrets.GH_ISSUES_PAT }}" gh issue -R "$spdk_repo" comment "$gh_issue" -b "$message"
-
-        # Rerun only failed jobs, which will rerun all dependent ones too.
-        gh run rerun $fp_run_id --failed -R ${{ github.repository }}
-
-        message="Retriggered"
-        curl -L -X POST https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review \
-        --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
-        --header "Content-Type: application/json" \
-        --data "{'message': '$message', 'labels': {'Verified': '0'}}" \
-        --fail-with-body
+      run: .github/scripts/parse_false_positive_comment.sh
