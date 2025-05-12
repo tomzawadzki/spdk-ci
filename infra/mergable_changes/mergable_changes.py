@@ -147,7 +147,7 @@ def write_text_summary(all_changes):
         ("Changes blocked by parents in series", get_blocked_by_changes(all_changes))
     ]
 
-    with open("mergable_changes.txt", "w") as fh:
+    with open(OUTPUT_FILE, "w") as fh:
         fh.write(f"Generated at {datetime.datetime.now(datetime.timezone.utc)}\n")
         fh.write("Contents are re-generated every 5 minutes.\n\n\n")
         for section_name, changes in sections:
