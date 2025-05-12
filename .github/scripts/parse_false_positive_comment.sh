@@ -14,7 +14,7 @@ set -eu
 shopt -s extglob
 
 spdk_repo=$REPO
-comment=$COMMENT
+gerrit_comment=$COMMENT
 reported_by=$AUTHOR
 
 gerrit_url=https://review.spdk.io/a/changes
@@ -22,7 +22,7 @@ gerrit_format_q="o=DETAILED_ACCOUNTS&o=MESSAGES&o=LABELS&o=SKIP_DIFFSTAT"
 
 # Looking for comment thats only content is "false positive: 123", with a leeway for no spaces
 # or hashtag symbol before number
-if [[ ! ${comment,,} =~ "patch set "[0-9]+:" false positive:"[[:space:]]*[#]?([0-9]+)$ ]]; then
+if [[ ! ${gerrit_comment,,} =~ "patch set "[0-9]+:" false positive:"[[:space:]]*[#]?([0-9]+)$ ]]; then
 	echo "Ignore. Comment does not include false positive phrase."
 	exit 0
 fi
@@ -31,6 +31,7 @@ gh_issue=${BASH_REMATCH[1]}
 # Verify that the issue exists and is open
 if ! gh_status=$(gh issue -R "$spdk_repo" view "$gh_issue" --json state --jq .state) \
 	|| [[ "$gh_status" != "OPEN" ]]; then
+	# shellcheck disable=SC2154
 	curl -L -X POST \
 		--user "$GERRIT_BOT_USER:$GERRIT_BOT_HTTP_PASSWD" \
 		--header "Content-Type: application/json" \

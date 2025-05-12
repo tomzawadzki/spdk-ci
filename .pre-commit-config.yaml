@@ -43,3 +43,14 @@ repos:
     name: Python-lint-mypy
     additional_dependencies:
     - types-requests
+
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.10.0.1
+  hooks:
+  - id: shellcheck
+    name: sh-shellcheck
+    args:
+    - '-fgcc'
+    - '-sbash'
+    types_or: [file, bash]
+    files: \.(sh|bash)$
