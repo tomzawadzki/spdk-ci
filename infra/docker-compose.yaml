@@ -46,6 +46,7 @@ services:
     - gerrit
     volumes:
     - mergable_changes_logs:/var/log
+    - mergable_changes_out:/output
     networks:
     - gerrit
 
@@ -53,6 +54,7 @@ volumes:
   gerrit_data:
   forwarder_logs:
   mergable_changes_logs:
+  mergable_changes_out:
 
 networks:
   gerrit:
