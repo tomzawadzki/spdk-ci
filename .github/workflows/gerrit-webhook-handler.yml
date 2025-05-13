@@ -60,7 +60,7 @@ jobs:
 
         # Only test latest patch set
         current_patch_set="$(jq -r '.current_revision_number' change.json)"
-        if [[ "$current_patch_set" -ne ${{ env.patch_set }} ]]; then
+        if ((current_patch_set != ${{ env.patch_set }})); then
           gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
         fi
 
