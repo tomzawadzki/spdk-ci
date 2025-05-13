@@ -22,7 +22,7 @@ gerrit_format_q="o=DETAILED_ACCOUNTS&o=MESSAGES&o=LABELS&o=SKIP_DIFFSTAT"
 
 # Looking for comment thats only content is "false positive: 123", with a leeway for no spaces
 # or hashtag symbol before number
-if [[ ! ${gerrit_comment,,} =~ "patch set "[0-9]+:" false positive:"[[:space:]]*[#]?([0-9]+)$ ]]; then
+if [[ ! ${gerrit_comment,,} =~ "patch set "[0-9]+:$'\n\nfalse positive:'[[:space:]]*[#]?([0-9]+)$ ]]; then
 	echo "Ignore. Comment does not include false positive phrase."
 	exit 0
 fi
