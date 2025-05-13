@@ -74,6 +74,23 @@ class GerritChange:
             ready=ready
         )
 
+    @classmethod
+    def blocking_change(cls, change_json: Dict):
+        return cls(
+            number=change_json['_number'],
+            project=change_json['project'],
+            subject=change_json['subject'],
+            owner=change_json['owner']['name'],
+            revisions=change_json['revisions'].values(),
+            blocked_by="",
+            reviewed_by="",
+            has_minus_one=False,
+            has_merge_conflict=False,
+            needs_plus_two=False,
+            ready=False
+        )
+
+
     def check_parents_ready(self, gerrit, all_changes):
         if self.ready:
             try:
@@ -96,8 +113,8 @@ class GerritChange:
 
                 parent_change = get_change_by_number(all_changes, change['_number'])
                 if not parent_change:
-                    # Looks like there's no parent changes for current change.
-                    continue
+                    # Looks like there's no +2'd parent changes so create a "blocking" one
+                    parent_change = GerritChange.blocking_change(change)
 
                 if parent_change.ready is False:
                     self.ready = False
