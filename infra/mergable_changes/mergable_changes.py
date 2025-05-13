@@ -88,7 +88,7 @@ class GerritChange:
                 # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#submitted-together
                 pass
 
-            for change in change_series:
+            for change in reversed(change_series):
                 # submitted_together contains a list data for changes submitted together including the
                 # one currently inspected - skip it.
                 if self.number == change['_number']:
