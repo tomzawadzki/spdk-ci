@@ -55,18 +55,21 @@ jobs:
         # .work_in_progress is not set when false
         work_in_progress="$(jq -r '.work_in_progress' change.json)"
         if [[ "$work_in_progress" == "true" ]]; then
+          echo "Ignore. Patch is currently WIP."
           gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
         fi
 
         # Only test latest patch set
         current_patch_set="$(jq -r '.current_revision_number' change.json)"
         if ((current_patch_set != ${{ env.patch_set }})); then
+          echo "Ignore. Patch set ${{ env.patch_set }} is not the latest."
           gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
         fi
 
         # Test only changes without a Verified vote already present
         verified=$(jq -r ".labels.Verified.all[]? | select(.username==\"${{ secrets.GERRIT_BOT_USER }}\").value" change.json)
         if ((verified != 0)); then
+          echo "Ignore. Patch already has a vote from CI."
           gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
         fi
 
