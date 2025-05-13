@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import time
 import logging
 import datetime
@@ -9,12 +8,10 @@ from typing import Dict
 from prettytable import PrettyTable
 from requests import RequestException
 from dataclasses import dataclass, field
-from pygerrit2 import GerritRestAPI, HTTPBasicAuth
+from pygerrit2 import GerritRestAPI
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 OUTPUT_FILE = os.getenv("OUTPUT_FILE", "mergable_changes.txt")
-GERRIT_USER_NAME = os.getenv("GERRIT_USER_NAME")
-GERRIT_PASSWORD = os.getenv("GERRIT_PASSWORD")
 GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL", "https://review.spdk.io")
 GERRIT_CHANGE_URL = os.path.join(GERRIT_BASE_URL, "c")
 
@@ -199,14 +196,9 @@ def main():
         ]
     )
 
-    if not GERRIT_USER_NAME or not GERRIT_PASSWORD:
-        logging.error("Error: GERRIT_USER_NAME or GERRIT_PASSWORD environment variable is not set.")
-        sys.exit(1)
-
     while True:
         all_changes = []
-        auth = HTTPBasicAuth(GERRIT_USER_NAME, GERRIT_PASSWORD)
-        gerrit = GerritRestAPI(url=GERRIT_BASE_URL, auth=auth)
+        gerrit = GerritRestAPI(url=GERRIT_BASE_URL)
         get_gerrit_changes(gerrit, all_changes)
         for change in all_changes:
             change.check_parents_ready(gerrit, all_changes)

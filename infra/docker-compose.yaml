@@ -40,8 +40,6 @@ services:
     restart: always
     environment:
     - OUTPUT_FILE=${OUTPUT_FILE}
-    - GERRIT_USER_NAME=${GERRIT_USER_NAME}
-    - GERRIT_PASSWORD=${GERRIT_PASSWORD}
     depends_on:
     - gerrit
     volumes:
