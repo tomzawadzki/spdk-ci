@@ -64,7 +64,7 @@ if ((current_patch_set != patch_set)); then
 fi
 
 # False positive should be used only on changes that already have a negative Verified vote
-verified=$(jq -r ".labels.Verified.all[] | select(.username==\"$GERRIT_BOT_USER\").value" change.json)
+verified=$(jq -r ".labels.Verified.all[]? | select(.username==\"$GERRIT_BOT_USER\").value" change.json)
 if ((verified != -1)); then
 	echo "Ignore. Comment posted with no negative vote from CI."
 	exit 0

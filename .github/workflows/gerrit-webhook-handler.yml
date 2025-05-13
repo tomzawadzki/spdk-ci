@@ -65,8 +65,8 @@ jobs:
         fi
 
         # Test only changes without a Verified vote already present
-        verified="$(jq -r '.labels.Verified.all[] | select(.username=="${{ secrets.GERRIT_BOT_USER }}").value' change.json)"
-        if [[ "$verified" -ne 0 ]]; then
+        verified=$(jq -r ".labels.Verified.all[]? | select(.username==\"${{ secrets.GERRIT_BOT_USER }}\").value" change.json)
+        if ((verified != 0)); then
           gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
         fi
 
