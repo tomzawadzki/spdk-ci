@@ -49,8 +49,9 @@ curl -s -X GET \
 	| tail -n +2 | jq . | tee change.json
 
 # Do not test any change marked as WIP
-ready_for_review="$(jq -r '.has_review_started' change.json)"
-if [[ "$ready_for_review" == "false" ]]; then
+# .work_in_progress is not set when false
+work_in_progress="$(jq -r '.work_in_progress' change.json)"
+if [[ "$work_in_progress" == "true" ]]; then
 	echo "Ignore. Comment posted to WIP change."
 	exit 0
 fi
