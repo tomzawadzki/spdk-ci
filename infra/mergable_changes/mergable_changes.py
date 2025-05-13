@@ -48,6 +48,7 @@ class GerritChange:
     def from_json(cls, change_json: Dict):
         ready = True
         is_mergeable = change_json['mergeable']
+        is_submittable = change_json['submittable']
         has_merge_conflict = not is_mergeable
         code_reviews = change_json['labels']['Code-Review']['all']
         plus_two_crs = sum(1 for review in code_reviews if review['value'] == 2)
@@ -56,7 +57,7 @@ class GerritChange:
         needs_plus_two = not has_minus_one and not has_merge_conflict and plus_two_crs == 1
         reviewed_by = str(next((review['name'] for review in code_reviews if review['value'] == 2), None))
 
-        if plus_two_crs < 2 or minus_one_crs > 0 or has_merge_conflict:
+        if not is_submittable:
             ready = False
 
         return cls(
@@ -107,7 +108,7 @@ class GerritChange:
 def get_gerrit_changes(gerrit, all_changes):
     query = "".join([
         "/changes/", "?q=project:spdk/spdk status:open label:Code-Review=2 label:Verified=1",
-        "&o=CURRENT_REVISION", "&o=DETAILED_LABELS", "&o=DETAILED_ACCOUNTS"
+        "&o=CURRENT_REVISION", "&o=DETAILED_LABELS", "&o=DETAILED_ACCOUNTS", "&o=SUBMITTABLE"
     ])
     changes_json = gerrit.get(query)
     for change_json in changes_json:
