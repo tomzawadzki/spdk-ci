@@ -6,6 +6,7 @@ on:
     paths-ignore:
     - '.github/workflows/selftest.yml'
     - '.github/workflows/build_qcow2.yml'
+    - 'infra/**'
   workflow_dispatch:
     inputs:
       client_payload:
