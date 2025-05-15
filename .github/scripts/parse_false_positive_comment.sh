@@ -39,7 +39,7 @@ if ! gh_status=$(gh issue -R "$spdk_repo" view "$gh_issue" --json state --jq .st
 		--fail-with-body \
 		"$gerrit_url/$change_num/revisions/$patch_set/review"
 	echo "Comment points to incorrect GitHub issue."
-	exit 1
+	exit 0
 fi
 
 # Get latest info about a change itself - first line is the XSSI mitigation string, drop it
