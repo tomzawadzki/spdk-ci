@@ -39,8 +39,7 @@ services:
     container_name: mergable_changes
     restart: always
     environment:
-    - OUTPUT_FILE=${OUTPUT_FILE}
-    - OUTPUT_HTML=${OUTPUT_HTML}
+    - OUTPUT_DIR=${OUTPUT_DIR}
     depends_on:
     - gerrit
     volumes:

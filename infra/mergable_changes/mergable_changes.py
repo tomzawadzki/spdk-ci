@@ -12,8 +12,7 @@ from dataclasses import dataclass, field
 from pygerrit2 import GerritRestAPI
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-OUTPUT_FILE = os.getenv("OUTPUT_FILE", "mergable_changes.txt")
-OUTPUT_HTML= os.getenv("OUTPUT_HTML", "mergable_changes.html")
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", "/output")
 GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL", "https://review.spdk.io")
 GERRIT_CHANGE_URL = os.path.join(GERRIT_BASE_URL, "c")
 
@@ -165,7 +164,7 @@ def write_text_summary(all_changes):
     }
 
     timestamp = datetime.datetime.now(datetime.timezone.utc)
-    with open(OUTPUT_FILE, "w") as fh:
+    with open(os.path.join(OUTPUT_DIR, "mergable_changes.txt"), "w") as fh:
         fh.write(f"Generated at {timestamp}\n")
         fh.write("Contents are re-generated every 5 minutes.\n\n\n")
         for section_name, changes in sections.items():
@@ -190,7 +189,7 @@ def write_text_summary(all_changes):
                 write_and_log("No changes in this category.\n", fh)
 
     template = jinja2.Environment(loader=jinja2.FileSystemLoader('./')).get_template("template.html")
-    with open(OUTPUT_HTML, "w+") as output:
+    with open(os.path.join(OUTPUT_DIR, "mergable_changes.html"), "w+") as output:
         output.write(template.render(sections=sections, timestamp=timestamp.strftime("%B %d %H:%M")))
 
 
