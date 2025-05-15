@@ -78,7 +78,7 @@ mapfile -t fp_run_failed_messages < <(
 		select(.author.username==\"$GERRIT_BOT_USER\") |
 		select(._revision_number==$patch_set) |
 		select(.message | test(\"Build failed\")) |
-		.message" change.json | grep "Build failed. Results: https://"
+		.message" change.json | grep "Build failed. Results: "
 )
 
 if ((${#fp_run_failed_messages[@]} == 0)); then
@@ -87,15 +87,13 @@ if ((${#fp_run_failed_messages[@]} == 0)); then
 fi
 
 # E.g:
-# Build failed. Results: https://github.com/spdk/spdk-ci/actions/runs/14057408093
-# Build failed. Results: https://github.com/spdk/spdk-ci/actions/runs/1234567/attempts/3
+# Build failed. Results: [15028790454/1](https://github.com/spdk/spdk-ci/actions/runs/15028790454/attempts/3)
+# Build failed. Results: [15028790454/1](https://github.com/spdk/spdk-ci/actions/runs/15028790454)
 fp_run_failed_messages=("${fp_run_failed_messages[@]}")
-# E.g: 14788777713
-# E.g: 1234567
+# E.g: 15028790454
 fp_run_id=${fp_run_failed_messages[-1]//@(*"runs/"|"/attempts"*)/}
-# E.g: https://github.com/spdk/spdk-ci/actions/runs/14788777713
-# E.g: https://github.com/spdk/spdk-ci/actions/runs/1234567/attempts/3
-fp_run_url=${fp_run_failed_messages[-1]#*Results: }
+# E.g: https://github.com/spdk/spdk-ci/actions/runs/15028790454
+fp_run_url=${fp_run_failed_messages[-1]//@(*"("|")")/}
 
 message="Another instance of this failure. Reported by @$reported_by. Log: $fp_run_url"
 # Special PAT to read/write GH issues is required
