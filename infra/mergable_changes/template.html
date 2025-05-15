@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/spdk.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap">
+    <title>SPDK Outstanding Patch Status</title>
+  </head>
+  <body class="bg-light">
+    <header class="bg-dark text-white py-3">
+      <div class="container">
+        <h1 class="text-center">SPDK Outstanding Patch Status</h1>
+        <p class="text-center">Generated on {{ timestamp }} UTC</p>
+        <p class="text-center">This page is updated every 5 minutes.</p>
+      </div>
+    </header>
+
+    <main class="container my-4">
+      <!-- Section: Changes Ready for Merge -->
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Changes ready for merge</h5>
+          </div>
+          <div class="card-body">
+            {% if sections["Changes ready for merge"] %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Number</th>
+                      <th>Subject</th>
+                      <th>Owner</th>
+                      <th>Age</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for change in sections["Changes ready for merge"] %}
+                      <tr class="align-middle">
+                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
+                        <td>{{ change.subject }}</td>
+                        <td>{{ change.owner }}</td>
+                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No changes are ready for merge at this time.</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Changes Needing Another +2 -->
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Changes needing another +2 CR vote</h5>
+          </div>
+          <div class="card-body">
+            {% if sections["Changes needing another +2 CR vote"] %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Number</th>
+                      <th>Subject</th>
+                      <th>Owner</th>
+                      <th>Age</th>
+                      <th>Reviewed By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for change in sections["Changes needing another +2 CR vote"] %}
+                      <tr class="align-middle">
+                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
+                        <td>{{ change.subject }}</td>
+                        <td>{{ change.owner }}</td>
+                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
+                        <td>{{ change.reviewed_by }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No changes need another +2 CR vote at this time.</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Changes with -1 votes -->
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Changes with -1 CR votes</h5>
+          </div>
+          <div class="card-body">
+            {% if sections["Changes with a -1 CR vote"] %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Number</th>
+                      <th>Subject</th>
+                      <th>Owner</th>
+                      <th>Age</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for change in sections["Changes with a -1 CR vote"] %}
+                      <tr class="align-middle">
+                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
+                        <td>{{ change.subject }}</td>
+                        <td>{{ change.owner }}</td>
+                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No -1 CR voted changes at this time.</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Changes with Merge Conflicts -->
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Changes with merge conflicts</h5>
+          </div>
+          <div class="card-body">
+            {% if sections["Changes with a merge conflict"] %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Number</th>
+                      <th>Subject</th>
+                      <th>Owner</th>
+                      <th>Age</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for change in sections["Changes with a merge conflict"] %}
+                      <tr class="align-middle">
+                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
+                        <td>{{ change.subject }}</td>
+                        <td>{{ change.owner }}</td>
+                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No changes have merge conflicts at this time.</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Changes blocked by parents -->
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Changes blocked by parent changes</h5>
+          </div>
+          <div class="card-body">
+            {% if sections["Changes blocked by parents in series"] %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Number</th>
+                      <th>Subject</th>
+                      <th>Owner</th>
+                      <th>Age</th>
+                      <th>Blocked by</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for change in sections["Changes blocked by parents in series"] %}
+                      <tr class="align-middle">
+                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
+                        <td>{{ change.subject }}</td>
+                        <td>{{ change.owner }}</td>
+                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
+                        <td><a href="{{ change.blocked_by.url }}">{{ change.blocked_by.number }} - {{ change.blocked_by.subject }}</a></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No changes blocked by their parent changes.</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer bg-dark text-white py-3">
+      <div class="container text-center">
+        Copyright © SPDK a Series of LF Projects, LLC. For web site terms of use, trademark policy, and other
+        project policies please see <a href="https://lfprojects.org">https://lfprojects.org</a>.
+      </div>
+    </footer>
+  </body>
+</html>

@@ -2,6 +2,7 @@
 
 import os
 import time
+import jinja2
 import logging
 import datetime
 from typing import Dict
@@ -12,6 +13,7 @@ from pygerrit2 import GerritRestAPI
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 OUTPUT_FILE = os.getenv("OUTPUT_FILE", "mergable_changes.txt")
+OUTPUT_HTML= os.getenv("OUTPUT_HTML", "mergable_changes.html")
 GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL", "https://review.spdk.io")
 GERRIT_CHANGE_URL = os.path.join(GERRIT_BASE_URL, "c")
 
@@ -154,18 +156,19 @@ def write_text_summary(all_changes):
         fh.write(line + "\n")
         logging.debug(line)
 
-    sections = [
-        ("Changes ready for merge", get_ready_changes(all_changes)),
-        ("Changes needing another +2 CR vote", get_needs_plus_two_changes(all_changes)),
-        ("Changes with a -1 CR vote", get_minus_one_changes(all_changes)),
-        ("Changes with a merge conflict", get_merge_conflict_changes(all_changes)),
-        ("Changes blocked by parents in series", get_blocked_by_changes(all_changes))
-    ]
+    sections = {
+        "Changes ready for merge": get_ready_changes(all_changes),
+        "Changes needing another +2 CR vote": get_needs_plus_two_changes(all_changes),
+        "Changes with a -1 CR vote": get_minus_one_changes(all_changes),
+        "Changes with a merge conflict": get_merge_conflict_changes(all_changes),
+        "Changes blocked by parents in series": get_blocked_by_changes(all_changes)
+    }
 
+    timestamp = datetime.datetime.now(datetime.timezone.utc)
     with open(OUTPUT_FILE, "w") as fh:
-        fh.write(f"Generated at {datetime.datetime.now(datetime.timezone.utc)}\n")
+        fh.write(f"Generated at {timestamp}\n")
         fh.write("Contents are re-generated every 5 minutes.\n\n\n")
-        for section_name, changes in sections:
+        for section_name, changes in sections.items():
             write_and_log(f"{section_name}", fh)
             write_and_log("-" * len(section_name), fh)
 
@@ -185,6 +188,11 @@ def write_text_summary(all_changes):
                 write_and_log(table.get_string() + "\n", fh)
             else:
                 write_and_log("No changes in this category.\n", fh)
+
+    template = jinja2.Environment(loader=jinja2.FileSystemLoader('./')).get_template("template.html")
+    with open(OUTPUT_HTML, "w+") as output:
+        output.write(template.render(sections=sections, timestamp=timestamp.strftime("%B %d %H:%M")))
+
 
 def main():
     logging.basicConfig(

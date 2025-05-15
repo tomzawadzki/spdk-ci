@@ -40,6 +40,7 @@ services:
     restart: always
     environment:
     - OUTPUT_FILE=${OUTPUT_FILE}
+    - OUTPUT_HTML=${OUTPUT_HTML}
     depends_on:
     - gerrit
     volumes:
