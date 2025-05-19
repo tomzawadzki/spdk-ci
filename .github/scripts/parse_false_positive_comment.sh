@@ -71,12 +71,13 @@ if ((verified != -1)); then
 fi
 
 # Find workflow to rerun. As a sanity check grab comment meeting following criteria:
-# most recent failed build comment posted by spdk-bot only on latest patch set
+# failed build comment from most recent patch set posted by spdk-bot - this patch set
+# has to be <= compared to $patch_set the workflow was triggered by.
 # NOTE: Message parsing is very fragile and has to match summary job
 mapfile -t fp_run_failed_messages < <(
-	jq -r ".messages[] |
+	jq -r ".messages | sort_by(._revision_number)[] |
 		select(.author.username==\"$GERRIT_BOT_USER\") |
-		select(._revision_number==$patch_set) |
+		select(._revision_number<=$patch_set) |
 		select(.message | test(\"Build failed\")) |
 		.message" change.json | grep "Build failed. Results: "
 )
