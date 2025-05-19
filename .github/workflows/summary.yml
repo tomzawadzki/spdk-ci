@@ -16,7 +16,7 @@ on:
 jobs:
   merge_outputs:
     # 22.04 used on purpose; it has lcov+gcov versions that are compatible with what
-    # is used in cijoe's Fedora 40 images. Using lcov+gcov from ubuntu-latest results
+    # is used in cijoe's Fedora 42 images. Using lcov+gcov from ubuntu-latest results
     # in warnings and/or failures.
     runs-on: ubuntu-22.04
     steps:

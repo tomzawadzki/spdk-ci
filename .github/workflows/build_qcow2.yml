@@ -37,7 +37,7 @@ on:
     branches: ["main"]
     paths:
     - '.github/workflows/build_qcow2.yml'
-    - 'cijoe/configs/qemuhost-with-guest-fedora-40.toml'
+    - 'cijoe/configs/qemuhost-with-guest-fedora-42.toml'
     - 'cijoe/workflows/build_qcow2_using_qemu.yaml'
 
 jobs:
@@ -102,7 +102,7 @@ jobs:
         cd ci/cijoe
         cijoe \
         --monitor \
-        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --config configs/qemuhost-with-guest-fedora-42.toml \
         --workflow workflows/build_qcow2_using_qemu.yaml
 
     - name: Upload Artifacts
@@ -114,14 +114,14 @@ jobs:
 
     - name: Change image format and compress
       run: |
-        qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img fedora_40_x86_64.qcow2 -O qcow2 -c
+        qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img fedora_42_x86_64.qcow2 -O qcow2 -c
 
     - name: Store Qcow2 build artifacts
       uses: actions/upload-artifact@v4.4.0
       with:
-        name: vm-image-fedora_40_x86_64
+        name: vm-image-fedora_42_x86_64
         compression-level: 0
-        path: fedora_40_x86_64.qcow2
+        path: fedora_42_x86_64.qcow2
 
   cache-qcow2:
     needs: build-qcow2
@@ -131,13 +131,13 @@ jobs:
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
       with:
-        name: vm-image-fedora_40_x86_64
+        name: vm-image-fedora_42_x86_64
 
     - name: Delete previous cache
       run: |
         gh extension install actions/gh-actions-cache
-        if gh actions-cache list --repo ${{ github.repository }} | grep -q "vm-image-fedora_40_x86_64"; then
-          gh actions-cache delete "vm-image-fedora_40_x86_64" --repo ${{ github.repository }} --confirm
+        if gh actions-cache list --repo ${{ github.repository }} | grep -q "vm-image-fedora_42_x86_64"; then
+          gh actions-cache delete "vm-image-fedora_42_x86_64" --repo ${{ github.repository }} --confirm
         fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -146,5 +146,5 @@ jobs:
       id: cache-qcow2
       uses: actions/cache/save@v4
       with:
-        path: fedora_40_x86_64.qcow2
-        key: vm-image-fedora_40_x86_64
+        path: fedora_42_x86_64.qcow2
+        key: vm-image-fedora_42_x86_64

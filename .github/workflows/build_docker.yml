@@ -43,7 +43,7 @@ jobs:
   select_vm_image:
     runs-on: ubuntu-latest
     env:
-      artifact_name: "vm-image-fedora_40_x86_64"
+      artifact_name: "vm-image-fedora_42_x86_64"
     steps:
     - name: Select latest qcow2 artifact
       id: get_artifact_id
@@ -90,14 +90,14 @@ jobs:
       id: restore-qcow2
       uses: actions/cache/restore@v4
       with:
-        path: fedora_40_x86_64.qcow2
-        key: vm-image-fedora_40_x86_64
+        path: fedora_42_x86_64.qcow2
+        key: vm-image-fedora_42_x86_64
 
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
-      if: ${{ hashFiles('fedora_40_x86_64.qcow2') == '' }}
+      if: ${{ hashFiles('fedora_42_x86_64.qcow2') == '' }}
       with:
-        name: vm-image-fedora_40_x86_64
+        name: vm-image-fedora_42_x86_64
         github-token: ${{ github.token }}
         run-id: ${{ needs.select_vm_image.outputs.artifact_id }}
 
@@ -106,7 +106,7 @@ jobs:
         cd ci/cijoe
         cijoe \
         --monitor \
-        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --config configs/qemuhost-with-guest-fedora-42.toml \
         --workflow workflows/build_docker_using_qcow2.yaml
 
     - name: Upload Artifacts
