@@ -50,6 +50,8 @@ jobs:
         path: './spdk-abi'
         fetch-depth: '0'
         fetch-tags: 'true'
+    - name: Get unmerged spdk-abi
+      run: git -C './spdk-abi' fetch https://review.spdk.io/spdk/spdk-abi refs/changes/92/25992/2 && git -C './spdk-abi' reset --hard FETCH_HEAD
     - name: Create abi tarball
       run: tar -C './spdk-abi' -czf spdk-abi.tar.gz .
     - name: Upload the abi tarball as an artifact
