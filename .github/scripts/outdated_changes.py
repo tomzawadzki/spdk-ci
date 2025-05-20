@@ -13,7 +13,7 @@ GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL", "https://review.spdk.io")
 def get_open_changes(gerrit):
     query = "".join([
         "/changes/",
-        "?q=project:spdk/spdk status:open -is:private",
+        "?q=project:spdk/spdk status:open -is:private -is:wip",
         "&o=CURRENT_REVISION"
     ])
     logging.info(f"Querying Gerrit with: {query}")
