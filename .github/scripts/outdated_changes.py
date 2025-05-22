@@ -19,8 +19,29 @@ def get_open_changes(gerrit):
     logging.info(f"Querying Gerrit with: {query}")
     return gerrit.get(query)
 
+def get_branch_tip_date(gerrit, branch):
+    try:
+        query = f"/projects/spdk%2Fspdk/branches/{branch.replace('.', '%2E')}"
+        logging.info(f"Querying Gerrit for branch tip: {query}")
+
+        branch_info = gerrit.get(query)
+        latest_revsion = branch_info.get("revision")
+
+        query = f"/projects/spdk%2Fspdk/commits/{latest_revsion}"
+        commit_info = gerrit.get(query)
+        commit_date_str = commit_info.get("committer", {}).get("date")
+
+        if not commit_date_str:
+            logging.warning(f"No commit date found for branch {branch}.")
+            return None
+
+        return datetime.datetime.strptime(commit_date_str, "%Y-%m-%d %H:%M:%S.%f000").replace(tzinfo=datetime.timezone.utc)
+    except Exception as e:
+        logging.error(f"Failed to get branch tip date for {branch}: {e}")
+        return None
+
 def process_changes(gerrit, changes):
-    now = datetime.datetime.now(datetime.timezone.utc)
+    branch_tip_dates = {}
     two_weeks = datetime.timedelta(weeks=2)
     four_weeks = datetime.timedelta(weeks=4)
     twelve_weeks = datetime.timedelta(weeks=12)
@@ -28,6 +49,7 @@ def process_changes(gerrit, changes):
     for change in changes:
         change_id = change.get("_number")
         project = change.get("project")
+        branch = change.get("branch")
         subject = change.get("subject", "N/A")
         owner = change.get("owner", {}).get("name", "Unknown")
         url = os.path.join(GERRIT_BASE_URL, "c", project, '+', str(change_id))
@@ -38,22 +60,29 @@ def process_changes(gerrit, changes):
         if not created_str:
             logging.warning(f"Change {change_id} has no 'created' field in the current revision.")
             continue
-
         created = datetime.datetime.strptime(created_str, "%Y-%m-%d %H:%M:%S.%f000").replace(tzinfo=datetime.timezone.utc)
-        time_since_update = now - created
-        if time_since_update > twelve_weeks:
+
+        if branch_tip_dates.get(branch):
+            branch_tip_date = branch_tip_dates[branch]
+        else:
+            branch_tip_date = get_branch_tip_date(gerrit, branch)
+            branch_tip_dates[branch] = branch_tip_date
+            logging.info(f"Saved branch tip date for {branch}: {branch_tip_date}")
+
+        time_since_branch_tip = branch_tip_date - created
+        if time_since_branch_tip > twelve_weeks:
             # Change is older than twelve weeks; we don't want VERY old changes to flood Gerrit dashboard,
             # so skip them.
             continue
 
         logging.info(f"Processing change {url} - {subject} by {owner}")
-        logging.info(f"Time since last update: {time_since_update.days} days")
+        logging.info(f"Time since last update: {time_since_branch_tip.days} days")
         message = "OUTDATED PATCH WARNING: Your change has not been updated for at least"
-        message += f" {time_since_update.days // 7} weeks ({time_since_update.days} days)."
-        if time_since_update > four_weeks:
+        message += f" {time_since_branch_tip.days // 7} weeks ({time_since_branch_tip.days} days)."
+        if time_since_branch_tip > four_weeks:
             message += " This makes it severely outdated. Please rebase your change."
             send_comment(gerrit, change_id, message, -1)
-        elif time_since_update > two_weeks:
+        elif time_since_branch_tip > two_weeks:
             message += " Please consider rebasing, make sure you're working with latest code base."
             send_comment(gerrit, change_id, message, 0)
 
