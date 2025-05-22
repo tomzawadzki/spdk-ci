@@ -2,13 +2,16 @@
 
 import os
 import logging
-import datetime
+from datetime import datetime, timezone, timedelta
 from pygerrit2 import GerritRestAPI, HTTPBasicAuth
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 GERRIT_USERNAME = os.getenv("GERRIT_USERNAME")
 GERRIT_PASSWORD = os.getenv("GERRIT_PASSWORD")
 GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL", "https://review.spdk.io")
+
+def parse_datetime(datetime_str):
+    return datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S.%f000").replace(tzinfo=timezone.utc)
 
 def get_open_changes(gerrit):
     query = "".join([
@@ -35,16 +38,16 @@ def get_branch_tip_date(gerrit, branch):
             logging.warning(f"No commit date found for branch {branch}.")
             return None
 
-        return datetime.datetime.strptime(commit_date_str, "%Y-%m-%d %H:%M:%S.%f000").replace(tzinfo=datetime.timezone.utc)
+        return parse_datetime(commit_date_str)
     except Exception as e:
         logging.error(f"Failed to get branch tip date for {branch}: {e}")
         return None
 
 def process_changes(gerrit, changes):
     branch_tip_dates = {}
-    two_weeks = datetime.timedelta(weeks=2)
-    four_weeks = datetime.timedelta(weeks=4)
-    twelve_weeks = datetime.timedelta(weeks=12)
+    two_weeks = timedelta(weeks=2)
+    four_weeks = timedelta(weeks=4)
+    twelve_weeks = timedelta(weeks=12)
 
     for change in changes:
         change_id = change.get("_number")
@@ -60,7 +63,7 @@ def process_changes(gerrit, changes):
         if not created_str:
             logging.warning(f"Change {change_id} has no 'created' field in the current revision.")
             continue
-        created = datetime.datetime.strptime(created_str, "%Y-%m-%d %H:%M:%S.%f000").replace(tzinfo=datetime.timezone.utc)
+        created = parse_datetime(created_str)
 
         if branch_tip_dates.get(branch):
             branch_tip_date = branch_tip_dates[branch]
