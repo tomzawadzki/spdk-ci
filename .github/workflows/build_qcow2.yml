@@ -36,6 +36,10 @@ on:
       distro:
         description: 'Distribution name_ver to build qcow2 image for'
         required: false
+        type: choice
+        options:
+        - fedora_40
+        - freebsd_14
         default: 'fedora_40'
   push:
     branches: ["main"]

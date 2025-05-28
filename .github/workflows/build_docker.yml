@@ -41,6 +41,10 @@ on:
       distro:
         description: 'Distribution name_ver to build docker from qcow2 image'
         required: false
+        type: choice
+        options:
+        - fedora_40
+        - freebsd_14
         default: 'fedora_40'
 
 jobs:
