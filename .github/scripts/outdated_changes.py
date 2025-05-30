@@ -73,6 +73,9 @@ def process_changes(gerrit, changes):
             logging.info(f"Saved branch tip date for {branch}: {branch_tip_date}")
 
         time_since_branch_tip = branch_tip_date - created
+        if time_since_branch_tip <= timedelta(0):
+            # Change is newer than branch tip; skip it.
+            continue
         if time_since_branch_tip > twelve_weeks:
             # Change is older than twelve weeks; we don't want VERY old changes to flood Gerrit dashboard,
             # so skip them.
