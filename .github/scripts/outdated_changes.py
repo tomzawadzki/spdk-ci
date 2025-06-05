@@ -17,7 +17,7 @@ def get_open_changes(gerrit):
     query = "".join([
         "/changes/",
         "?q=project:spdk/spdk status:open -is:private -is:wip",
-        "&o=CURRENT_REVISION"
+        "&o=CURRENT_REVISION&o=MESSAGES",
     ])
     logging.info(f"Querying Gerrit with: {query}")
     return gerrit.get(query)
