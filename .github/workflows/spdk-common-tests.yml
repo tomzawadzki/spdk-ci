@@ -152,7 +152,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml guest_initialize guest_start guest_check tgz_transfer abi_transfer ci_configs_transfer tgz_unpack output_create \
-        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --config configs/qemuhost-with-guest-fedora_40.toml \
         --output report_${{ matrix.workflow }}_prep_guest \
         --monitor
 
@@ -160,7 +160,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml ${{ matrix.workflow }} \
-        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --config configs/qemuhost-with-guest-fedora_40.toml \
         --output report_${{ matrix.workflow }} \
         --monitor
 
@@ -169,7 +169,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml output_listing retrieve_autorun_output \
-        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --config configs/qemuhost-with-guest-fedora_40.toml \
         --output report_${{ matrix.workflow }}_cleanup \
         --monitor
 
@@ -178,7 +178,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml guest_shutdown \
-        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --config configs/qemuhost-with-guest-fedora_40.toml \
         --output report_${{ matrix.workflow }}_guest_shutdown \
         --monitor
 
