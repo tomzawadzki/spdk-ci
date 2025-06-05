@@ -43,6 +43,13 @@ def get_branch_tip_date(gerrit, branch):
         logging.error(f"Failed to get branch tip date for {branch}: {e}")
         return None
 
+def get_current_patch_comments(messages, current_revision_number):
+    comments = []
+    for message in messages:
+        if message.get("_revision_number") == current_revision_number:
+            comments.append(message["message"])
+    return comments
+
 def process_changes(gerrit, changes):
     branch_tip_dates = {}
     two_weeks = timedelta(weeks=2)
@@ -58,6 +65,7 @@ def process_changes(gerrit, changes):
         url = os.path.join(GERRIT_BASE_URL, "c", project, '+', str(change_id))
         revisions = change.get("revisions", {})
         current_revision = next(iter(revisions.values()), {})
+        current_revision_number = change.get("current_revision_number")
         created_str = current_revision.get("created")
 
         if not created_str:
@@ -81,15 +89,25 @@ def process_changes(gerrit, changes):
             # so skip them.
             continue
 
+        existing_comments = get_current_patch_comments(change["messages"], current_revision_number)
+
         logging.info(f"Processing change {url} - {subject} by {owner}")
         logging.info(f"Time since last update: {time_since_branch_tip.days} days")
         message = "OUTDATED PATCH WARNING: Your change has not been updated for at least"
         message += f" {time_since_branch_tip.days // 7} weeks ({time_since_branch_tip.days} days)."
         if time_since_branch_tip > four_weeks:
-            message += " This makes it severely outdated. Please rebase your change."
+            message_substr = " This makes it severely outdated. Please rebase your change."
+            if any(message_substr in comment for comment in existing_comments):
+                # We already sent this comment, skip.
+                continue
+            message += message_substr
             send_comment(gerrit, change_id, message, -1)
         elif time_since_branch_tip > two_weeks:
-            message += " Please consider rebasing, make sure you're working with latest code base."
+            message_substr = " Please consider rebasing, make sure you're working with latest code base."
+            if any(message_substr in comment for comment in existing_comments):
+                # We already sent this comment, skip.
+                continue
+            message += message_substr
             send_comment(gerrit, change_id, message, None)
 
 def send_comment(gerrit, change_id, message, vote):
