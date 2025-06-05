@@ -33,12 +33,16 @@ on:
         description: 'Reference to specific Gerrit patch set'
         required: false
         default: ''
+      distro:
+        description: 'Distribution name_ver to build qcow2 image for'
+        required: false
+        default: 'fedora_40'
   push:
     branches: ["main"]
     paths:
     - '.github/workflows/build_qcow2.yml'
-    - 'cijoe/configs/qemuhost-with-guest-fedora-40.toml'
-    - 'cijoe/workflows/build_qcow2_using_qemu.yaml'
+    - 'cijoe/configs/qemuhost-with-guest-*.toml'
+    - 'cijoe/workflows/build_*_qcow2_using_qemu.yaml'
 
 jobs:
 
@@ -46,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
 
     concurrency:
-      group: build_qcow2
+      group: ${{ format('build_{0}_qcow2', inputs.distro) }}
       cancel-in-progress: false
 
     steps:
@@ -83,7 +87,7 @@ jobs:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
 
     concurrency:
-      group: build_qcow2
+      group: ${{ format('build_{0}_qcow2', inputs.distro) }}
       cancel-in-progress: false
 
     steps:
@@ -102,8 +106,8 @@ jobs:
         cd ci/cijoe
         cijoe \
         --monitor \
-        --config configs/qemuhost-with-guest-fedora-40.toml \
-        --workflow workflows/build_qcow2_using_qemu.yaml
+        --config configs/qemuhost-with-guest-${{inputs.distro}}.toml \
+        --workflow workflows/build_${{inputs.distro}}_qcow2_using_qemu.yaml
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4.4.0
@@ -114,14 +118,14 @@ jobs:
 
     - name: Change image format and compress
       run: |
-        qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img fedora_40_x86_64.qcow2 -O qcow2 -c
+        qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img ${{inputs.distro}}_x86_64.qcow2 -O qcow2 -c
 
     - name: Store Qcow2 build artifacts
       uses: actions/upload-artifact@v4.4.0
       with:
-        name: vm-image-fedora_40_x86_64
+        name: vm-image-${{inputs.distro}}_x86_64
         compression-level: 0
-        path: fedora_40_x86_64.qcow2
+        path: ${{inputs.distro}}_x86_64.qcow2
 
   cache-qcow2:
     needs: build-qcow2
@@ -131,13 +135,13 @@ jobs:
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
       with:
-        name: vm-image-fedora_40_x86_64
+        name: vm-image-${{inputs.distro}}_x86_64
 
     - name: Delete previous cache
       run: |
         gh extension install actions/gh-actions-cache
-        if gh actions-cache list --repo ${{ github.repository }} | grep -q "vm-image-fedora_40_x86_64"; then
-          gh actions-cache delete "vm-image-fedora_40_x86_64" --repo ${{ github.repository }} --confirm
+        if gh actions-cache list --repo ${{ github.repository }} | grep -q "vm-image-${{inputs.distro}}_x86_64"; then
+          gh actions-cache delete "vm-image-${{inputs.distro}}_x86_64" --repo ${{ github.repository }} --confirm
         fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -146,5 +150,5 @@ jobs:
       id: cache-qcow2
       uses: actions/cache/save@v4
       with:
-        path: fedora_40_x86_64.qcow2
-        key: vm-image-fedora_40_x86_64
+        path: ${{inputs.distro}}_x86_64.qcow2
+        key: vm-image-${{inputs.distro}}_x86_64
