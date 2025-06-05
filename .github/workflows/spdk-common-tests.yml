@@ -62,13 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       artifact_name: "vm-image-fedora_40_x86_64"
+      GH_TOKEN: ${{ github.token }}
     steps:
     - name: Select latest qcow2 artifact
       id: get_artifact_id
       # TODO: make it a composite action for reuse
       run: |
-        ARTIFACT_ID=$(gh api --paginate "/repos/spdk/spdk-ci/actions/artifacts?name=${{ env.artifact_name }}" \
-        -q '.artifacts | map(select(.name == "${{ env.artifact_name }}")) | sort_by(.updated_at) | .[-1].workflow_run.id')        
+        ARTIFACT_ID=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=${{ env.artifact_name }}" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
         echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
     outputs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
