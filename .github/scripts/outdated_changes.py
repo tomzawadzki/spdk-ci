@@ -90,13 +90,16 @@ def process_changes(gerrit, changes):
             send_comment(gerrit, change_id, message, -1)
         elif time_since_branch_tip > two_weeks:
             message += " Please consider rebasing, make sure you're working with latest code base."
-            send_comment(gerrit, change_id, message, 0)
+            send_comment(gerrit, change_id, message, None)
 
 def send_comment(gerrit, change_id, message, vote):
+    json_data = {"message": message}
+    if vote is not None:
+        json_data["labels"] = {"Verified": vote}
+
     logging.info(f"Sending comment to change {change_id}: {message} (Verified={vote})")
     try:
-        gerrit.post(f"/changes/{change_id}/revisions/current/review",
-                    json={"message": message,"labels": {"Verified": vote}})
+        gerrit.post(f"/changes/{change_id}/revisions/current/review", json=json_data)
         logging.info(f"Comment sent successfully to change {change_id}.")
     except Exception as e:
         logging.error(f"Failed to send comment to change {change_id}: {e}")
