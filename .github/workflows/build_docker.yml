@@ -44,6 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       artifact_name: "vm-image-fedora_40_x86_64"
+      GH_TOKEN: ${{ github.token }}
     steps:
     - name: Select latest qcow2 artifact
       id: get_artifact_id
