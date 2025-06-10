@@ -38,19 +38,22 @@ on:
         description: 'Push to registry -- ghcr.io'
         required: false
         default: 'false'
+      distro:
+        description: 'Distribution name_ver to build docker from qcow2 image'
+        required: false
+        default: 'fedora_40'
 
 jobs:
   select_vm_image:
     runs-on: ubuntu-latest
     env:
-      artifact_name: "vm-image-fedora_40_x86_64"
       GH_TOKEN: ${{ github.token }}
     steps:
     - name: Select latest qcow2 artifact
       id: get_artifact_id
       # TODO: make it a composite action for reuse
       run: |
-        ARTIFACT_ID=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=${{ env.artifact_name }}" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
+        ARTIFACT_ID=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-${{ inputs.distro }}_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
         echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
     outputs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
@@ -87,14 +90,14 @@ jobs:
       id: restore-qcow2
       uses: actions/cache/restore@v4
       with:
-        path: fedora_40_x86_64.qcow2
-        key: vm-image-fedora_40_x86_64
+        path: ${{ inputs.distro }}_x86_64.qcow2
+        key: vm-image-${{ inputs.distro }}_x86_64
 
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
-      if: ${{ hashFiles('fedora_40_x86_64.qcow2') == '' }}
+      if: hashFiles(format('{0}_x86_64.qcow2', inputs.distro)) == ''
       with:
-        name: vm-image-fedora_40_x86_64
+        name: vm-image-${{ inputs.distro }}_x86_64
         github-token: ${{ github.token }}
         run-id: ${{ needs.select_vm_image.outputs.artifact_id }}
 
@@ -103,7 +106,7 @@ jobs:
         cd ci/cijoe
         cijoe \
         --monitor \
-        --config configs/qemuhost-with-guest-fedora-40.toml \
+        --config configs/qemuhost-with-guest-${{ inputs.distro }}.toml \
         --workflow workflows/build_docker_using_qcow2.yaml
 
     - name: Upload Artifacts
