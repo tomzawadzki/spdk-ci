@@ -61,14 +61,14 @@ jobs:
   select_vm_image:
     runs-on: ubuntu-latest
     env:
-      artifact_name: "vm-image-fedora_40_x86_64"
+      DISTRO: fedora_40
       GH_TOKEN: ${{ github.token }}
     steps:
     - name: Select latest qcow2 artifact
       id: get_artifact_id
       # TODO: make it a composite action for reuse
       run: |
-        ARTIFACT_ID=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=${{ env.artifact_name }}" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
+        ARTIFACT_ID=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-${{ env.DISTRO }}_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
         echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
     outputs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
@@ -97,13 +97,16 @@ jobs:
         - check-so-deps-container-autotest
         include:
         - nvme_setup: "default"
+        - distro: "fedora_40"
         - workflow: ftl-vm-autotest
           nvme_setup: "ftl"
+          distro: "fedora_40"
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
       ABI_TARBALL_PATH: ${{ github.workspace }}/spdk-abi.tar.gz
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
       NVME_SETUP: ${{ matrix.nvme_setup }}
+      DISTRO: ${{ matrix.distro }}
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.52
       options: --device=/dev/kvm
@@ -137,14 +140,14 @@ jobs:
       id: restore-qcow2
       uses: actions/cache/restore@v4
       with:
-        path: fedora_40_x86_64.qcow2
-        key: vm-image-fedora_40_x86_64
+        path: ${{matrix.distro}}_x86_64.qcow2
+        key: vm-image-${{matrix.distro}}_x86_64
 
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
-      if: ${{ hashFiles('fedora_40_x86_64.qcow2') == '' }}
+      if: hashFiles(format('{0}_x86_64.qcow2', matrix.distro)) == ''
       with:
-        name: vm-image-fedora_40_x86_64
+        name: vm-image-${{matrix.distro}}_x86_64
         github-token: ${{ github.token }}
         run-id: ${{ needs.select_vm_image.outputs.artifact_id }}
 
@@ -152,7 +155,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml guest_initialize guest_start guest_check tgz_transfer abi_transfer ci_configs_transfer tgz_unpack output_create \
-        --config configs/qemuhost-with-guest-fedora_40.toml \
+        --config configs/qemuhost-with-guest-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow }}_prep_guest \
         --monitor
 
@@ -160,7 +163,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml ${{ matrix.workflow }} \
-        --config configs/qemuhost-with-guest-fedora_40.toml \
+        --config configs/qemuhost-with-guest-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow }} \
         --monitor
 
@@ -169,7 +172,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml output_listing retrieve_autorun_output \
-        --config configs/qemuhost-with-guest-fedora_40.toml \
+        --config configs/qemuhost-with-guest-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow }}_cleanup \
         --monitor
 
@@ -178,7 +181,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml guest_shutdown \
-        --config configs/qemuhost-with-guest-fedora_40.toml \
+        --config configs/qemuhost-with-guest-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow }}_guest_shutdown \
         --monitor
 
