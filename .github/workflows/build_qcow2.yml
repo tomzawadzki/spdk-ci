@@ -36,7 +36,7 @@ on:
       distro:
         description: 'Distribution name_ver to build qcow2 image for'
         required: false
-        default: 'fedora_40'
+        default: 'fedora_42'
   push:
     branches: ["main"]
     paths:

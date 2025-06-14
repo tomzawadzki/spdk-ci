@@ -61,7 +61,7 @@ jobs:
   select_vm_image:
     runs-on: ubuntu-latest
     env:
-      DISTRO: fedora_40
+      DISTRO: fedora_42
       GH_TOKEN: ${{ github.token }}
     steps:
     - name: Select latest qcow2 artifact
@@ -97,10 +97,10 @@ jobs:
         - check-so-deps-container-autotest
         include:
         - nvme_setup: "default"
-        - distro: "fedora_40"
+        - distro: "fedora_42"
         - workflow: ftl-vm-autotest
           nvme_setup: "ftl"
-          distro: "fedora_40"
+          distro: "fedora_42"
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
       ABI_TARBALL_PATH: ${{ github.workspace }}/spdk-abi.tar.gz

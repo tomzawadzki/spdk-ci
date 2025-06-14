@@ -38,7 +38,7 @@ jobs:
     # This job can run on any type of runner, requires docker to be present
     runs-on: example_runner
     container:
-      image: registry.fedoraproject.org/fedora-minimal:41
+      image: registry.fedoraproject.org/fedora-minimal:42
     if: ${{ inputs.hello_container }}
     steps:
     - run: echo "Top of the morning to you !"

@@ -43,16 +43,16 @@ system_args.tcp_forward = {host = 4200, guest = 22}
 # SYSTEM_IMAGING: A collection of system images in the form of cloudimages,
 # diskimages, and docker images.
 #
-[system-imaging.images.fedora-40-x86_64]
+[system-imaging.images.fedora-42-x86_64]
 system_label = "x86_64"
 
-cloud.url ="https://mirror.netsite.dk/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2"
-cloud.path = "{{ local.env.HOME }}/system_imaging/cloud/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2"
+cloud.url ="https://mirror.netsite.dk/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2"
+cloud.path = "{{ local.env.HOME }}/system_imaging/cloud/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2"
 cloud.metadata_path = "{{ resources.auxiliary['system_imaging.cloudinit-linux-common-metadata'] }}"
 cloud.userdata_path = "{{ resources.auxiliary['system_imaging.cloudinit-linux-common-userdata'] }}"
 
-#disk.path = "{{ local.env.HOME }}/system_imaging/disk/fedora_40_x86_64.qcow2"
-disk.path = "/__w/spdk-ci/spdk-ci/fedora_40_x86_64.qcow2"
+#disk.path = "{{ local.env.HOME }}/system_imaging/disk/fedora_42_x86_64.qcow2"
+disk.path = "/__w/spdk-ci/spdk-ci/fedora_42_x86_64.qcow2"
 
 docker.name = "spdk-ci"
-docker.tag = "fedora_40"
+docker.tag = "fedora_42"

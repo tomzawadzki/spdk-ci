@@ -41,7 +41,7 @@ on:
       distro:
         description: 'Distribution name_ver to build docker from qcow2 image'
         required: false
-        default: 'fedora_40'
+        default: 'fedora_42'
 
 jobs:
   select_vm_image:
