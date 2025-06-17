@@ -55,4 +55,4 @@ cloud.userdata_path = "{{ resources.auxiliary['system_imaging.cloudinit-linux-co
 disk.path = "/__w/spdk-ci/spdk-ci/fedora_40_x86_64.qcow2"
 
 docker.name = "spdk-ci"
-docker.tag = "poc"
+docker.tag = "fedora_40"
