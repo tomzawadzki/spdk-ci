@@ -61,15 +61,18 @@ jobs:
   select_vm_image:
     runs-on: ubuntu-latest
     env:
-      DISTRO: fedora_40
       GH_TOKEN: ${{ github.token }}
     steps:
     - name: Select latest qcow2 artifact
       id: get_artifact_id
       # TODO: make it a composite action for reuse
       run: |
-        ARTIFACT_ID=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-${{ env.DISTRO }}_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
-        echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
+        set -x
+        fedora_40=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-fedora_40_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
+        freebsd_14=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-freebsd_14_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
+        [[ -z "${fedora_40}" ]] && echo "fedora_40 is empty" && exit 1
+        [[ -z "${freebsd_14}" ]] && echo "freebsd_14 is empty" && exit 1
+        echo "artifact_id={'fedora_40':$fedora_40,'freebsd_14':$freebsd_14}" >> "$GITHUB_OUTPUT"
     outputs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
@@ -101,6 +104,9 @@ jobs:
         - workflow: ftl-vm-autotest
           nvme_setup: "ftl"
           distro: "fedora_40"
+        - workflow: freebsd-vm-autotest
+          nvme_setup: "default"
+          distro: "freebsd_14"
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
       ABI_TARBALL_PATH: ${{ github.workspace }}/spdk-abi.tar.gz
@@ -149,7 +155,7 @@ jobs:
       with:
         name: vm-image-${{matrix.distro}}_x86_64
         github-token: ${{ github.token }}
-        run-id: ${{ needs.select_vm_image.outputs.artifact_id }}
+        run-id: ${{ fromJson(needs.select_vm_image.outputs.artifact_id)[ matrix.distro ] }}
 
     - name: qemu-guest, provision
       run: |

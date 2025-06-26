@@ -81,6 +81,11 @@ steps:
   run: |
     /opt/spdk/autorun.sh /opt/configs/nvmf-tcp-uring-vm-autotest.conf
 
+- name: freebsd-vm-autotest
+  run: |
+    ln -sfn /usr/local/bin/perl /usr/bin/perl
+    TEST_MIN_STORAGE_SIZE=0 SYSDIR="{{ local.env.HOME }}/git/freebsd/sys" /opt/spdk/autorun.sh /opt/configs/freebsd-vm-autotest.conf
+
 - name: unittest-gcc-container-autotest
   run: |
     rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/unittest-gcc-container-autotest.conf && ocf_precompile && unittest_build && ./test/unit/unittest.sh
