@@ -45,7 +45,7 @@ bin = "qemu-system-x86_64"
 # SYSTEM_IMAGING: A collection of system images in the form of cloudimages,
 # diskimages, and docker images.
 #
-[system-imaging.images.freebsd-14-x86_64]
+[system-imaging.images.freebsd_14-x86_64]
 system_label = "x86_64"
 # cloud.decompressed_path = "{{ local.env.HOME }}/system_imaging/cloud/FreeBSD-14.2-RELEASE-amd64-BASIC-CLOUDINIT.zfs.qcow2"
 # cloud.url ="https://download.freebsd.org/releases/VM-IMAGES/14.2-RELEASE/amd64/Latest/FreeBSD-14.2-RELEASE-amd64-BASIC-CLOUDINIT.zfs.qcow2.xz"

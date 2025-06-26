@@ -40,7 +40,7 @@ bin = "qemu-system-x86_64"
 # SYSTEM_IMAGING: A collection of system images in the form of cloudimages,
 # diskimages, and docker images.
 #
-[system-imaging.images.fedora-40-x86_64]
+[system-imaging.images.fedora_40-x86_64]
 system_label = "x86_64"
 cloud.url = "https://mirror.netsite.dk/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2"
 cloud.path = "{{ local.env.HOME }}/system_imaging/cloud/Fedora-Cloud-Base-Generic.x86_64-40-1.14.qcow2"

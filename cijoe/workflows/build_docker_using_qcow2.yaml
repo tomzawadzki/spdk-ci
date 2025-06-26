@@ -9,7 +9,7 @@ doc: |
 
   For example:
 
-    system-imaging.images.fedora-40-x86_64.disk.path
+    system-imaging.images.fedora_40-x86_64.disk.path
 
   Then a Docker image is created. See the script for details.
 
