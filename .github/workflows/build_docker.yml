@@ -69,7 +69,7 @@ jobs:
       IMAGE_ID: ghcr.io/${{ github.repository_owner }}/spdk-ci:${{ inputs.distro }}
 
     container:
-      image: ghcr.io/refenv/cijoe-docker:v0.9.52
+      image: ghcr.io/refenv/cijoe-docker:v0.9.54
       options: >
         --device=/dev/kvm
         --device=/dev/fuse

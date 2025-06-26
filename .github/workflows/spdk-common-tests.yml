@@ -108,7 +108,7 @@ jobs:
       NVME_SETUP: ${{ matrix.nvme_setup }}
       DISTRO: ${{ matrix.distro }}
     container:
-      image: ghcr.io/refenv/cijoe-docker:v0.9.52
+      image: ghcr.io/refenv/cijoe-docker:v0.9.54
       options: --device=/dev/kvm
 
     steps:
