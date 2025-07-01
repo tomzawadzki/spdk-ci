@@ -9,7 +9,7 @@ repos:
   hooks:
   - id: toml-sort
     name: TOML-format
-    args: [--all]
+    args: [--check]
     files: \.toml$
 
 # This is for CIJOE and GitHUB Action Workflow files
