@@ -49,8 +49,53 @@ on:
     - 'cijoe/workflows/build_*_qcow2_using_qemu.yaml'
 
 jobs:
+  determine-distros:
+    runs-on: ubuntu-latest
+    outputs:
+      distro: ${{ steps.set-distro.outputs.distro }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.1.7
+      with:
+        fetch-depth: 2
+    - name: Determine distros to build
+      id: set-distro
+      # If triggered by workflow_dispatch, build the input distro selected by the user.
+      # It's a single choice input so we don't need to do any additional checks.
+      # If triggered by a push event, build all of the distros which may have been affected
+      # by the change.
+      # * .github/workflows/build_qcow2.yml - main workflow changed, build all supported distros
+      # * cijoe/configs/*.toml or cijoe/workflows/*.yaml - configration changed, add affected distro
+      #   to the list of distros to build.
+      run: |
+        distros_to_build=()
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          distros_to_build+=("${{ inputs.distro }}")
+        else
+          changed_files=$(git diff --name-only HEAD~1 HEAD)
+
+          if grep -q '.github/workflows/build_qcow2.yml' <<< $changed_files; then
+            for conf in cijoe/workflows/build_*_qcow2_using_qemu.yaml; do
+                distro=$(basename "$conf" | sed -E 's/build_(.*)_qcow2_using_qemu\.yaml/\1/')
+                distros_to_build+=("$distro")
+            done
+          else
+            for file in $changed_files; do
+              if [[ $file == cijoe/configs/qemuhost-with-guest-*.toml ]]; then
+                distro=$(basename "$file" | sed -E 's/qemuhost-with-guest-(.*)\.toml/\1/')
+              elif [[ $file == cijoe/workflows/build_*_qcow2_using_qemu.yaml ]]; then
+                distro=$(basename "$file" | sed -E 's/build_(.*)_qcow2_using_qemu\.yaml/\1/')
+              fi
+              distros_to_build+=("$distro")
+            done
+          fi
+        fi
+        printf -v joined_distros '\"%s\",' ${distros_to_build[@]}
+        echo "Distros to build: ${joined_distros%,}"
+        echo "distro=[${joined_distros%,}]" >> $GITHUB_OUTPUT
 
   source-archive:
+    needs: determine-distros
     runs-on: ubuntu-latest
 
     concurrency:
@@ -77,8 +122,13 @@ jobs:
         path: spdk.tar.gz
 
   build-qcow2:
-    needs: source-archive
+    needs:
+    - determine-distros
+    - source-archive
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro: ${{ fromJson(needs.determine-distros.outputs.distro) }}
     container:
       image: ghcr.io/refenv/cijoe-docker:v0.9.54
       options: >
@@ -91,7 +141,7 @@ jobs:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
 
     concurrency:
-      group: ${{ format('build_{0}_qcow2', inputs.distro) }}
+      group: ${{ format('build_{0}_qcow2', matrix.distro) }}
       cancel-in-progress: false
 
     steps:
@@ -110,8 +160,8 @@ jobs:
         cd ci/cijoe
         cijoe \
         --monitor \
-        --config configs/qemuhost-with-guest-${{inputs.distro}}.toml \
-        --workflow workflows/build_${{inputs.distro}}_qcow2_using_qemu.yaml
+        --config configs/qemuhost-with-guest-${{ matrix.distro }}.toml \
+        --workflow workflows/build_${{ matrix.distro }}_qcow2_using_qemu.yaml
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4.4.0
@@ -122,30 +172,36 @@ jobs:
 
     - name: Change image format and compress
       run: |
-        qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img ${{inputs.distro}}_x86_64.qcow2 -O qcow2 -c
+        qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img ${{ matrix.distro }}_x86_64.qcow2 -O qcow2 -c
 
     - name: Store Qcow2 build artifacts
       uses: actions/upload-artifact@v4.4.0
       with:
-        name: vm-image-${{inputs.distro}}_x86_64
+        name: vm-image-${{ matrix.distro }}_x86_64
         compression-level: 0
-        path: ${{inputs.distro}}_x86_64.qcow2
+        path: ${{ matrix.distro }}_x86_64.qcow2
 
   cache-qcow2:
-    needs: build-qcow2
+    needs:
+    - determine-distros
+    - build-qcow2
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        distro: ${{ fromJson(needs.determine-distros.outputs.distro) }}
 
     steps:
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v4.1.8
       with:
-        name: vm-image-${{inputs.distro}}_x86_64
+        name: vm-image-${{ matrix.distro }}_x86_64
 
     - name: Delete previous cache
       run: |
         gh extension install actions/gh-actions-cache
-        if gh actions-cache list --repo ${{ github.repository }} | grep -q "vm-image-${{inputs.distro}}_x86_64"; then
-          gh actions-cache delete "vm-image-${{inputs.distro}}_x86_64" --repo ${{ github.repository }} --confirm
+        if gh actions-cache list --repo ${{ github.repository }} | grep -q "vm-image-${{ matrix.distro }}_x86_64"; then
+          gh actions-cache delete "vm-image-${{ matrix.distro }}_x86_64" --repo ${{ github.repository }} --confirm
         fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -154,5 +210,5 @@ jobs:
       id: cache-qcow2
       uses: actions/cache/save@v4
       with:
-        path: ${{inputs.distro}}_x86_64.qcow2
-        key: vm-image-${{inputs.distro}}_x86_64
+        path: ${{ matrix.distro }}_x86_64.qcow2
+        key: vm-image-${{ matrix.distro }}_x86_64
