@@ -60,6 +60,9 @@ steps:
   run: |
     pkg install -y git
 
+- name: kernel_src
+  uses: core.repository_prep
+
 - name: tgz_transfer
   uses: core.put
   with:
