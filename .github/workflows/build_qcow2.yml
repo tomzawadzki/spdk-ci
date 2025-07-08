@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
 
     concurrency:
-      group: ${{ format('build_{0}_qcow2', inputs.distro) }}
+      group: build_qcow2_source_archive
       cancel-in-progress: false
 
     steps:
