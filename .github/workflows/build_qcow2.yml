@@ -57,11 +57,13 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4.1.7
       with:
-        fetch-depth: 2
+        fetch-depth: 0
     - name: Determine distros to build
       id: set-distro
       env:
         GH_EVENT_NAME: ${{ github.event_name }}
+        GH_EVENT_BEFORE: ${{ github.event.before }}
+        GH_EVENT_AFTER: ${{ github.event.after }}
         GH_INPUTS_DISTRO: ${{ inputs.distro }}
       run: .github/scripts/build_qcow2_determine_distros.sh
 

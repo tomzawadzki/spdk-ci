@@ -15,7 +15,7 @@ changed_files=()
 if [[ "$GH_EVENT_NAME" == "workflow_dispatch" ]]; then
 	distros_to_build+=("$GH_INPUTS_DISTRO")
 else
-	mapfile -t changed_files < <(git diff --name-only HEAD~1 HEAD)
+	mapfile -t changed_files < <(git diff --name-only "$GH_EVENT_BEFORE" "$GH_EVENT_AFTER")
 fi
 
 for file in "${changed_files[@]}"; do
