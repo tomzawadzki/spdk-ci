@@ -55,7 +55,7 @@ class GerritChange:
         needs_plus_two = not has_minus_one and not has_merge_conflict and plus_two_crs == 1
         reviewed_by = str(next((review['name'] for review in code_reviews if review['value'] == 2), None))
 
-        if not is_submittable:
+        if not is_submittable or not is_mergeable:
             ready = False
 
         return cls(
