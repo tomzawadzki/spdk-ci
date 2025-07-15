@@ -62,6 +62,10 @@ jobs:
 
         change_num="${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}"
         patch_set="${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}"
+        title="${{ fromJSON(needs.env_vars.outputs.client_payload).change.subject }}"
+
+        echo "SPDK: ($change_num/$patch_set)$title" >> $GITHUB_STEP_SUMMARY
+        echo "Gerrit: <https://review.spdk.io/c/spdk/spdk/+/$change_num/$patch_set>" >> $GITHUB_STEP_SUMMARY
 
         # Get latest info about a change itself
         curl -s -X GET "https://review.spdk.io/changes/spdk%2Fspdk~$change_num?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT" \

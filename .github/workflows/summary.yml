@@ -95,8 +95,6 @@ jobs:
         change_num="${{ fromJson(inputs.client_payload).change.number }}"
         patch_set="${{ fromJson(inputs.client_payload).patchSet.number }}"
 
-        echo "Gerrit: <https://review.spdk.io/c/spdk/spdk/+/$change_num/$patch_set>" >> $GITHUB_STEP_SUMMARY
-
         patch_set_date="${{ fromJson(inputs.client_payload).patchSet.createdOn }}"
         current_date="$(date +%s)"
         patch_set_turnaround="$(date -d@"$(($current_date - $patch_set_date))" -u +%Hh:%Mm:%Ss)"
