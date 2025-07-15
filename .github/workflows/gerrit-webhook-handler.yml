@@ -40,6 +40,7 @@ env:
 
 jobs:
   env_vars: # Workaround for https://github.com/actions/runner/issues/2372
+    name: Setup enviroment
     runs-on: ubuntu-latest
     outputs:
       client_payload: ${{ env.client_payload }}
@@ -47,6 +48,7 @@ jobs:
     - run: echo "Passing workflow env vars to reusable workflows"
 
   patch_set_status:
+    name: Verify patch set state
     needs: env_vars
     runs-on: ubuntu-latest
     if: ${{ needs.env_vars.outputs.client_payload }}
@@ -93,6 +95,7 @@ jobs:
         fi
 
   common:
+    name: Common tests
     if: ${{ !cancelled() }}
     needs:
     - env_vars
@@ -103,6 +106,7 @@ jobs:
       client_payload: ${{ needs.env_vars.outputs.client_payload }}
 
   hpe:
+    name: NVMe-oF RDMA tests
     if: ${{ !cancelled() }}
     needs:
     - env_vars
@@ -115,6 +119,7 @@ jobs:
 
   # Summary should be last job, please make sure to include yours in 'needs'.
   summary:
+    name: Job summary
     if: ${{ !cancelled() }}
     needs:
     - env_vars
