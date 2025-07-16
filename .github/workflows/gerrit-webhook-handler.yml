@@ -54,20 +54,21 @@ jobs:
     if: ${{ needs.env_vars.outputs.client_payload }}
     env:
       GH_TOKEN: ${{ github.token }}
-      change_num: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}
-      patch_set: ${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}
     steps:
     - name: Check patch set status
       run: |
         set -e
         set -x
 
+        change_num="${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}"
+        patch_set="${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}"
+
         # Get latest info about a change itself
-        curl -s -X GET "https://review.spdk.io/changes/spdk%2Fspdk~${{ env.change_num }}?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT" \
+        curl -s -X GET "https://review.spdk.io/changes/spdk%2Fspdk~$change_num?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT" \
         | tail -n +2 >  change.json
 
         if [[ ! -s change.json ]]; then
-          echo "Change ${{ env.change_num }} not found, exiting."
+          echo "Change $change_num not found, exiting."
           echo "Either it's a private change or in restricted branch."
           gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
         fi
@@ -82,8 +83,8 @@ jobs:
 
         # Only test latest patch set
         current_patch_set="$(jq -r '.current_revision_number' change.json)"
-        if ((current_patch_set != ${{ env.patch_set }})); then
-          echo "Ignore. Patch set ${{ env.patch_set }} is not the latest."
+        if ((current_patch_set != $patch_set)); then
+          echo "Ignore. Patch set $patch_set is not the latest."
           gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
         fi
 
