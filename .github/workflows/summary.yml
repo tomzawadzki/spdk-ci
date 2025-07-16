@@ -29,7 +29,7 @@ jobs:
     - name: Download artifact tarballs
       uses: actions/download-artifact@v4.1.8
       with:
-        pattern: 'common-job-*'
+        pattern: '*-job-*'
         path: ./_autorun_summary
 
     - name: Untar the SPDK repo
