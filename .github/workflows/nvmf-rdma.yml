@@ -48,4 +48,4 @@ jobs:
       if: always()
       with:
         path: ./output
-        name: nvmf-rdma-vm_artifacts
+        name: hpe-job-nvmf-rdma
