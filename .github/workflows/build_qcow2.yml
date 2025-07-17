@@ -143,7 +143,7 @@ jobs:
       if: always()
       with:
         path: ci/cijoe/cijoe-output
-        name: cijoe-cloudinit-report
+        name: cijoe-${{ matrix.distro }}-cloudinit-report
 
     - name: Change image format and compress
       run: |
