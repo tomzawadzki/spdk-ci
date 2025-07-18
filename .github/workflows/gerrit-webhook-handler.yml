@@ -13,6 +13,7 @@ run-name: >-
     || github.event_name == 'workflow_dispatch' && inputs.client_payload == '' && format('Manual: SPDK master')
     || github.event_name == 'repository_dispatch' && github.event.client_payload != '' && format('({0}/{1}){2}',
        github.event.client_payload.change.number, github.event.client_payload.patchSet.number, github.event.client_payload.change.subject)
+    || format('SPDK per-patch')
   }}
 
 on:
