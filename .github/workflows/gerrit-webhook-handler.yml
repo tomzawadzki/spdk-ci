@@ -1,9 +1,9 @@
 ---
 name: SPDK per-patch tests
 
-# Pull request - "SPDK-CI: PR#123: Example Title
-# Workflow dispatch - Manual: (12345/5)Example Gerrit Subject
-# Repository dispatch - (12345/5)Example Gerrit Subject
+# Pull request - "SPDK-CI: PR#123: Example Title"
+# Workflow dispatch - "Manual: (12345/5)Example Gerrit Subject"
+# Repository dispatch - "(12345/5)Example Gerrit Subject"
 run-name: >-
   ${{
     github.event_name == 'pull_request' && format('SPDK-CI: PR#{0}: {1}',
