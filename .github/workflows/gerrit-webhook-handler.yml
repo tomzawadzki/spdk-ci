@@ -135,5 +135,5 @@ jobs:
     uses: ./.github/workflows/summary.yml
     with:
       client_payload: ${{ needs.env_vars.outputs.client_payload }}
-      result: ${{ needs.common.result }}
+      result: ${{ (needs.common.result == 'success' && needs.hpe.result == 'success') && 'success' || 'failure' }}
     secrets: inherit
