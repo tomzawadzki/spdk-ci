@@ -19,6 +19,7 @@ on:
 jobs:
   hpe-nvmf-rdma:
     runs-on: [hpe-rdma-vm]
+    timeout-minutes: 60
     env:
       gerrit_ref: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload).patchSet.ref || inputs.gerrit_ref }}
       spdk_path: './spdk'
