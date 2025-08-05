@@ -96,7 +96,7 @@ jobs:
         - scan-build-container-autotest
         - check-so-deps-container-autotest
         include:
-        - nvme_setup: "default"
+        - nvme_setup: "zns"
         - distro: "fedora_40"
         - workflow: ftl-vm-autotest
           nvme_setup: "ftl"
