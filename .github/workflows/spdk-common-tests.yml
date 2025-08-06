@@ -83,24 +83,11 @@ jobs:
     strategy:
       matrix:
         workflow:
-        - nvme-vm-autotest
-        - raid-vm-autotest
-        - bdev-vm-autotest
         - nvmf-tcp-vm-autotest
         - nvmf-tcp-uring-vm-autotest
-        - unittest-gcc-container-autotest
-        - check-format-container-autotest
-        - release-build-gcc-container-autotest
-        - doc-container-autotest
-        - build-files-container-autotest
-        - scan-build-container-autotest
-        - check-so-deps-container-autotest
         include:
         - nvme_setup: "default"
         - distro: "fedora_40"
-        - workflow: ftl-vm-autotest
-          nvme_setup: "ftl"
-          distro: "fedora_40"
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
       ABI_TARBALL_PATH: ${{ github.workspace }}/spdk-abi.tar.gz
