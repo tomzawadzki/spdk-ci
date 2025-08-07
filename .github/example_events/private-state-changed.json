@@ -1,0 +1,58 @@
+{
+    "event_type": "private-state-changed",
+    "client_payload": {
+    "changer": {
+        "name": "Karol Latecki",
+        "email": "karol.latecki@nutanix.com",
+        "username": "karlatec"
+    },
+    "patchSet": {
+        "number": 14,
+        "revision": "bf8e596d1241e70063fe1544c0ae40d2b6a0027f",
+        "parents": [
+        "45aba0553c1afa084e31ab36c38fd76530eae57a"
+        ],
+        "ref": "refs/changes/95/17495/14",
+        "uploader": {
+        "name": "Tomasz Zawadzki",
+        "email": "tomasz@tzawadzki.com",
+        "username": "tomzawadzki"
+        },
+        "createdOn": 1746704475,
+        "author": {
+        "name": "Karol Latecki",
+        "email": "karol.latecki@nutanix.com",
+        "username": "karlatec"
+        },
+        "kind": "TRIVIAL_REBASE",
+        "sizeInsertions": 11,
+        "sizeDeletions": 1
+    },
+    "change": {
+        "project": "spdk/spdk",
+        "branch": "master",
+        "id": "Ida4b070a441f860f0c02ccad851c9d8b8f1d94f0",
+        "number": 17495,
+        "subject": "CI Test",
+        "owner": {
+        "name": "Karol Latecki",
+        "email": "karol.latecki@nutanix.com",
+        "username": "karlatec"
+        },
+        "url": "https://review.spdk.io/c/spdk/spdk/+/17495",
+        "commitMessage": "CI Test\n\nSigned-off-by: Karol Latecki <karol.latecki@intel.com>\nChange-Id: Ida4b070a441f860f0c02ccad851c9d8b8f1d94f0\n",
+        "createdOn": 1681220190,
+        "status": "NEW"
+    },
+    "project": {
+        "name": "spdk/spdk"
+    },
+    "refName": "refs/heads/master",
+    "changeKey": {
+        "key": "Ida4b070a441f860f0c02ccad851c9d8b8f1d94f0"
+    },
+    "type": "private-state-changed",
+    "eventCreatedOn": 1754551754
+    }
+}
+

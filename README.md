@@ -81,4 +81,10 @@ run all common tests
  $ gh act --job tests --secret GITHUB_TOKEN=$(gh auth token) workflow_dispatch
 ```
 
+run a workflow using repository_dispatch event (example events provided in `.github/example_events`)
+
+```bash
+ $ gh act --job parse_comment --secret GITHUB_TOKEN=$(gh auth token) -e .github/example_events/comment-added.json repository_dispatch
+```bash
+
 for more examples, visit <https://nektosact.com/>
