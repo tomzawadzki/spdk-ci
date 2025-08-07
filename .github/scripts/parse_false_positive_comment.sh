@@ -17,7 +17,7 @@ spdk_repo=$REPO
 gerrit_comment=$COMMENT
 reported_by=$AUTHOR
 
-gerrit_url=https://review.spdk.io/changes
+gerrit_url=https://review.spdk.io/a/changes
 gerrit_format_q="o=DETAILED_ACCOUNTS&o=MESSAGES&o=LABELS&o=SKIP_DIFFSTAT"
 
 # Looking for comment thats only content is "false positive: 123", with a leeway for no spaces
