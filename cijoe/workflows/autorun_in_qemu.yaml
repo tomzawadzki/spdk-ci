@@ -84,7 +84,7 @@ steps:
 - name: freebsd-vm-autotest
   run: |
     ln -sfn /usr/local/bin/perl /usr/bin/perl
-    TEST_MIN_STORAGE_SIZE=0 SYSDIR="{{ local.env.HOME }}/git/freebsd/sys" /opt/spdk/autorun.sh /opt/configs/freebsd-vm-autotest.conf
+    USE_INSTALLED_CONTIGMEM=yes SKIP_HUGE=yes TEST_MIN_STORAGE_SIZE=0 SYSDIR="{{ local.env.HOME }}/git/freebsd/sys" /opt/spdk/autorun.sh /opt/configs/freebsd-vm-autotest.conf
 
 - name: unittest-gcc-container-autotest
   run: |

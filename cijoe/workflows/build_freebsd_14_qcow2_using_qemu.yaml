@@ -79,7 +79,7 @@ steps:
   run: |
     /tmp/spdk/scripts/pkgdep.sh -a
     mkdir /tmp/git_repos
-    CC=gcc13 /tmp/spdk/test/common/config/autotest_setup.sh --install-deps --upgrade --dir-git="/tmp/git_repos" --test-conf="lcov,flamegraph,fio,nvmecli,bpftrace,qemu"
+    CC=gcc13 SYSDIR="{{ local.env.HOME }}/git/freebsd/sys" /tmp/spdk/test/common/config/autotest_setup.sh --install-deps --upgrade --dir-git="/tmp/git_repos" --test-conf="lcov,flamegraph,fio,nvmecli,bpftrace,qemu,contigmem"
     rm -r /tmp/git_repos
 
 - name: guest_shutdown
