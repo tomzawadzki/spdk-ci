@@ -85,6 +85,6 @@ run a workflow using repository_dispatch event (example events provided in `.git
 
 ```bash
  $ gh act --job parse_comment --secret GITHUB_TOKEN=$(gh auth token) -e .github/example_events/comment-added.json repository_dispatch
-```bash
+```
 
 for more examples, visit <https://nektosact.com/>
