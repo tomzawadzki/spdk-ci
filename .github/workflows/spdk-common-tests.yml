@@ -79,7 +79,6 @@ jobs:
   distros-container:
     needs:
     - checkout_spdk
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         # Keep latest 2 versions of each flavor here
@@ -99,8 +98,12 @@ jobs:
         # - docker.io/opensuse/leap:16.0
         # - mcr.microsoft.com/azurelinux/base/core:3.0
         # - docker.io/library/archlinux:base-20250907.0.417472
-    container:
-      image: ${{ matrix.distro }}
+        include:
+        # TODO: consider also [macos-latest, windows-2022]
+        - os: ubuntu-22.04-arm
+          distro: ""   # no container for this one
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    container: ${{ matrix.distro != '' && matrix.distro || null }}
     steps:
     - uses: actions/download-artifact@v4.1.8
       with:
@@ -117,7 +120,7 @@ jobs:
         set -x
         tar xzf spdk.tar.gz --strip 1
         # TODO: consider 'autorun.sh' or 'autobuild.sh' or 'autotest.sh'
-        ./scripts/pkgdep.sh --all
+        ${{ matrix.distro == '' && 'sudo' || '' }} ./scripts/pkgdep.sh --all
         ./configure --enable-coverage \
             --without-uring \
             --without-fio \
