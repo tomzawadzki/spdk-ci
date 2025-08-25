@@ -1,6 +1,21 @@
 ---
 name: False positive rerun
 
+# Pull request - "SPDK-CI: PR#123: Example Title"
+# Workflow dispatch - "Manual: (12345/5)Example Gerrit Subject"
+# Repository dispatch - "(12345/5)Example Gerrit Subject"
+run-name: >-
+  ${{
+    github.event_name == 'pull_request' && format('SPDK-CI: PR#{0}: {1}',
+       github.event.pull_request.number, github.event.pull_request.title)
+    || github.event_name == 'workflow_dispatch' && inputs.client_payload != '' && format('Manual: ({0}/{1}){2}',
+       fromJson(inputs.client_payload).change.number, fromJson(inputs.client_payload).patchSet.number, fromJson(inputs.client_payload).change.subject)
+    || github.event_name == 'workflow_dispatch' && inputs.client_payload == '' && format('Manual: SPDK master')
+    || github.event_name == 'repository_dispatch' && github.event.client_payload != '' && format('({0}/{1}){2}',
+       github.event.client_payload.change.number, github.event.client_payload.patchSet.number, github.event.client_payload.change.subject)
+    || format('SPDK per-patch')
+  }}
+
 on:
   workflow_dispatch:
     inputs:
