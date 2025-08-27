@@ -96,6 +96,7 @@ jobs:
         - unittest-gcc-container-autotest
         - check-format-container-autotest
         - release-build-gcc-container-autotest
+        - release-build-clang-container-autotest
         - doc-container-autotest
         - build-files-container-autotest
         - scan-build-container-autotest
