@@ -92,6 +92,7 @@ jobs:
         - nvmf-tcp-vm-autotest
         - nvmf-tcp-uring-vm-autotest
         - iscsi-vm-autotest
+        - iscsi-uring-vm-autotest
         - unittest-gcc-container-autotest
         - check-format-container-autotest
         - release-build-gcc-container-autotest

@@ -85,6 +85,10 @@ steps:
   run: |
     /opt/spdk/autorun.sh /opt/configs/iscsi-vm-autotest.conf
 
+- name: iscsi-uring-vm-autotest
+  run: |
+    /opt/spdk/autorun.sh /opt/configs/iscsi-uring-vm-autotest.conf
+
 - name: freebsd-vm-autotest
   run: |
     ln -sfn /usr/local/bin/perl /usr/bin/perl
