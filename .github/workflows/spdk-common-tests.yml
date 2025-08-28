@@ -95,6 +95,7 @@ jobs:
         - iscsi-uring-vm-autotest
         - unittest-gcc-container-autotest
         - unittest-clang-container-autotest
+        - unittest-valgrind-container-autotest
         - check-format-container-autotest
         - release-build-gcc-container-autotest
         - release-build-clang-container-autotest
