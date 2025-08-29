@@ -76,6 +76,61 @@ jobs:
     outputs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
+  distros-container:
+    needs:
+    - checkout_spdk
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep latest 2 versions of each flavor here
+        distro:
+        - quay.io/centos/centos:9
+        - quay.io/centos/centos:10
+        - docker.io/rockylinux/rockylinux:9
+        - docker.io/rockylinux/rockylinux:10
+        - docker.io/library/ubuntu:20.04
+        - docker.io/library/ubuntu:22.04
+        - docker.io/library/ubuntu:24.04
+        - docker.io/library/fedora:42
+        - docker.io/library/fedora:43
+        - docker.io/library/debian:12.12
+        - docker.io/library/debian:11.11
+        - docker.io/opensuse/leap:15.6
+        # - docker.io/opensuse/leap:16.0
+        # - mcr.microsoft.com/azurelinux/base/core:3.0
+        # - docker.io/library/archlinux:base-20250907.0.417472
+    container:
+      image: ${{ matrix.distro }}
+    steps:
+    - uses: actions/download-artifact@v4.1.8
+      with:
+        name: repo-spdk
+    - if: contains(matrix.distro, 'ubuntu') || contains(matrix.distro, 'debian')
+      run: apt-get update
+    - if: matrix.distro == 'docker.io/opensuse/leap:15.6'
+      run: zypper install -y tar gzip
+    - shell: bash
+      env:
+        TZ: Etc/UTC
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        set -x
+        tar xzf spdk.tar.gz --strip 1
+        # TODO: consider 'autorun.sh' or 'autobuild.sh' or 'autotest.sh'
+        ./scripts/pkgdep.sh --all
+        ./configure --enable-coverage \
+            --without-uring \
+            --without-fio \
+            --without-rbd \
+            --without-rdma \
+            --without-shared \
+            --without-iscsi-initiator \
+            --without-vtune \
+            --without-vfio-user
+        source ./scripts/common.sh
+        make -j
+
   autorun:
     name: ${{ matrix.workflow }}
     needs:
