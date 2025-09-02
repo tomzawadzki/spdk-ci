@@ -1,5 +1,8 @@
 # SPDK Continuous Integration
 
+[![SPDK-CI build VM image](https://github.com/spdk/spdk-ci/actions/workflows/build_qcow2.yml/badge.svg)](https://github.com/spdk/spdk-ci/actions/workflows/build_qcow2.yml)
+[![SPDK per-patch tests](https://github.com/spdk/spdk-ci/actions/workflows/gerrit-webhook-handler.yml/badge.svg)](https://github.com/spdk/spdk-ci/actions/workflows/gerrit-webhook-handler.yml)
+
 **DISCLAIMER: This repository is an area of very active development.
 Outdated documentation and breaking changes might occur.**
 
