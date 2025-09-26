@@ -77,6 +77,8 @@ jobs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
   distros-container:
+    # TODO: better check changed files,but for now is good enough to reduce CI times
+    if: contains(inputs.client_payload, 'pkgdep')
     needs:
     - checkout_spdk
     strategy:
