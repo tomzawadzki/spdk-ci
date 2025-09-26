@@ -81,7 +81,6 @@ jobs:
     - checkout_spdk
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         # Keep latest 2 versions of each flavor here
         distro:
