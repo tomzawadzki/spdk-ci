@@ -53,10 +53,14 @@ jobs:
     needs: env_vars
     runs-on: ubuntu-latest
     if: ${{ needs.env_vars.outputs.client_payload }}
+    outputs:
+      changed_files: ${{ steps.patch.outputs.changed_files }}
+
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
     - name: Check patch set status
+      id: patch
       run: |
         set -e
         set -x
@@ -69,7 +73,7 @@ jobs:
         echo "Gerrit: <https://review.spdk.io/c/spdk/spdk/+/$change_num/$patch_set>" >> $GITHUB_STEP_SUMMARY
 
         # Get latest info about a change itself
-        curl -s -X GET "https://review.spdk.io/changes/spdk%2Fspdk~$change_num?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT" \
+        curl -s -X GET "https://review.spdk.io/changes/spdk%2Fspdk~$change_num?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT&o=CURRENT_REVISION&o=ALL_FILES" \
         | tail -n +2 >  change.json
 
         if [[ ! -s change.json ]]; then
@@ -100,6 +104,9 @@ jobs:
           gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
         fi
 
+        # Get list of files to skip some tests later depending on what files were touched
+        echo "changed_files=$(jq -r '.revisions[].files | keys' change.json)" >> "$GITHUB_OUTPUT"
+
   common:
     name: Common tests
     if: ${{ !cancelled() }}
@@ -110,6 +117,7 @@ jobs:
     with:
       # "Client payload" is all of the information Gerrit webhooks sends out.
       client_payload: ${{ needs.env_vars.outputs.client_payload }}
+      changed_files: $${{ needs.patch_set_status.outputs.changed_files }}
 
   hpe:
     name: NVMe-oF RDMA tests

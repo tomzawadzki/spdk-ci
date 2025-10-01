@@ -18,6 +18,10 @@ on:
         required: false
         type: string
         default: ''
+      changed_files:
+        required: false
+        type: string
+        default: ''
 
 env:
   spdk_path: './spdk'
@@ -77,8 +81,7 @@ jobs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
   distros-container:
-    # TODO: better check changed files,but for now is good enough to reduce CI times
-    if: contains(inputs.client_payload, 'pkgdep')
+    if: contains(inputs.changed_files, 'pkgdep')
     needs:
     - checkout_spdk
     strategy:
