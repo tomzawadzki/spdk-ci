@@ -105,7 +105,7 @@ jobs:
         fi
 
         # Get list of files to skip some tests later depending on what files were touched
-        echo "changed_files=$(jq -r '.revisions[].files | keys' change.json)" >> "$GITHUB_OUTPUT"
+        echo "changed_files=$(jq -c -r '.revisions[].files | keys' change.json)" >> "$GITHUB_OUTPUT"
 
   common:
     name: Common tests
