@@ -59,53 +59,15 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+    - uses: actions/checkout@v4
     - name: Check patch set status
       id: patch
-      run: |
-        set -e
-        set -x
-
-        change_num="${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}"
-        patch_set="${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}"
-        title="${{ fromJSON(needs.env_vars.outputs.client_payload).change.subject }}"
-
-        echo "SPDK: ($change_num/$patch_set)$title" >> $GITHUB_STEP_SUMMARY
-        echo "Gerrit: <https://review.spdk.io/c/spdk/spdk/+/$change_num/$patch_set>" >> $GITHUB_STEP_SUMMARY
-
-        # Get latest info about a change itself
-        curl -s -X GET "https://review.spdk.io/changes/spdk%2Fspdk~$change_num?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT&o=CURRENT_REVISION&o=ALL_FILES" \
-        | tail -n +2 >  change.json
-
-        if [[ ! -s change.json ]]; then
-          echo "Change $change_num not found, exiting." >> $GITHUB_STEP_SUMMARY
-          echo "Either it's a private change or in restricted branch." >> $GITHUB_STEP_SUMMARY
-          gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
-        fi
-
-        # Do not test any change marked as WIP
-        # .work_in_progress is not set when false
-        work_in_progress="$(jq -r '.work_in_progress' change.json)"
-        if [[ "$work_in_progress" == "true" ]]; then
-          echo "Ignore. Patch is currently WIP." >> $GITHUB_STEP_SUMMARY
-          gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
-        fi
-
-        # Only test latest patch set
-        current_patch_set="$(jq -r '.current_revision_number' change.json)"
-        if ((current_patch_set != $patch_set)); then
-          echo "Ignore. Patch set $patch_set is not the latest." >> $GITHUB_STEP_SUMMARY
-          gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
-        fi
-
-        # Test only changes without a Verified vote already present
-        verified=$(jq -r ".labels.Verified.all[]? | select(.username==\"${{ secrets.GERRIT_BOT_USER }}\").value" change.json)
-        if ((verified != 0)); then
-          echo "Ignore. Patch already has a vote from CI." >> $GITHUB_STEP_SUMMARY
-          gh run cancel ${{ github.run_id }} -R ${{ github.repository }}
-        fi
-
-        # Get list of files to skip some tests later depending on what files were touched
-        echo "changed_files=$(jq -c -r '.revisions[].files | keys' change.json)" >> "$GITHUB_OUTPUT"
+      env:
+        CHANGE_NUM: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}
+        PATCH_SET: ${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}
+        TITLE: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.subject }}
+        GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
+      run: .github/scripts/parse_gerrit_webhook.sh
 
   common:
     name: Common tests
