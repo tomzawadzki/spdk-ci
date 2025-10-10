@@ -34,11 +34,6 @@ system_args.raw = """\
 # specifically by 'guest.start_guest()'
 system_args.tcp_forward = {host = 4200, guest = 22}
 
-[qemu.repository]
-remote = "https://github.com/freebsd/freebsd.git"
-path = "{{ local.env.HOME }}/git/freebsd"
-tag = "release/14.2.0-p3"
-
 [qemu.systems.x86_64]
 bin = "qemu-system-x86_64"
 

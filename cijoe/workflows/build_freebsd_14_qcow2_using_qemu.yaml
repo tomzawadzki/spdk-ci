@@ -61,7 +61,10 @@ steps:
     pkg install -y git
 
 - name: kernel_src
-  uses: core.repository_prep
+  run: |
+    # TODO: consider revert back to using `core.repository_prep` once `shallow` and `single-branch` options are added to cijoe
+    mkdir -p "{{ local.env.HOME }}/git/freebsd"
+    curl -L https://github.com/freebsd/freebsd-src/archive/refs/tags/release/14.2.0-p3.tar.gz | tar -xz -C "{{ local.env.HOME }}/git/freebsd" --strip-components=1
 
 - name: tgz_transfer
   uses: core.put
