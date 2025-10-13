@@ -34,13 +34,16 @@ jobs:
       # Required to use locally defined actions
     - name: Checkout the spdk-ci repo locally
       uses: actions/checkout@v4.1.7
+
     - name: Prepare SPDK repo by checking out from Gerrit
       uses: ./.github/actions/checkout_gerrit
       with:
         gerrit_ref: ${{ env.gerrit_ref }}
         spdk_path: ${{ env.spdk_path }}
+
     - name: Create repository tarball
       run: tar -C ${{ env.spdk_path }} -czf spdk.tar.gz .
+
     - name: Upload the repository tarball as an artifact
       uses: actions/upload-artifact@v4.4.0
       with:
@@ -54,6 +57,7 @@ jobs:
         path: './spdk-abi'
         fetch-depth: '0'
         fetch-tags: 'true'
+
     - name: Create abi tarball
       run: tar -C './spdk-abi' -czf spdk-abi.tar.gz .
     - name: Upload the abi tarball as an artifact
@@ -62,14 +66,11 @@ jobs:
         name: repo-spdk-abi
         path: spdk-abi.tar.gz
 
-  select_vm_image:
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
     - name: Select latest qcow2 artifact
       id: get_artifact_id
       # TODO: make it a composite action for reuse
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -x
         fedora_40=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-fedora_40_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
@@ -142,7 +143,6 @@ jobs:
     name: ${{ matrix.workflow }}
     needs:
     - checkout_spdk
-    - select_vm_image
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -222,7 +222,7 @@ jobs:
       with:
         name: vm-image-${{matrix.distro}}_x86_64
         github-token: ${{ github.token }}
-        run-id: ${{ fromJson(needs.select_vm_image.outputs.artifact_id)[ matrix.distro ] }}
+        run-id: ${{ fromJson(needs.checkout_spdk.outputs.artifact_id)[ matrix.distro ] }}
 
     - name: qemu-guest, provision
       run: |
