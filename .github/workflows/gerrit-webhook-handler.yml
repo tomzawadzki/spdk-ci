@@ -45,10 +45,10 @@ jobs:
   patch_set_status:
     name: Verify patch set state
     runs-on: ubuntu-latest
-    if: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
+    if: github.event.client_payload != ''
     outputs:
       changed_files: ${{ steps.patch.outputs.changed_files }}
-      client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
+      client_payload: ${{ env.client_payload }}
     env:
       GH_TOKEN: ${{ github.token }}
       client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
