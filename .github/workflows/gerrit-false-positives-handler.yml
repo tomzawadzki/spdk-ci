@@ -27,32 +27,24 @@ on:
     types:
     - comment-added
 
-env:
-  client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || inputs.client_payload }}
-
 jobs:
-  env_vars: # Workaround for https://github.com/actions/runner/issues/2372
-    runs-on: ubuntu-latest
-    outputs:
-      client_payload: ${{ env.client_payload }}
-    steps:
-    - run: echo "Passing workflow env vars to reusable workflows"
-
   parse_comment:
-    needs: env_vars
     runs-on: ubuntu-latest
+    if: github.event.client_payload || inputs.client_payload != ''
     env:
-      GH_TOKEN: ${{ github.token }}
-      change_num: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}
-      patch_set: ${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}
-      COMMENT: ${{ fromJSON(needs.env_vars.outputs.client_payload).comment }}
-      AUTHOR: ${{ fromJSON(needs.env_vars.outputs.client_payload).author.username }}
-      REPO: ${{ github.repository_owner }}/spdk
-      GH_REPO: ${{ github.repository }}
-      GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
-      GERRIT_BOT_HTTP_PASSWD: ${{ secrets.GERRIT_BOT_HTTP_PASSWD }}
-      GH_ISSUES_PAT: ${{ secrets.GH_ISSUES_PAT }}
+      client_payload: ${{ github.event.client_payload && toJson(github.event.client_payload) || inputs.client_payload }}
     steps:
     - uses: actions/checkout@v4
     - name: Parse for false positive
       run: .github/scripts/parse_false_positive_comment.sh
+      env:
+        GH_TOKEN: ${{ github.token }}
+        change_num: ${{ fromJSON(env.client_payload).change.number }}
+        patch_set: ${{ fromJSON(env.client_payload).patchSet.number }}
+        COMMENT: ${{ fromJSON(env.client_payload).comment }}
+        AUTHOR: ${{ fromJSON(env.client_payload).author.username }}
+        REPO: ${{ github.repository_owner }}/spdk
+        GH_REPO: ${{ github.repository }}
+        GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
+        GERRIT_BOT_HTTP_PASSWD: ${{ secrets.GERRIT_BOT_HTTP_PASSWD }}
+        GH_ISSUES_PAT: ${{ secrets.GH_ISSUES_PAT }}
