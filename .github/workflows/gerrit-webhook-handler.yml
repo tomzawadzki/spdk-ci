@@ -35,37 +35,31 @@ on:
     - wip-state-changed
     - private-state-changed
 
-env:
-  # TODO: Renable client_payload for workflow_dispatch
-  client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
+# env:
+#   # TODO: Renable client_payload for workflow_dispatch
+#   # Workaround for https://github.com/actions/runner/issues/2372
+#   client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
 
 jobs:
-  env_vars: # Workaround for https://github.com/actions/runner/issues/2372
-    name: Setup enviroment
-    runs-on: ubuntu-latest
-    outputs:
-      client_payload: ${{ env.client_payload }}
-    steps:
-    - run: echo "Passing workflow env vars to reusable workflows"
 
   patch_set_status:
     name: Verify patch set state
-    needs: env_vars
     runs-on: ubuntu-latest
-    if: ${{ needs.env_vars.outputs.client_payload }}
+    if: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
     outputs:
       changed_files: ${{ steps.patch.outputs.changed_files }}
-
+      client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
     env:
       GH_TOKEN: ${{ github.token }}
+      client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
     steps:
     - uses: actions/checkout@v4
     - name: Check patch set status
       id: patch
       env:
-        CHANGE_NUM: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}
-        PATCH_SET: ${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}
-        TITLE: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.subject }}
+        CHANGE_NUM: ${{ fromJSON(env.client_payload).change.number }}
+        PATCH_SET: ${{ fromJSON(env.client_payload).patchSet.number }}
+        TITLE: ${{ fromJSON(env.client_payload).change.subject }}
         GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
       run: .github/scripts/parse_gerrit_webhook.sh
 
@@ -73,23 +67,21 @@ jobs:
     name: Common tests
     if: ${{ !cancelled() }}
     needs:
-    - env_vars
     - patch_set_status
     uses: ./.github/workflows/spdk-common-tests.yml
     with:
       # "Client payload" is all of the information Gerrit webhooks sends out.
-      client_payload: ${{ needs.env_vars.outputs.client_payload }}
+      client_payload: ${{ needs.patch_set_status.outputs.client_payload }}
       changed_files: $${{ needs.patch_set_status.outputs.changed_files }}
 
   hpe:
     name: NVMe-oF RDMA tests
     if: ${{ !cancelled() }}
     needs:
-    - env_vars
     - patch_set_status
     uses: ./.github/workflows/nvmf-rdma.yml
     with:
-      client_payload: ${{ needs.env_vars.outputs.client_payload }}
+      client_payload: ${{ needs.patch_set_status.outputs.client_payload }}
   # Add more jobs below if needed.
 
 
@@ -98,12 +90,11 @@ jobs:
     name: Job summary
     if: ${{ !cancelled() }}
     needs:
-    - env_vars
     - patch_set_status
     - common
     - hpe
     uses: ./.github/workflows/summary.yml
     with:
-      client_payload: ${{ needs.env_vars.outputs.client_payload }}
+      client_payload: ${{ needs.patch_set_status.outputs.client_payload }}
       result: ${{ (needs.common.result == 'success' && needs.hpe.result == 'success') && 'success' || 'failure' }}
     secrets: inherit
