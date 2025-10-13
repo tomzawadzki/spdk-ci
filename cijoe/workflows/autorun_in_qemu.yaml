@@ -134,6 +134,10 @@ steps:
   run: |
     rootdir=/opt/spdk && cd $rootdir && source ./test/common/autobuild_common.sh /opt/configs/check-so-deps-container-autotest.conf && ocf_precompile && SPDK_ABI_DIR=/opt/spdk-abi check_so_deps
 
+- name: short-fuzz-phy-autotest
+  run: |
+    /opt/spdk/autorun.sh /opt/configs/short-fuzz-phy-autotest.conf
+
 - name: output_listing
   run: |
     ls /opt

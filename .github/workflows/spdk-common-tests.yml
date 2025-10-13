@@ -165,6 +165,7 @@ jobs:
         - build-files-container-autotest
         - scan-build-container-autotest
         - check-so-deps-container-autotest
+        - short-fuzz-phy-autotest
         include:
         - nvme_setup: "zns"
         - distro: "fedora_40"
