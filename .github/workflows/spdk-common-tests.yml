@@ -81,7 +81,7 @@ jobs:
     outputs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
-  distros-container:
+  pkgdep:
     if: contains(inputs.changed_files, 'pkgdep')
     needs:
     - checkout_spdk
