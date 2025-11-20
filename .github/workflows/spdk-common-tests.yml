@@ -126,7 +126,7 @@ jobs:
         set -x
         tar xzf spdk.tar.gz --strip 1
         # TODO: consider 'autorun.sh' or 'autobuild.sh' or 'autotest.sh'
-        ${{ matrix.distro == '' && 'sudo' || '' }} ./scripts/pkgdep.sh --all
+        ./test/common/config/autotest_setup.sh --install-deps
         ./configure --enable-coverage \
             --without-uring \
             --without-fio \
