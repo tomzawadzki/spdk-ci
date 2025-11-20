@@ -82,7 +82,7 @@ jobs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
   pkgdep:
-    if: contains(inputs.changed_files, 'pkgdep')
+    if: ${{ contains(inputs.changed_files, 'pkgdep') || contains(inputs.changed_files, 'autotest_setup.sh') }}
     needs:
     - checkout_spdk
     strategy:
