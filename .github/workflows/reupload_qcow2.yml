@@ -1,0 +1,83 @@
+---
+name: Reupload qcow2 vm images
+# Github artifacts expire after 90 days.
+# If no new qcow2 images are built in this time then the .qcow2 artifacts will not
+# be available for users to download. Workflows can still rely on the cache.
+# Periodically re-upload the Qcow2 image artifacts to make sure they do not expire.
+
+# If found in available artifacts:
+# - download the image from artifacts
+# - upload the image as an artifact
+# - delete the previous caches
+# - cache the image
+# If not found in available artifacts:
+# - download the image from cache
+# - upload the image as an artifact
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 12 * * 6'
+
+jobs:
+  cache-upload:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro:
+        - fedora_40
+        - freebsd_14
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - name: Check if qcow2 artifacts availability
+      run: |
+        artifact_id=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-${{ matrix.distro }}_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
+        echo "artifact_id=$artifact_id" >> "$GITHUB_ENV"
+
+    - name: Download VM Qcow2 image artifact
+      uses: actions/download-artifact@v4.1.8
+      if: env.artifact_id != ''
+      with:
+        name: vm-image-${{matrix.distro}}_x86_64
+        github-token: ${{ github.token }}
+        run-id: env.artifact_id
+
+    - name: Download VM Qcow2 image from cache
+      if: env.artifact_id  == ''
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{matrix.distro}}_x86_64.qcow2
+        key: vm-image-${{matrix.distro}}_x86_64
+
+    - name: Check if Qcow2 image was downloaded
+      if: hashFiles(format('{0}_x86_64.qcow2', matrix.distro)) == ''
+      run: |
+        echo "Qcow2 was not downloaded from artifacts or cache"
+        echo "Please build a new image using the build_qcow2.yml workflow"
+        exit 1
+
+    - name: Upload Qcow2 image artifact
+      uses: actions/upload-artifact@v4.4.0
+      with:
+        name: vm-image-${{ matrix.distro }}_x86_64
+        compression-level: 0
+        path: ${{ matrix.distro }}_x86_64.qcow2
+
+    # Script from https://github.com/actions/cache "Tips and workarounds" section
+    - name: Delete previous caches
+      if: env.artifact_id != ''
+      run: |
+        cache_id=$(gh cache list --key "vm-image-${{ matrix.distro }}_x86_64" --json id --jq '.[].id')
+        if [[ -n "$cache_id" ]]; then
+          echo "Deleting cache $cache_id for vm-image-${{ matrix.distro }}_x86_64"
+          gh cache delete $cache_id
+        fi
+
+    - name: Cache qcow2 image
+      if: env.artifact_id != ''
+      id: cache-qcow2
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ matrix.distro }}_x86_64.qcow2
+        key: vm-image-${{ matrix.distro }}_x86_64
