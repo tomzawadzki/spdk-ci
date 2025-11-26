@@ -76,7 +76,7 @@ jobs:
 
   hpe:
     name: NVMe-oF RDMA tests
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.repository == 'spdk/spdk-ci' }}
     needs:
     - patch_set_status
     uses: ./.github/workflows/nvmf-rdma.yml
@@ -96,5 +96,7 @@ jobs:
     uses: ./.github/workflows/summary.yml
     with:
       client_payload: ${{ needs.patch_set_status.outputs.client_payload }}
-      result: ${{ (needs.common.result == 'success' && needs.hpe.result == 'success') && 'success' || 'failure' }}
+      result: >-
+        ${{ (needs.common.result == 'success' && (needs.hpe.result == 'success' || needs.hpe.result == 'skipped')) &&
+        'success' || 'failure' }}
     secrets: inherit
