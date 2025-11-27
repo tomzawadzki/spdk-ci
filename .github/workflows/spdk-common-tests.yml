@@ -242,7 +242,7 @@ jobs:
         --monitor
 
     - name: qemu-guest, cleanup
-      if: always()
+      if: always() && hashFiles('ci/cijoe')
       run: |
         cd ci/cijoe
         cijoe workflows/autorun_in_qemu.yaml output_listing retrieve_autorun_output \
