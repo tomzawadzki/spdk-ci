@@ -109,6 +109,8 @@ jobs:
         - os: ubuntu-22.04-arm
           distro: ""   # no container for this one
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    env:
+      DISTRO: ${{ matrix.distro }}
     container: ${{ matrix.distro != '' && matrix.distro || null }}
     steps:
     - uses: actions/download-artifact@v4.1.8
@@ -126,7 +128,11 @@ jobs:
         set -x
         tar xzf spdk.tar.gz --strip 1
         # TODO: consider 'autorun.sh' or 'autobuild.sh' or 'autotest.sh'
-        ./test/common/config/autotest_setup.sh --install-deps
+        if [[ $DISTRO =~ "fedora:43" ]]; then
+          ./test/common/config/autotest_setup.sh --install-deps
+        else
+          ./scripts/pkgdep.sh --all
+        fi
         ./configure --enable-coverage \
             --without-uring \
             --without-fio \
