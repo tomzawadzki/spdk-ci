@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: ''
+      force_pkgdep:
+        description: 'Force pkgdep test phase to run'
+        required: true
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       client_payload:
@@ -82,7 +87,10 @@ jobs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
   pkgdep:
-    if: contains(inputs.changed_files, 'pkgdep') || contains(inputs.changed_files, 'autotest_setup.sh')
+    if: |
+      contains(inputs.changed_files, 'pkgdep') ||
+      contains(inputs.changed_files, 'autotest_setup.sh') ||
+      inputs.force_pkgdep == true
     needs:
     - checkout_spdk
     strategy:
