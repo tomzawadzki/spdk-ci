@@ -131,7 +131,7 @@ jobs:
         if [[ $DISTRO =~ "fedora:43" ]]; then
           ./test/common/config/autotest_setup.sh --install-deps
         else
-          ./scripts/pkgdep.sh --all
+          ${{ matrix.distro == '' && 'sudo' || '' }} ./scripts/pkgdep.sh --all
         fi
         ./configure --enable-coverage \
             --without-uring \
