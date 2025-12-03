@@ -137,7 +137,8 @@ jobs:
         tar xzf spdk.tar.gz --strip 1
         # TODO: consider 'autorun.sh' or 'autobuild.sh' or 'autotest.sh'
         if [[ $DISTRO =~ "fedora:43" ]]; then
-          ./test/common/config/autotest_setup.sh --install-deps
+          ./test/common/config/autotest_setup.sh --install-deps \
+            --test-conf="fio,flamegraph,qemu,libiscsi,nvmecli,spdk,refspdk,lcov,bpftrace,doxygen"
         else
           ${{ matrix.distro == '' && 'sudo' || '' }} ./scripts/pkgdep.sh --all
         fi
