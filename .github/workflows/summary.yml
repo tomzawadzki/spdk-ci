@@ -47,13 +47,18 @@ jobs:
 
     - name: Post process artifacts from jobs
       id: autorun_post
+      working-directory: spdk
       run: |
         # TODO: either use an official lcov image or create our own
         # TODO: get rid of pandas dependency in spdk/autorun_post.py.
         #       It's ~1GB with all it's dependecies, which is an overkill for
         #       a few table operations.
-        sudo apt-get update && sudo apt-get install -y lcov python3-pandas
-        ./spdk/autorun_post.py -d ./_autorun_summary -r ./spdk
+        sudo apt-get update && sudo apt-get install -y lcov python3-pandas python3-tabulate
+        # This step is needed for auto code generation of the header file `include/spdk_internal/rpc_autogen.h`
+        ./configure --without-nvme-cuse
+        make -C include jsonrpc
+        # Now can run post processing
+        ./autorun_post.py -d ../_autorun_summary -r ./
         echo "result=success" >> "$GITHUB_OUTPUT"
 
     - name: Upload artifacts
