@@ -119,7 +119,7 @@ jobs:
         - docker.io/library/debian:12.12
         - docker.io/library/debian:11.11
         - docker.io/opensuse/leap:15.6
-        # - docker.io/opensuse/leap:16.0
+        - docker.io/opensuse/leap:16.0
         - mcr.microsoft.com/azurelinux/base/core:3.0
         # - docker.io/library/archlinux:base-20250907.0.417472
         include:
