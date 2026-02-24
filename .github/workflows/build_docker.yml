@@ -37,7 +37,8 @@ on:
       push_to_registry:
         description: 'Push to registry -- ghcr.io'
         required: false
-        default: 'false'
+        type: boolean
+        default: false
       distro:
         description: 'Distribution name_ver to build docker from qcow2 image'
         required: false
