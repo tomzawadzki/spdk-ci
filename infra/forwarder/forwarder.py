@@ -43,15 +43,26 @@ def post_event_to_github(event_type, payload):
         logging.info("Test mode; not forwarding to GitHub Actions.")
 
 def process_queue():
+    pending_events: dict[int, dict[str, Any]] = {}
+
     while True:
         time.sleep(QUEUE_PROCESS_INTERVAL)
-        events: list[dict[str, Any]] = []
+
         while True:
             try:
-                events.append(event_queue.get_nowait())
+                event_data = event_queue.get_nowait()
             except queue.Empty:
                 break
-        for event_data in events:
+            change_number = event_data["change_number"]
+            if change_number in pending_events:
+                logging.info(f"Replacing queued event for change {change_number}")
+            pending_events[change_number] = event_data
+
+        if not pending_events:
+            continue
+
+        for change_number in list(pending_events):
+            event_data = pending_events.pop(change_number)
             post_event_to_github(event_data["type"], event_data["payload"])
 
 class WebhookHandler(BaseHTTPRequestHandler):
@@ -81,9 +92,11 @@ class WebhookHandler(BaseHTTPRequestHandler):
             self.send_webhook_response()
             return
 
+        change_number = payload.get("change", {}).get("number")
         event_data = {
             "type": event_type,
-            "payload": payload
+            "payload": payload,
+            "change_number": change_number
         }
         event_queue.put(event_data)
 
