@@ -210,6 +210,7 @@ jobs:
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
       NVME_SETUP: ${{ matrix.nvme_setup }}
       DISTRO: ${{ matrix.distro }}
+      GITHUB_WORKSPACE: ${{ github.workspace }}
 
     # TODO: Figure out how to pass volumes variable to container context
     container:
