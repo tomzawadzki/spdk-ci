@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any
 import os
 import json
 import requests
 import logging
 import re
+import threading
+import time
+import queue
 
 TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL", "https://api.github.com/repos/spdk/spdk-ci")
 GITHUB_DISPATCH_URL = f"{GITHUB_REPO_URL}/dispatches"
+QUEUE_PROCESS_INTERVAL = int(os.getenv("QUEUE_PROCESS_INTERVAL", "60"))
+
+event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
 # This matches the pattern used in parse_false_positive_comment.sh
 FALSE_POSITIVE_PATTERN = re.compile(
@@ -34,6 +41,18 @@ def post_event_to_github(event_type, payload):
         logging.info(f"GitHub Action Trigger Response: {response.status_code} {response.text}")
     else:
         logging.info("Test mode; not forwarding to GitHub Actions.")
+
+def process_queue():
+    while True:
+        time.sleep(QUEUE_PROCESS_INTERVAL)
+        events: list[dict[str, Any]] = []
+        while True:
+            try:
+                events.append(event_queue.get_nowait())
+            except queue.Empty:
+                break
+        for event_data in events:
+            post_event_to_github(event_data["type"], event_data["payload"])
 
 class WebhookHandler(BaseHTTPRequestHandler):
     def send_webhook_response(self):
@@ -62,7 +81,11 @@ class WebhookHandler(BaseHTTPRequestHandler):
             self.send_webhook_response()
             return
 
-        post_event_to_github(event_type, payload)
+        event_data = {
+            "type": event_type,
+            "payload": payload
+        }
+        event_queue.put(event_data)
 
         self.send_webhook_response()
 
@@ -79,6 +102,9 @@ if __name__ == "__main__":
     if not GITHUB_TOKEN or not GITHUB_REPO_URL:
         logging.error("Error: GITHUB_TOKEN or GITHUB_REPO_URL environment variable is not set.")
         exit(1)
+
+    queue_thread = threading.Thread(target=process_queue, daemon=True)
+    queue_thread.start()
 
     server_address = ('', 8000)
     httpd = HTTPServer(server_address, WebhookHandler)
