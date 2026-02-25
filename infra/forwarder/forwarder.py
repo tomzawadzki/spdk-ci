@@ -19,6 +19,22 @@ FALSE_POSITIVE_PATTERN = re.compile(
     re.IGNORECASE
 )
 
+def post_event_to_github(event_type, payload):
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+    }
+    body = {
+        "event_type": event_type,
+        "client_payload": payload
+    }
+
+    if not TEST_MODE:
+        response = requests.post(GITHUB_DISPATCH_URL, headers=headers, json=body)
+        logging.info(f"GitHub Action Trigger Response: {response.status_code} {response.text}")
+    else:
+        logging.info("Test mode; not forwarding to GitHub Actions.")
+
 class WebhookHandler(BaseHTTPRequestHandler):
     def send_webhook_response(self):
         self.send_response(200)
@@ -43,20 +59,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 self.send_webhook_response()
                 return
 
-        headers = {
-            "Authorization": f"Bearer {GITHUB_TOKEN}",
-            "Accept": "application/vnd.github+json",
-        }
-        body = {
-            "event_type": event_type,
-            "client_payload": payload
-        }
-
-        if not TEST_MODE:
-            response = requests.post(GITHUB_DISPATCH_URL, headers=headers, json=body)
-            logging.info(f"GitHub Action Trigger Response: {response.status_code} {response.text}")
-        else:
-            logging.info("Test mode; not forwarding to GitHub Actions.")
+        post_event_to_github(event_type, payload)
 
         self.send_webhook_response()
 
