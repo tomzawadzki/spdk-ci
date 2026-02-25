@@ -56,8 +56,11 @@ class WebhookHandler(BaseHTTPRequestHandler):
             comment = payload.get("comment", "")
             if not comment or not FALSE_POSITIVE_PATTERN.search(comment):
                 logging.info("Ignoring comment-added event: comment does not match false positive pattern")
-                self.send_webhook_response()
-                return
+            else:
+                post_event_to_github(event_type, payload)
+
+            self.send_webhook_response()
+            return
 
         post_event_to_github(event_type, payload)
 
