@@ -10,7 +10,8 @@ import re
 TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_ACTION_URL = os.getenv("GITHUB_ACTION_URL")
+GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL", "https://api.github.com/repos/spdk/spdk-ci")
+GITHUB_DISPATCH_URL = f"{GITHUB_REPO_URL}/dispatches"
 
 # This matches the pattern used in parse_false_positive_comment.sh
 FALSE_POSITIVE_PATTERN = re.compile(
@@ -49,7 +50,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
         }
 
         if not TEST_MODE:
-            response = requests.post(GITHUB_ACTION_URL, headers=headers, json=body)
+            response = requests.post(GITHUB_DISPATCH_URL, headers=headers, json=body)
             logging.info(f"GitHub Action Trigger Response: {response.status_code} {response.text}")
         else:
             logging.info("Test mode; not forwarding to GitHub Actions.")
@@ -68,8 +69,8 @@ if __name__ == "__main__":
         ]
     )
 
-    if not GITHUB_TOKEN or not GITHUB_ACTION_URL:
-        logging.error("Error: GITHUB_TOKEN or GITHUB_ACTION_URL environment variable is not set.")
+    if not GITHUB_TOKEN or not GITHUB_REPO_URL:
+        logging.error("Error: GITHUB_TOKEN or GITHUB_REPO_URL environment variable is not set.")
         exit(1)
 
     server_address = ('', 8000)

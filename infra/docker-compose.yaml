@@ -36,7 +36,7 @@ services:
     restart: always
     environment:
     - GITHUB_TOKEN=${GITHUB_TOKEN}
-    - GITHUB_ACTION_URL=${GITHUB_ACTION_URL}
+    - GITHUB_REPO_URL=${GITHUB_REPO_URL}
     - TEST_MODE=${FORWARDER_TEST_MODE}
     depends_on:
     - gerrit
