@@ -16,7 +16,9 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL", "https://api.github.com/repos/spdk/spdk-ci")
 GITHUB_DISPATCH_URL = f"{GITHUB_REPO_URL}/dispatches"
+GITHUB_WORKFLOW_RUNS_URL = f"{GITHUB_REPO_URL}/actions/workflows/gerrit-webhook-handler.yml/runs"
 QUEUE_PROCESS_INTERVAL = int(os.getenv("QUEUE_PROCESS_INTERVAL", "60"))
+MAX_RUNNING_WORKFLOWS = int(os.getenv("MAX_RUNNING_WORKFLOWS", "3"))
 
 event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
@@ -42,6 +44,25 @@ def post_event_to_github(event_type, payload):
     else:
         logging.info("Test mode; not forwarding to GitHub Actions.")
 
+def get_active_workflow_count():
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+    }
+    count = 0
+    for status in ("in_progress", "waiting", "queued"):
+        try:
+            response = requests.get(
+                GITHUB_WORKFLOW_RUNS_URL, headers=headers,
+                params={"status": status})
+            if response.status_code == 200:
+                count += response.json().get("total_count", 0)
+            else:
+                logging.warning(f"Failed to query workflow runs (status={status}): {response.status_code}")
+        except requests.RequestException as e:
+            logging.warning(f"Error querying workflow runs (status={status}): {e}")
+    return count
+
 def process_queue():
     pending_events: dict[int, dict[str, Any]] = {}
 
@@ -61,9 +82,17 @@ def process_queue():
         if not pending_events:
             continue
 
+        to_send = MAX_RUNNING_WORKFLOWS - get_active_workflow_count()
+        if to_send <= 0:
+            logging.info(f"Max workflows reached, deferring {len(pending_events)} events")
+            continue
+
         for change_number in list(pending_events):
+            if to_send <= 0:
+                break
             event_data = pending_events.pop(change_number)
             post_event_to_github(event_data["type"], event_data["payload"])
+            to_send -= 1
 
 class WebhookHandler(BaseHTTPRequestHandler):
     def send_webhook_response(self):
