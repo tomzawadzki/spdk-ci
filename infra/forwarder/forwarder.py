@@ -20,6 +20,11 @@ FALSE_POSITIVE_PATTERN = re.compile(
 )
 
 class WebhookHandler(BaseHTTPRequestHandler):
+    def send_webhook_response(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'Webhook received')
+
     def do_POST(self):
         logging.info(f"Received POST request on {self.path}")
 
@@ -35,9 +40,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
             comment = payload.get("comment", "")
             if not comment or not FALSE_POSITIVE_PATTERN.search(comment):
                 logging.info("Ignoring comment-added event: comment does not match false positive pattern")
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(b'Webhook received')
+                self.send_webhook_response()
                 return
 
         headers = {
@@ -55,9 +58,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
         else:
             logging.info("Test mode; not forwarding to GitHub Actions.")
 
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'Webhook received')
+        self.send_webhook_response()
 
 if __name__ == "__main__":
     logging.basicConfig(
