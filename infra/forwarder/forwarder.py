@@ -10,6 +10,7 @@ import re
 import threading
 import time
 import queue
+import jinja2
 
 TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -19,6 +20,7 @@ GITHUB_DISPATCH_URL = f"{GITHUB_REPO_URL}/dispatches"
 GITHUB_WORKFLOW_RUNS_URL = f"{GITHUB_REPO_URL}/actions/workflows/gerrit-webhook-handler.yml/runs"
 QUEUE_PROCESS_INTERVAL = int(os.getenv("QUEUE_PROCESS_INTERVAL", "60"))
 MAX_RUNNING_WORKFLOWS = int(os.getenv("MAX_RUNNING_WORKFLOWS", "3"))
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", "/output")
 
 event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
@@ -63,6 +65,30 @@ def get_active_workflow_count():
             logging.warning(f"Error querying workflow runs (status={status}): {e}")
     return count
 
+def write_queue_snapshot(pending_events):
+    rows = []
+    for change_number, event_data in pending_events.items():
+        payload = event_data.get("payload", {})
+        change = payload.get("change", {})
+        patchset = payload.get("patchSet", {})
+        rows.append({
+            "change_url": change.get("url", ""),
+            "change_number": change_number,
+            "patchset_number": patchset.get("number", ""),
+            "subject": change.get("subject", ""),
+        })
+
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader("./"))
+    template = env.get_template("queue_status_template.html")
+    html = template.render(
+        rows=rows,
+        timestamp=time.strftime("%B %d %H:%M", time.gmtime()),
+        interval=QUEUE_PROCESS_INTERVAL,
+    )
+
+    with open(os.path.join(OUTPUT_DIR, "queue_status.html"), "w") as f:
+        f.write(html)
+
 def process_queue():
     pending_events: dict[int, dict[str, Any]] = {}
 
@@ -90,6 +116,8 @@ def process_queue():
                     event_data = pending_events.pop(change_number)
                     post_event_to_github(event_data["type"], event_data["payload"])
                     to_send -= 1
+
+        write_queue_snapshot(pending_events)
 
 class WebhookHandler(BaseHTTPRequestHandler):
     def send_webhook_response(self):

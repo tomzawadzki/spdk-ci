@@ -38,10 +38,12 @@ services:
     - GITHUB_TOKEN=${GITHUB_TOKEN}
     - GITHUB_REPO_URL=${GITHUB_REPO_URL}
     - TEST_MODE=${FORWARDER_TEST_MODE}
+    - OUTPUT_DIR=${MERGABLE_CHANGES_OUTPUT_DIR}
     depends_on:
     - gerrit
     volumes:
     - forwarder_logs:/var/log
+    - forwarder_out:/output
     networks:
     - gerrit
 
@@ -64,6 +66,7 @@ services:
 
 volumes:
   forwarder_logs:
+  forwarder_out:
   mergable_changes_logs:
   mergable_changes_out:
 

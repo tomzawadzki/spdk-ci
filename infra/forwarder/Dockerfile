@@ -1,6 +1,9 @@
 FROM python:3.13-alpine
 
-RUN pip install requests
+RUN pip install requests \
+	jinja2
 COPY forwarder.py /app/forwarder.py
+COPY queue_status_template.html /app/queue_status_template.html
 
-CMD [ "python", "/app/forwarder.py"]
+WORKDIR /app
+CMD [ "python", "forwarder.py"]

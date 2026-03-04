@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/spdk.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap">
+    <title>SPDK Forwarder Queue Status</title>
+  </head>
+  <body class="bg-light">
+    <header class="bg-dark text-white py-3">
+      <div class="container">
+        <h1 class="text-center">SPDK Forwarder Queue Status</h1>
+        <p class="text-center">Generated on {{ timestamp }} UTC</p>
+        <p class="text-center">This page is updated every {{ interval }} seconds.</p>
+      </div>
+    </header>
+
+    <main class="container my-4">
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Queued Events</h5>
+          </div>
+          <div class="card-body">
+            {% if rows %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Event</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in rows %}
+                      <tr class="align-middle">
+                        <td><a href="{{ row.change_url }}" class="text-dark">({{ row.change_number }}/{{ row.patchset_number }}){{ row.subject }}</a></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No events are queued at this time.</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer bg-dark text-white py-3">
+      <div class="container text-center">
+        Copyright © SPDK a Series of LF Projects, LLC. For web site terms of use, trademark policy, and other
+        project policies please see <a href="https://lfprojects.org">https://lfprojects.org</a>.
+      </div>
+    </footer>
+  </body>
+</html>
