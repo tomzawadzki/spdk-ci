@@ -79,20 +79,17 @@ def process_queue():
                 logging.info(f"Replacing queued event for change {change_number}")
             pending_events[change_number] = event_data
 
-        if not pending_events:
-            continue
-
-        to_send = MAX_RUNNING_WORKFLOWS - get_active_workflow_count()
-        if to_send <= 0:
-            logging.info(f"Max workflows reached, deferring {len(pending_events)} events")
-            continue
-
-        for change_number in list(pending_events):
+        if pending_events:
+            to_send = MAX_RUNNING_WORKFLOWS - get_active_workflow_count()
             if to_send <= 0:
-                break
-            event_data = pending_events.pop(change_number)
-            post_event_to_github(event_data["type"], event_data["payload"])
-            to_send -= 1
+                logging.info(f"Max workflows reached, deferring {len(pending_events)} events")
+            else:
+                for change_number in list(pending_events):
+                    if to_send <= 0:
+                        break
+                    event_data = pending_events.pop(change_number)
+                    post_event_to_github(event_data["type"], event_data["payload"])
+                    to_send -= 1
 
 class WebhookHandler(BaseHTTPRequestHandler):
     def send_webhook_response(self):
