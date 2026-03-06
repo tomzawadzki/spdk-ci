@@ -208,12 +208,46 @@ def build_recovery_event(change):
     }
 
 
+def get_active_workflow_changes():
+    """Return a set of (change_number, patchset_number) for active workflow runs."""
+    # Matches run-name pattern "(12345/5)Subject" from gerrit-webhook-handler.yml
+    display_title_re = re.compile(r"^\((\d+)/(\d+)\)")
+
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+    }
+    active = set()
+    for status in ("in_progress", "waiting", "queued"):
+        try:
+            response = requests.get(
+                GITHUB_WORKFLOW_RUNS_URL, headers=headers,
+                params={"status": status, "per_page": 100})
+            if response.status_code != 200:
+                logging.warning(f"Failed to query workflow runs (status={status}): {response.status_code}")
+                continue
+            for run in response.json().get("workflow_runs", []):
+                m = display_title_re.search(run.get("display_title", ""))
+                if m:
+                    change_number = int(m.group(1))
+                    patchset_number = int(m.group(2))
+                    active.add((change_number, patchset_number))
+        except requests.RequestException as exc:
+            logging.warning(f"Error querying workflow runs (status={status}): {exc}")
+    return active
+
+
 def recover_queue():
     """Enqueue recovery events from Gerrit for changes missing a Verified label."""
     try:
         changes = list_recoverable_changes()
         events = [e for c in changes if (e := build_recovery_event(c))]
         events.sort(key=lambda e: e["payload"]["patchSet"]["createdOn"])
+
+        active = get_active_workflow_changes()
+        events = [e for e in events
+                  if (e["change_number"], e["payload"]["patchSet"]["number"]) not in active]
+
         for event in events:
             event_queue.put(event)
         logging.info(f"Recovery: enqueued {len(events)} events from Gerrit")
