@@ -40,11 +40,22 @@ def post_event_to_github(event_type, payload):
         "client_payload": payload
     }
 
-    if not TEST_MODE:
-        response = requests.post(GITHUB_DISPATCH_URL, headers=headers, json=body)
-        logging.info(f"GitHub Action Trigger Response: {response.status_code} {response.text}")
-    else:
+    if TEST_MODE:
         logging.info("Test mode; not forwarding to GitHub Actions.")
+        return True
+
+    try:
+        response = requests.post(GITHUB_DISPATCH_URL, headers=headers, json=body)
+    except requests.RequestException as exc:
+        logging.warning(f"GitHub action trigger failed with request error: {exc}")
+        return False
+
+    if 200 <= response.status_code < 300:
+        logging.info(f"GitHub Action Trigger Response: {response.status_code} {response.text}")
+        return True
+
+    logging.warning(f"GitHub Action Trigger failed: {response.status_code} {response.text}")
+    return False
 
 def get_active_workflow_count():
     headers = {
@@ -113,9 +124,10 @@ def process_queue():
                 for change_number in list(pending_events):
                     if to_send <= 0:
                         break
-                    event_data = pending_events.pop(change_number)
-                    post_event_to_github(event_data["type"], event_data["payload"])
-                    to_send -= 1
+                    event_data = pending_events[change_number]
+                    if post_event_to_github(event_data["type"], event_data["payload"]):
+                        del pending_events[change_number]
+                        to_send -= 1
 
         write_queue_snapshot(pending_events)
 
