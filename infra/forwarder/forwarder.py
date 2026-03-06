@@ -168,6 +168,59 @@ def list_recoverable_changes():
     return recovered
 
 
+def build_recovery_event(change):
+    """Build a minimal fake patchset-created event from a Gerrit REST API change object."""
+    current_revision_data = _get_current_revision(change)
+    if not current_revision_data:
+        return {}
+
+    patchset_created = _parse_gerrit_timestamp_to_unix(current_revision_data.get("created"))
+    if patchset_created is None:
+        return {}
+
+    try:
+        patchset_number = int(current_revision_data.get("_number"))
+        change_number = int(change.get("_number"))
+    except Exception:
+        return {}
+    patchset_ref = current_revision_data.get("ref")
+    subject = change.get("subject")
+
+    if not all([patchset_ref, subject]):
+        return {}
+
+    # Extend the fields below if GitHub workflows start using them
+    return {
+        "type": "patchset-created",
+        "change_number": change_number,
+        "payload": {
+            "type": "patchset-created",
+            "change": {
+                "number": change_number,
+                "subject": subject,
+            },
+            "patchSet": {
+                "number": patchset_number,
+                "ref": patchset_ref,
+                "createdOn": patchset_created,
+            },
+        },
+    }
+
+
+def recover_queue():
+    """Enqueue recovery events from Gerrit for changes missing a Verified label."""
+    try:
+        changes = list_recoverable_changes()
+        events = [e for c in changes if (e := build_recovery_event(c))]
+        events.sort(key=lambda e: e["payload"]["patchSet"]["createdOn"])
+        for event in events:
+            event_queue.put(event)
+        logging.info(f"Recovery: enqueued {len(events)} events from Gerrit")
+    except Exception as exc:
+        logging.warning(f"Recovery failed (continuing startup): {exc}")
+
+
 def process_queue():
     pending_events: dict[int, dict[str, Any]] = {}
 
@@ -249,6 +302,8 @@ if __name__ == "__main__":
     if not GITHUB_TOKEN or not GITHUB_REPO_URL:
         logging.error("Error: GITHUB_TOKEN or GITHUB_REPO_URL environment variable is not set.")
         exit(1)
+
+    recover_queue()
 
     queue_thread = threading.Thread(target=process_queue, daemon=True)
     queue_thread.start()
