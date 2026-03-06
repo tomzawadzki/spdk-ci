@@ -37,6 +37,7 @@ services:
     environment:
     - GITHUB_TOKEN=${GITHUB_TOKEN}
     - GITHUB_REPO_URL=${GITHUB_REPO_URL}
+    - GERRIT_URL=${GERRIT_URL}
     - TEST_MODE=${FORWARDER_TEST_MODE}
     - OUTPUT_DIR=${MERGABLE_CHANGES_OUTPUT_DIR}
     depends_on:

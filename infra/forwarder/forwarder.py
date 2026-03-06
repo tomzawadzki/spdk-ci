@@ -2,6 +2,8 @@
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
+from datetime import datetime, timedelta, timezone
+from pygerrit2 import GerritRestAPI
 import os
 import json
 import requests
@@ -21,6 +23,10 @@ GITHUB_WORKFLOW_RUNS_URL = f"{GITHUB_REPO_URL}/actions/workflows/gerrit-webhook-
 QUEUE_PROCESS_INTERVAL = int(os.getenv("QUEUE_PROCESS_INTERVAL", "60"))
 MAX_RUNNING_WORKFLOWS = int(os.getenv("MAX_RUNNING_WORKFLOWS", "3"))
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "/output")
+GERRIT_URL = os.getenv("GERRIT_URL", "https://review.spdk.io")
+RECOVERY_WINDOW_DAYS = int(os.getenv("RECOVERY_WINDOW_DAYS", "7"))
+GERRIT_QUERY_LIMIT = int(os.getenv("GERRIT_QUERY_LIMIT", "300"))
+gerrit = GerritRestAPI(url=GERRIT_URL)
 
 event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
@@ -99,6 +105,68 @@ def write_queue_snapshot(pending_events):
 
     with open(os.path.join(OUTPUT_DIR, "queue_status.html"), "w") as f:
         f.write(html)
+
+
+def _parse_gerrit_timestamp_to_unix(timestamp):
+    """Parse Gerrit REST timestamp (e.g. "2025-01-15 10:30:00.000000000") to Unix epoch int."""
+    if not timestamp:
+        return None
+    try:
+        return int(datetime.fromisoformat(timestamp).timestamp())
+    except Exception:
+        logging.warning(f"Failed to parse Gerrit timestamp: {timestamp}")
+        return None
+
+
+def _get_current_revision(change):
+    """Extract the current revision dict from a Gerrit change object."""
+    revisions = change.get("revisions")
+    if not isinstance(revisions, dict):
+        return {}
+    current_revision = change.get("current_revision")
+    if not current_revision:
+        return {}
+    current_revision_data = revisions.get(current_revision)
+    if not isinstance(current_revision_data, dict):
+        return {}
+    return current_revision_data
+
+
+def query_gerrit_for_recovery():
+    """Query Gerrit REST API for open changes without a Verified label."""
+    query = "".join([
+        "/changes/",
+        "?q=project:spdk/spdk status:open -is:wip -is:private"
+        " -label:Verified<0 -label:Verified>0"
+        f" -age:{RECOVERY_WINDOW_DAYS}d",
+        "&o=CURRENT_REVISION",
+        f"&n={GERRIT_QUERY_LIMIT}",
+    ])
+
+    try:
+        return gerrit.get(query)
+    except Exception as exc:
+        logging.warning(f"Error querying Gerrit: {exc}")
+        return []
+
+
+def list_recoverable_changes():
+    """Filter Gerrit query results to changes whose current patchset was created within RECOVERY_WINDOW_DAYS."""
+    cutoff_epoch = int((datetime.now(timezone.utc) - timedelta(days=RECOVERY_WINDOW_DAYS)).timestamp())
+    recovered = []
+
+    for change in query_gerrit_for_recovery():
+        current_revision_data = _get_current_revision(change)
+        if not current_revision_data:
+            continue
+        patchset_created = _parse_gerrit_timestamp_to_unix(current_revision_data.get("created"))
+        if patchset_created is None:
+            continue
+        if patchset_created >= cutoff_epoch:
+            recovered.append(change)
+
+    return recovered
+
 
 def process_queue():
     pending_events: dict[int, dict[str, Any]] = {}
