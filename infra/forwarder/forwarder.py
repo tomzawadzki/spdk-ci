@@ -30,12 +30,6 @@ gerrit = GerritRestAPI(url=GERRIT_URL)
 
 event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
-# This matches the pattern used in parse_false_positive_comment.sh
-FALSE_POSITIVE_PATTERN = re.compile(
-    r"patch set \d+:\n\nfalse positive:\s*#?\d+$",
-    re.IGNORECASE
-)
-
 def post_event_to_github(event_type, payload):
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -304,8 +298,13 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
         # Filter comment-added events: only forward if comment matches false positive pattern
         if event_type == "comment-added":
+            # This matches the pattern used in parse_false_positive_comment.sh
+            false_positive_pattern = re.compile(
+                r"patch set \d+:\n\nfalse positive:\s*#?\d+$",
+                re.IGNORECASE
+            )
             comment = payload.get("comment", "")
-            if not comment or not FALSE_POSITIVE_PATTERN.search(comment):
+            if not comment or not false_positive_pattern.search(comment):
                 logging.info("Ignoring comment-added event: comment does not match false positive pattern")
             else:
                 post_event_to_github(event_type, payload)
