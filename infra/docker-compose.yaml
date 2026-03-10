@@ -2,7 +2,7 @@
 version: '3.9'
 services:
   gerrit:
-    image: gerritcodereview/gerrit:3.13.3
+    image: gerritcodereview/gerrit:3.13.4
     container_name: gerrit
     restart: always
     volumes:
