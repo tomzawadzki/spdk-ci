@@ -13,6 +13,7 @@ import threading
 import time
 import queue
 import jinja2
+from collections import deque
 
 TEST_MODE = (os.getenv("TEST_MODE") or "false").lower() == "true"
 LOG_LEVEL = (os.getenv("LOG_LEVEL") or "INFO").upper()
@@ -83,17 +84,30 @@ def post_event_to_github(event_type, payload):
 def get_active_workflow_count():
     return len(_get_workflow_runs())
 
-def write_queue_snapshot(pending_events):
+def write_queue_snapshot(pending_events, dispatched_owners):
+    # Simulate the fair-scheduling order on copies so we can display the
+    # estimated dispatch sequence without mutating the live state.
+    remaining = dict(pending_events)
+    owners_copy = deque(dispatched_owners)
     rows = []
-    for change_number, event_data in pending_events.items():
+    while remaining:
+        selected = _select_fair_event(remaining, owners_copy)
+        event_data = remaining.pop(selected)
+        owner = _get_event_owner(event_data)
+        if owner in owners_copy:
+            owners_copy.remove(owner)
+        if owner is not None:
+            owners_copy.append(owner)
+
         payload = event_data.get("payload", {})
         change = payload.get("change", {})
         patchset = payload.get("patchSet", {})
         rows.append({
             "change_url": change.get("url", ""),
-            "change_number": change_number,
+            "change_number": selected,
             "patchset_number": patchset.get("number", ""),
             "subject": change.get("subject", ""),
+            "owner": owner or "",
         })
 
     env = jinja2.Environment(loader=jinja2.FileSystemLoader("./"))
@@ -244,8 +258,42 @@ def recover_queue():
         logging.warning(f"Recovery failed (continuing startup): {exc}")
 
 
+def _get_event_owner(event_data):
+    """Return the change owner username, or None if missing."""
+    return event_data.get("payload", {}).get("change", {}).get("owner", {}).get("username")
+
+
+def _select_fair_event(pending_events, dispatched_owners):
+    """Pick the next change_number to dispatch using owner-based round-robin.
+
+    New owners (not in dispatched_owners) get priority, in insertion order.
+    When all pending owners have been dispatched before, the one dispatched
+    longest ago (front of deque) goes next.
+
+    Callers must ensure pending_events is non-empty; the function always
+    returns a valid change_number under that precondition.
+    """
+    # Pass 1: prefer events from owners we haven't dispatched yet.
+    # None owners (missing data) always pass this check and get priority.
+    for change_number, event_data in pending_events.items():
+        if _get_event_owner(event_data) not in dispatched_owners:
+            return change_number
+
+    # Pass 2: all pending owners are in the deque -- pick the one at the
+    # front (dispatched longest ago) that still has a pending event.
+    for candidate in dispatched_owners:
+        for change_number, event_data in pending_events.items():
+            if _get_event_owner(event_data) == candidate:
+                return change_number
+
+
 def process_queue():
     pending_events: dict[int, dict[str, Any]] = {}
+    # Tracks which owners have been dispatched, ordered from least-recent
+    # (front) to most-recent (back).  Used by _select_fair_event() for
+    # round-robin selection.  Cleared only when the queue fully drains so
+    # that owners returning mid-cycle land in the right position.
+    dispatched_owners: deque[str] = deque()
 
     while True:
         time.sleep(QUEUE_PROCESS_INTERVAL)
@@ -265,15 +313,24 @@ def process_queue():
             if to_send <= 0:
                 logging.info(f"Max workflows reached, deferring {len(pending_events)} events")
             else:
-                for change_number in list(pending_events):
-                    if to_send <= 0:
+                while to_send > 0 and pending_events:
+                    selected = _select_fair_event(pending_events, dispatched_owners)
+                    event_data = pending_events[selected]
+                    if not post_event_to_github(event_data["type"], event_data["payload"]):
                         break
-                    event_data = pending_events[change_number]
-                    if post_event_to_github(event_data["type"], event_data["payload"]):
-                        del pending_events[change_number]
-                        to_send -= 1
+                    del pending_events[selected]
+                    owner = _get_event_owner(event_data)
+                    if owner in dispatched_owners:
+                        dispatched_owners.remove(owner)
+                    if owner is not None:
+                        dispatched_owners.append(owner)
+                    to_send -= 1
+        else:
+            # Queue fully drained -- reset round-robin so everyone starts
+            # fresh when new events arrive.
+            dispatched_owners.clear()
 
-        write_queue_snapshot(pending_events)
+        write_queue_snapshot(pending_events, dispatched_owners)
 
 class WebhookHandler(BaseHTTPRequestHandler):
     def send_webhook_response(self):

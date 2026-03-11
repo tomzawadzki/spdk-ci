@@ -31,12 +31,14 @@
                   <thead class="thead-dark">
                     <tr>
                       <th>Event</th>
+                      <th>Owner</th>
                     </tr>
                   </thead>
                   <tbody>
                     {% for row in rows %}
                       <tr class="align-middle">
-                        <td><a href="{{ row.change_url }}" class="text-dark">({{ row.change_number }}/{{ row.patchset_number }}){{ row.subject }}</a></td>
+                        <td><a href="{{ row.change_url }}" class="text-dark">({{ row.change_number }}/{{ row.patchset_number }}) {{ row.subject }}</a></td>
+                        <td>{{ row.owner }}</td>
                       </tr>
                     {% endfor %}
                   </tbody>
