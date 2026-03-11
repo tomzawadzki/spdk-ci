@@ -19,24 +19,60 @@
     </header>
 
     <main class="container my-4">
+      <p class="text-muted">Entries are shown in the estimated dispatch order, which may change as new patches are submitted. The scheduler uses round-robin across patch owners so that no single contributor monopolizes the CI queue.</p>
+
+      {% if in_progress_rows %}
+      <section class="mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">In Progress</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead class="thead-dark">
+                  <tr>
+                    <th>Status</th>
+                    <th>Event</th>
+                    <th>GitHub Run</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in in_progress_rows %}
+                    <tr class="align-middle">
+                      <td><span class="badge bg-success">{{ row.status }}</span></td>
+                      <td><a href="{{ row.change_url }}" class="text-dark">({{ row.change_number }}/{{ row.patchset_number }}) {{ row.subject }}</a></td>
+                      <td>{% if row.run_url %}<a href="{{ row.run_url }}">View run</a>{% endif %}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
       <section class="mb-5">
         <div class="card shadow-sm">
           <div class="card-header bg-info text-white">
             <h5 class="mb-0">Queued Events</h5>
           </div>
           <div class="card-body">
-            {% if rows %}
+            {% if waiting_rows %}
               <div class="table-responsive">
                 <table class="table table-striped">
                   <thead class="thead-dark">
                     <tr>
+                      <th>Status</th>
                       <th>Event</th>
                       <th>Owner</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {% for row in rows %}
+                    {% for row in waiting_rows %}
                       <tr class="align-middle">
+                        <td><span class="badge bg-warning text-dark">{{ row.status }}</span></td>
                         <td><a href="{{ row.change_url }}" class="text-dark">({{ row.change_number }}/{{ row.patchset_number }}) {{ row.subject }}</a></td>
                         <td>{{ row.owner }}</td>
                       </tr>

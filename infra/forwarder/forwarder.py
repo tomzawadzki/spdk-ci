@@ -84,12 +84,34 @@ def post_event_to_github(event_type, payload):
 def get_active_workflow_count():
     return len(_get_workflow_runs())
 
+
+def _build_in_progress_rows():
+    """Build status page rows for workflows currently running on GitHub."""
+    rows = []
+    for run in _get_workflow_runs():
+        m = DISPLAY_TITLE_RE.search(run.get("display_title", ""))
+        if not m:
+            continue
+        change_number = int(m.group(1))
+        rows.append({
+            "change_url": f"{GERRIT_URL}/c/spdk/spdk/+/{change_number}",
+            "change_number": change_number,
+            "patchset_number": int(m.group(2)),
+            "subject": m.group(3).strip(),
+            "status": "In Progress",
+            "run_url": run.get("html_url", ""),
+        })
+    return rows
+
+
 def write_queue_snapshot(pending_events, dispatched_owners):
+    in_progress_rows = _build_in_progress_rows()
+
     # Simulate the fair-scheduling order on copies so we can display the
     # estimated dispatch sequence without mutating the live state.
     remaining = dict(pending_events)
     owners_copy = deque(dispatched_owners)
-    rows = []
+    waiting_rows = []
     while remaining:
         selected = _select_fair_event(remaining, owners_copy)
         event_data = remaining.pop(selected)
@@ -102,18 +124,21 @@ def write_queue_snapshot(pending_events, dispatched_owners):
         payload = event_data.get("payload", {})
         change = payload.get("change", {})
         patchset = payload.get("patchSet", {})
-        rows.append({
+        waiting_rows.append({
             "change_url": change.get("url", ""),
             "change_number": selected,
             "patchset_number": patchset.get("number", ""),
             "subject": change.get("subject", ""),
             "owner": owner or "",
+            "status": "Waiting",
+            "run_url": "",
         })
 
     env = jinja2.Environment(loader=jinja2.FileSystemLoader("./"))
     template = env.get_template("queue_status_template.html")
     html = template.render(
-        rows=rows,
+        in_progress_rows=in_progress_rows,
+        waiting_rows=waiting_rows,
         timestamp=time.strftime("%B %d %H:%M", time.gmtime()),
         interval=QUEUE_PROCESS_INTERVAL,
     )
@@ -331,6 +356,7 @@ def process_queue():
             dispatched_owners.clear()
 
         write_queue_snapshot(pending_events, dispatched_owners)
+
 
 class WebhookHandler(BaseHTTPRequestHandler):
     def send_webhook_response(self):
