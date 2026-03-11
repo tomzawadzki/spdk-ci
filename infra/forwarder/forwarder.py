@@ -26,15 +26,37 @@ OUTPUT_DIR = os.getenv("OUTPUT_DIR") or "/output"
 GERRIT_URL = os.getenv("GERRIT_URL") or "https://review.spdk.io"
 RECOVERY_WINDOW_DAYS = int(os.getenv("RECOVERY_WINDOW_DAYS") or "7")
 GERRIT_QUERY_LIMIT = int(os.getenv("GERRIT_QUERY_LIMIT") or "300")
-gerrit = GerritRestAPI(url=GERRIT_URL)
+# Matches run-name pattern "(12345/5)Subject" from gerrit-webhook-handler.yml
+DISPLAY_TITLE_RE = re.compile(r"^\((\d+)/(\d+)\)(.*)")
 
 event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
-def post_event_to_github(event_type, payload):
-    headers = {
+
+def _github_headers():
+    return {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github+json",
     }
+
+
+def _get_workflow_runs():
+    """Fetch all active workflow runs (in_progress, waiting, queued) from GitHub."""
+    runs = []
+    for status in ("in_progress", "waiting", "queued"):
+        try:
+            response = requests.get(
+                GITHUB_WORKFLOW_RUNS_URL, headers=_github_headers(),
+                params={"status": status, "per_page": 100})
+            if response.status_code == 200:
+                runs.extend(response.json().get("workflow_runs", []))
+            else:
+                logging.warning(f"Failed to query workflow runs (status={status}): {response.status_code}")
+        except requests.RequestException as exc:
+            logging.warning(f"Error querying workflow runs (status={status}): {exc}")
+    return runs
+
+
+def post_event_to_github(event_type, payload):
     body = {
         "event_type": event_type,
         "client_payload": payload
@@ -45,7 +67,7 @@ def post_event_to_github(event_type, payload):
         return True
 
     try:
-        response = requests.post(GITHUB_DISPATCH_URL, headers=headers, json=body)
+        response = requests.post(GITHUB_DISPATCH_URL, headers=_github_headers(), json=body)
     except requests.RequestException as exc:
         logging.warning(f"GitHub action trigger failed with request error: {exc}")
         return False
@@ -57,24 +79,9 @@ def post_event_to_github(event_type, payload):
     logging.warning(f"GitHub Action Trigger failed: {response.status_code} {response.text}")
     return False
 
+
 def get_active_workflow_count():
-    headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github+json",
-    }
-    count = 0
-    for status in ("in_progress", "waiting", "queued"):
-        try:
-            response = requests.get(
-                GITHUB_WORKFLOW_RUNS_URL, headers=headers,
-                params={"status": status})
-            if response.status_code == 200:
-                count += response.json().get("total_count", 0)
-            else:
-                logging.warning(f"Failed to query workflow runs (status={status}): {response.status_code}")
-        except requests.RequestException as e:
-            logging.warning(f"Error querying workflow runs (status={status}): {e}")
-    return count
+    return len(_get_workflow_runs())
 
 def write_queue_snapshot(pending_events):
     rows = []
@@ -128,6 +135,7 @@ def _get_current_revision(change):
 
 def query_gerrit_for_recovery():
     """Query Gerrit REST API for open changes without a Verified label."""
+    gerrit = GerritRestAPI(url=GERRIT_URL)
     query = "".join([
         "/changes/",
         "?q=project:spdk/spdk status:open -is:wip -is:private"
@@ -204,30 +212,13 @@ def build_recovery_event(change):
 
 def get_active_workflow_changes():
     """Return a set of (change_number, patchset_number) for active workflow runs."""
-    # Matches run-name pattern "(12345/5)Subject" from gerrit-webhook-handler.yml
-    display_title_re = re.compile(r"^\((\d+)/(\d+)\)")
-
-    headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github+json",
-    }
     active = set()
-    for status in ("in_progress", "waiting", "queued"):
-        try:
-            response = requests.get(
-                GITHUB_WORKFLOW_RUNS_URL, headers=headers,
-                params={"status": status, "per_page": 100})
-            if response.status_code != 200:
-                logging.warning(f"Failed to query workflow runs (status={status}): {response.status_code}")
-                continue
-            for run in response.json().get("workflow_runs", []):
-                m = display_title_re.search(run.get("display_title", ""))
-                if m:
-                    change_number = int(m.group(1))
-                    patchset_number = int(m.group(2))
-                    active.add((change_number, patchset_number))
-        except requests.RequestException as exc:
-            logging.warning(f"Error querying workflow runs (status={status}): {exc}")
+    for run in _get_workflow_runs():
+        m = DISPLAY_TITLE_RE.search(run.get("display_title", ""))
+        if m:
+            change_number = int(m.group(1))
+            patchset_number = int(m.group(2))
+            active.add((change_number, patchset_number))
     return active
 
 
