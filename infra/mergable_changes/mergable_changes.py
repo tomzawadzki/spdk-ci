@@ -11,9 +11,9 @@ from requests import RequestException
 from dataclasses import dataclass, field
 from pygerrit2 import GerritRestAPI
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-OUTPUT_DIR = os.getenv("OUTPUT_DIR", "/output")
-GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL", "https://review.spdk.io")
+LOG_LEVEL = (os.getenv("LOG_LEVEL") or "INFO").upper()
+OUTPUT_DIR = os.getenv("OUTPUT_DIR") or "/output"
+GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL") or "https://review.spdk.io"
 GERRIT_CHANGE_URL = os.path.join(GERRIT_BASE_URL, "c")
 
 

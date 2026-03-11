@@ -14,18 +14,18 @@ import time
 import queue
 import jinja2
 
-TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL", "https://api.github.com/repos/spdk/spdk-ci")
+TEST_MODE = (os.getenv("TEST_MODE") or "false").lower() == "true"
+LOG_LEVEL = (os.getenv("LOG_LEVEL") or "INFO").upper()
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or None
+GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL") or "https://api.github.com/repos/spdk/spdk-ci"
 GITHUB_DISPATCH_URL = f"{GITHUB_REPO_URL}/dispatches"
 GITHUB_WORKFLOW_RUNS_URL = f"{GITHUB_REPO_URL}/actions/workflows/gerrit-webhook-handler.yml/runs"
-QUEUE_PROCESS_INTERVAL = int(os.getenv("QUEUE_PROCESS_INTERVAL", "60"))
-MAX_RUNNING_WORKFLOWS = int(os.getenv("MAX_RUNNING_WORKFLOWS", "3"))
-OUTPUT_DIR = os.getenv("OUTPUT_DIR", "/output")
-GERRIT_URL = os.getenv("GERRIT_URL", "https://review.spdk.io")
-RECOVERY_WINDOW_DAYS = int(os.getenv("RECOVERY_WINDOW_DAYS", "7"))
-GERRIT_QUERY_LIMIT = int(os.getenv("GERRIT_QUERY_LIMIT", "300"))
+QUEUE_PROCESS_INTERVAL = int(os.getenv("QUEUE_PROCESS_INTERVAL") or "60")
+MAX_RUNNING_WORKFLOWS = int(os.getenv("MAX_RUNNING_WORKFLOWS") or "3")
+OUTPUT_DIR = os.getenv("OUTPUT_DIR") or "/output"
+GERRIT_URL = os.getenv("GERRIT_URL") or "https://review.spdk.io"
+RECOVERY_WINDOW_DAYS = int(os.getenv("RECOVERY_WINDOW_DAYS") or "7")
+GERRIT_QUERY_LIMIT = int(os.getenv("GERRIT_QUERY_LIMIT") or "300")
 gerrit = GerritRestAPI(url=GERRIT_URL)
 
 event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
