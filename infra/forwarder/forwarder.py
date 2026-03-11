@@ -142,6 +142,7 @@ def query_gerrit_for_recovery():
         " -label:Verified<0 -label:Verified>0"
         f" -age:{RECOVERY_WINDOW_DAYS}d",
         "&o=CURRENT_REVISION",
+        "&o=DETAILED_ACCOUNTS",
         f"&n={GERRIT_QUERY_LIMIT}",
     ])
 
@@ -187,6 +188,7 @@ def build_recovery_event(change):
         return {}
     patchset_ref = current_revision_data.get("ref")
     subject = change.get("subject")
+    owner = change.get("owner", {}).get("username")
 
     if not all([patchset_ref, subject]):
         return {}
@@ -200,6 +202,8 @@ def build_recovery_event(change):
             "change": {
                 "number": change_number,
                 "subject": subject,
+                "url": f"{GERRIT_URL}/c/spdk/spdk/+/{change_number}",
+                "owner": {"username": owner},
             },
             "patchSet": {
                 "number": patchset_number,
@@ -303,11 +307,14 @@ class WebhookHandler(BaseHTTPRequestHandler):
             self.send_webhook_response()
             return
 
-        change_number = payload.get("change", {}).get("number")
+        change = payload.get("change", {})
+        change_number = change.get("number")
+        if not change.get("owner", {}).get("username"):
+            logging.warning(f"Event for change {change_number} is missing owner username")
         event_data = {
             "type": event_type,
             "payload": payload,
-            "change_number": change_number
+            "change_number": change_number,
         }
         event_queue.put(event_data)
 
