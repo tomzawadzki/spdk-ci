@@ -25,7 +25,7 @@ To set up the environment:
 - `GERRIT_DIR`: Path to the Gerrit data directory on the host.
 - `GERRIT_URL`: The URL of the Gerrit instance.
 - `FORWARDER_GITHUB_TOKEN`: A GitHub Personal Access Token used by the forwarder to trigger GitHub Actions.
-- `FORWARDER_GITHUB_REPO_URL`: The URL of the GitHub repository (e.g., `https://api.github.com/repos/spdk/spdk-ci`).
+- `FORWARDER_GITHUB_REPO`: The GitHub repository to trigger actions on (e.g., `spdk/spdk-ci`).
 - `FORWARDER_TEST_MODE`: If `true`, the forwarder will log events but not actually send them to GitHub.
 - `OUTPUT_DIR`: The directory where the forwarder and mergable_changes scripts write their output files (mapped to `/output` inside containers).
 

@@ -22,7 +22,7 @@ class ForwarderConfig:
     test_mode: bool = False
     log_level: str = "INFO"
     github_token: str = ""
-    github_repo_url: str = "https://api.github.com/repos/spdk/spdk-ci"
+    github_repo: str = "spdk/spdk-ci"
     queue_process_interval: int = 60
     max_running_workflows: int = 3
     output_dir: str = "/output"
@@ -41,9 +41,10 @@ class ForwarderConfig:
             print("CRITICAL: FORWARDER_GITHUB_TOKEN environment variable is required when not in test mode.", file=sys.stderr)
             sys.exit(1)
 
-        self.github_repo_url = os.getenv("FORWARDER_GITHUB_REPO_URL", self.github_repo_url).rstrip("/")
-        self.github_dispatch_url = f"{self.github_repo_url}/dispatches"
-        self.github_workflow_runs_url = f"{self.github_repo_url}/actions/workflows/gerrit-webhook-handler.yml/runs"
+        self.github_repo = os.getenv("FORWARDER_GITHUB_REPO", self.github_repo)
+        github_repo_url = f"https://api.github.com/repos/{self.github_repo}"
+        self.github_dispatch_url = f"{github_repo_url}/dispatches"
+        self.github_workflow_runs_url = f"{github_repo_url}/actions/workflows/gerrit-webhook-handler.yml/runs"
 
         self.output_dir = os.getenv("OUTPUT_DIR", self.output_dir)
         self.gerrit_url = os.getenv("GERRIT_URL", self.gerrit_url).rstrip("/")
