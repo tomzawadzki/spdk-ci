@@ -13,8 +13,8 @@ from pygerrit2 import GerritRestAPI
 
 LOG_LEVEL = (os.getenv("LOG_LEVEL") or "INFO").upper()
 OUTPUT_DIR = os.getenv("OUTPUT_DIR") or "/output"
-GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL") or "https://review.spdk.io"
-GERRIT_CHANGE_URL = os.path.join(GERRIT_BASE_URL, "c")
+GERRIT_URL = os.getenv("GERRIT_URL") or "https://review.spdk.io"
+GERRIT_CHANGE_URL = os.path.join(GERRIT_URL, "c")
 
 
 @dataclass
@@ -205,7 +205,7 @@ def main():
 
     while True:
         all_changes = []
-        gerrit = GerritRestAPI(url=GERRIT_BASE_URL)
+        gerrit = GerritRestAPI(url=GERRIT_URL)
         get_gerrit_changes(gerrit, all_changes)
         for change in all_changes:
             change.check_parents_ready(gerrit, all_changes)

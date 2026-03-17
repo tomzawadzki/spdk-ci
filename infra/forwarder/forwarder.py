@@ -15,18 +15,18 @@ import queue
 import jinja2
 from collections import deque
 
-TEST_MODE = (os.getenv("TEST_MODE") or "false").lower() == "true"
+TEST_MODE = (os.getenv("FORWARDER_TEST_MODE") or "false").lower() == "true"
 LOG_LEVEL = (os.getenv("LOG_LEVEL") or "INFO").upper()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or None
-GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL") or "https://api.github.com/repos/spdk/spdk-ci"
+GITHUB_TOKEN = os.getenv("FORWARDER_GITHUB_TOKEN") or None
+GITHUB_REPO_URL = os.getenv("FORWARDER_GITHUB_REPO_URL") or "https://api.github.com/repos/spdk/spdk-ci"
 GITHUB_DISPATCH_URL = f"{GITHUB_REPO_URL}/dispatches"
 GITHUB_WORKFLOW_RUNS_URL = f"{GITHUB_REPO_URL}/actions/workflows/gerrit-webhook-handler.yml/runs"
-QUEUE_PROCESS_INTERVAL = int(os.getenv("QUEUE_PROCESS_INTERVAL") or "60")
-MAX_RUNNING_WORKFLOWS = int(os.getenv("MAX_RUNNING_WORKFLOWS") or "3")
+QUEUE_PROCESS_INTERVAL = int(os.getenv("FORWARDER_QUEUE_PROCESS_INTERVAL") or "60")
+MAX_RUNNING_WORKFLOWS = int(os.getenv("FORWARDER_MAX_RUNNING_WORKFLOWS") or "3")
 OUTPUT_DIR = os.getenv("OUTPUT_DIR") or "/output"
 GERRIT_URL = os.getenv("GERRIT_URL") or "https://review.spdk.io"
-RECOVERY_WINDOW_DAYS = int(os.getenv("RECOVERY_WINDOW_DAYS") or "7")
-GERRIT_QUERY_LIMIT = int(os.getenv("GERRIT_QUERY_LIMIT") or "300")
+RECOVERY_WINDOW_DAYS = int(os.getenv("FORWARDER_RECOVERY_WINDOW_DAYS") or "7")
+GERRIT_QUERY_LIMIT = int(os.getenv("FORWARDER_GERRIT_QUERY_LIMIT") or "300")
 # Matches run-name pattern "(12345/5)Subject" from gerrit-webhook-handler.yml
 DISPLAY_TITLE_RE = re.compile(r"^\((\d+)/(\d+)\)(.*)")
 
