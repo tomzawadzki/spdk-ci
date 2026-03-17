@@ -35,8 +35,8 @@ services:
     - ${GERRIT_DIR}/static:/var/gerrit/static
     - ${GERRIT_DIR}/tmp:/var/gerrit/tmp
     - ${GERRIT_DIR}/.ssh:/var/gerrit/.ssh
-    environment:
-    - CANONICAL_WEB_URL=${GERRIT_CANONICAL_WEB_URL}
+    env_file:
+    - .env
     ports:
     - "29418:29418"
     - "8080:8080"
@@ -50,12 +50,8 @@ services:
       dockerfile: Dockerfile
     container_name: webhook_forwarder
     restart: always
-    environment:
-    - GITHUB_TOKEN=${GITHUB_TOKEN}
-    - GITHUB_REPO_URL=${GITHUB_REPO_URL}
-    - GERRIT_URL=${GERRIT_URL}
-    - TEST_MODE=${FORWARDER_TEST_MODE}
-    - OUTPUT_DIR=${MERGABLE_CHANGES_OUTPUT_DIR}
+    env_file:
+    - .env
     depends_on:
     - gerrit
     volumes:
@@ -71,8 +67,8 @@ services:
       dockerfile: Dockerfile
     container_name: mergable_changes
     restart: always
-    environment:
-    - OUTPUT_DIR=${MERGABLE_CHANGES_OUTPUT_DIR}
+    env_file:
+    - .env
     depends_on:
     - gerrit
     volumes:
