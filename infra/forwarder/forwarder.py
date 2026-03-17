@@ -5,6 +5,8 @@ from typing import Any
 from datetime import datetime, timedelta, timezone
 from pygerrit2 import GerritRestAPI
 import os
+import sys
+from dataclasses import dataclass, field
 import json
 import requests
 import logging
@@ -15,18 +17,44 @@ import queue
 import jinja2
 from collections import deque
 
-TEST_MODE = (os.getenv("FORWARDER_TEST_MODE") or "false").lower() == "true"
-LOG_LEVEL = (os.getenv("LOG_LEVEL") or "INFO").upper()
-GITHUB_TOKEN = os.getenv("FORWARDER_GITHUB_TOKEN") or None
-GITHUB_REPO_URL = os.getenv("FORWARDER_GITHUB_REPO_URL") or "https://api.github.com/repos/spdk/spdk-ci"
-GITHUB_DISPATCH_URL = f"{GITHUB_REPO_URL}/dispatches"
-GITHUB_WORKFLOW_RUNS_URL = f"{GITHUB_REPO_URL}/actions/workflows/gerrit-webhook-handler.yml/runs"
-QUEUE_PROCESS_INTERVAL = int(os.getenv("FORWARDER_QUEUE_PROCESS_INTERVAL") or "60")
-MAX_RUNNING_WORKFLOWS = int(os.getenv("FORWARDER_MAX_RUNNING_WORKFLOWS") or "3")
-OUTPUT_DIR = os.getenv("OUTPUT_DIR") or "/output"
-GERRIT_URL = os.getenv("GERRIT_URL") or "https://review.spdk.io"
-RECOVERY_WINDOW_DAYS = int(os.getenv("FORWARDER_RECOVERY_WINDOW_DAYS") or "7")
-GERRIT_QUERY_LIMIT = int(os.getenv("FORWARDER_GERRIT_QUERY_LIMIT") or "300")
+@dataclass
+class ForwarderConfig:
+    test_mode: bool = False
+    log_level: str = "INFO"
+    github_token: str = ""
+    github_repo_url: str = "https://api.github.com/repos/spdk/spdk-ci"
+    queue_process_interval: int = 60
+    max_running_workflows: int = 3
+    output_dir: str = "/output"
+    gerrit_url: str = "https://review.spdk.io"
+    recovery_window_days: int = 7
+    gerrit_query_limit: int = 300
+    github_dispatch_url: str = field(init=False)
+    github_workflow_runs_url: str = field(init=False)
+
+    def __post_init__(self):
+        self.test_mode = os.getenv("FORWARDER_TEST_MODE", str(self.test_mode)).lower() == "true"
+        self.log_level = os.getenv("LOG_LEVEL", self.log_level).upper()
+        self.github_token = os.getenv("FORWARDER_GITHUB_TOKEN", self.github_token)
+
+        if not self.github_token and not self.test_mode:
+            print("CRITICAL: FORWARDER_GITHUB_TOKEN environment variable is required when not in test mode.", file=sys.stderr)
+            sys.exit(1)
+
+        self.github_repo_url = os.getenv("FORWARDER_GITHUB_REPO_URL", self.github_repo_url).rstrip("/")
+        self.github_dispatch_url = f"{self.github_repo_url}/dispatches"
+        self.github_workflow_runs_url = f"{self.github_repo_url}/actions/workflows/gerrit-webhook-handler.yml/runs"
+
+        self.output_dir = os.getenv("OUTPUT_DIR", self.output_dir)
+        self.gerrit_url = os.getenv("GERRIT_URL", self.gerrit_url).rstrip("/")
+        for attr in ['queue_process_interval', 'max_running_workflows', 'recovery_window_days', 'gerrit_query_limit']:
+            try:
+                setattr(self, attr, int(os.getenv(f"FORWARDER_{attr.upper()}", str(getattr(self, attr)))))
+            except Exception:
+                print(f"CRITICAL: FORWARDER_{attr.upper()} must be an integer.", file=sys.stderr)
+                sys.exit(1)
+
+config = ForwarderConfig()
 # Matches run-name pattern "(12345/5)Subject" from gerrit-webhook-handler.yml
 DISPLAY_TITLE_RE = re.compile(r"^\((\d+)/(\d+)\)(.*)")
 
@@ -35,7 +63,7 @@ event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
 def _github_headers():
     return {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Authorization": f"Bearer {config.github_token}",
         "Accept": "application/vnd.github+json",
     }
 
@@ -46,7 +74,7 @@ def _get_workflow_runs():
     for status in ("in_progress", "waiting", "queued"):
         try:
             response = requests.get(
-                GITHUB_WORKFLOW_RUNS_URL, headers=_github_headers(),
+                config.github_workflow_runs_url, headers=_github_headers(),
                 params={"status": status, "per_page": 100})
             if response.status_code == 200:
                 runs.extend(response.json().get("workflow_runs", []))
@@ -63,12 +91,12 @@ def post_event_to_github(event_type, payload):
         "client_payload": payload
     }
 
-    if TEST_MODE:
+    if config.test_mode:
         logging.info("Test mode; not forwarding to GitHub Actions.")
         return True
 
     try:
-        response = requests.post(GITHUB_DISPATCH_URL, headers=_github_headers(), json=body)
+        response = requests.post(config.github_dispatch_url, headers=_github_headers(), json=body)
     except requests.RequestException as exc:
         logging.warning(f"GitHub action trigger failed with request error: {exc}")
         return False
@@ -94,7 +122,7 @@ def _build_in_progress_rows():
             continue
         change_number = int(m.group(1))
         rows.append({
-            "change_url": f"{GERRIT_URL}/c/spdk/spdk/+/{change_number}",
+            "change_url": f"{config.gerrit_url}/c/spdk/spdk/+/{change_number}",
             "change_number": change_number,
             "patchset_number": int(m.group(2)),
             "subject": m.group(3).strip(),
@@ -140,10 +168,10 @@ def write_queue_snapshot(pending_events, dispatched_owners):
         in_progress_rows=in_progress_rows,
         waiting_rows=waiting_rows,
         timestamp=time.strftime("%B %d %H:%M", time.gmtime()),
-        interval=QUEUE_PROCESS_INTERVAL,
+        interval=config.queue_process_interval,
     )
 
-    with open(os.path.join(OUTPUT_DIR, "queue_status.html"), "w") as f:
+    with open(os.path.join(config.output_dir, "queue_status.html"), "w") as f:
         f.write(html)
 
 
@@ -174,15 +202,15 @@ def _get_current_revision(change):
 
 def query_gerrit_for_recovery():
     """Query Gerrit REST API for open changes without a Verified label."""
-    gerrit = GerritRestAPI(url=GERRIT_URL)
+    gerrit = GerritRestAPI(url=config.gerrit_url)
     query = "".join([
         "/changes/",
         "?q=project:spdk/spdk status:open -is:wip -is:private"
         " -label:Verified<0 -label:Verified>0"
-        f" -age:{RECOVERY_WINDOW_DAYS}d",
+        f" -age:{config.recovery_window_days}d",
         "&o=CURRENT_REVISION",
         "&o=DETAILED_ACCOUNTS",
-        f"&n={GERRIT_QUERY_LIMIT}",
+        f"&n={config.gerrit_query_limit}",
     ])
 
     try:
@@ -194,7 +222,7 @@ def query_gerrit_for_recovery():
 
 def list_recoverable_changes():
     """Filter Gerrit query results to changes whose current patchset was created within RECOVERY_WINDOW_DAYS."""
-    cutoff_epoch = int((datetime.now(timezone.utc) - timedelta(days=RECOVERY_WINDOW_DAYS)).timestamp())
+    cutoff_epoch = int((datetime.now(timezone.utc) - timedelta(days=config.recovery_window_days)).timestamp())
     recovered = []
 
     for change in query_gerrit_for_recovery():
@@ -241,7 +269,7 @@ def build_recovery_event(change):
             "change": {
                 "number": change_number,
                 "subject": subject,
-                "url": f"{GERRIT_URL}/c/spdk/spdk/+/{change_number}",
+                "url": f"{config.gerrit_url}/c/spdk/spdk/+/{change_number}",
                 "owner": {"username": owner},
             },
             "patchSet": {
@@ -321,7 +349,7 @@ def process_queue():
     dispatched_owners: deque[str] = deque()
 
     while True:
-        time.sleep(QUEUE_PROCESS_INTERVAL)
+        time.sleep(config.queue_process_interval)
 
         while True:
             try:
@@ -334,7 +362,7 @@ def process_queue():
             pending_events[change_number] = event_data
 
         if pending_events:
-            to_send = MAX_RUNNING_WORKFLOWS - get_active_workflow_count()
+            to_send = config.max_running_workflows - get_active_workflow_count()
             if to_send <= 0:
                 logging.info(f"Max workflows reached, deferring {len(pending_events)} events")
             else:
@@ -405,17 +433,13 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     logging.basicConfig(
-        level=getattr(logging, LOG_LEVEL, logging.INFO),
+        level=getattr(logging, config.log_level, logging.INFO),
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(),
             logging.FileHandler("/var/log/webhook_forwarder.log", mode="a")
         ]
     )
-
-    if not GITHUB_TOKEN or not GITHUB_REPO_URL:
-        logging.error("Error: GITHUB_TOKEN or GITHUB_REPO_URL environment variable is not set.")
-        exit(1)
 
     recover_queue()
 
