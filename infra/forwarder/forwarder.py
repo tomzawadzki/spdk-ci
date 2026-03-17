@@ -317,6 +317,37 @@ def _get_event_owner(event_data):
     return event_data.get("payload", {}).get("change", {}).get("owner", {}).get("username")
 
 
+def _get_change_flags(payload):
+    """Return change flags (wip/private/open/status) from an event payload."""
+    change = payload.get("change", {})
+    return {
+        "wip": change.get("wip"),
+        "private": change.get("private"),
+        "open": change.get("open"),
+        "status": change.get("status"),
+    }
+
+
+def _should_drop_event(event_data):
+    """Return (drop, reason) based on events flags."""
+    flags = _get_change_flags(event_data.get("payload", {}))
+
+    if flags["wip"] is True:
+        return True, "wip"
+
+    if flags["private"] is True:
+        return True, "private"
+
+    if flags["open"] is False:
+        return True, "closed"
+
+    status = flags["status"]
+    if status is not None and status != "NEW":
+        return True, f"status={status}"
+
+    return False, None
+
+
 def _select_fair_event(pending_events, dispatched_owners):
     """Pick the next change_number to dispatch using owner-based round-robin.
 
@@ -361,6 +392,10 @@ def process_queue():
             if change_number in pending_events:
                 logging.info(f"Replacing queued event for change {change_number}")
             pending_events[change_number] = event_data
+            drop, reason = _should_drop_event(event_data)
+            if drop:
+                del pending_events[change_number]
+                logging.info(f"Dropping event for change {change_number} ({reason})")
 
         if pending_events:
             to_send = config.max_running_workflows - get_active_workflow_count()
