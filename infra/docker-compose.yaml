@@ -11,8 +11,7 @@ services:
     - gerrit
     volumes:
     - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    - forwarder_out:/var/www/forwarder:ro
-    - mergable_changes_out:/var/www/mergable_changes:ro
+    - outputs:/var/www/outputs:ro
     - ${NGINX_CERT_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
     - ${NGINX_STATIC_DIR:-/var/www/ci.spdk.io}:/var/www/localhost:ro
     networks:
@@ -60,8 +59,8 @@ services:
     depends_on:
     - gerrit
     volumes:
-    - forwarder_logs:/var/log
-    - forwarder_out:/output
+    - logs:/var/log
+    - outputs:/output
     networks:
     - gerrit
 
@@ -77,16 +76,14 @@ services:
     depends_on:
     - gerrit
     volumes:
-    - mergable_changes_logs:/var/log
-    - mergable_changes_out:/output
+    - logs:/var/log
+    - outputs:/output
     networks:
     - gerrit
 
 volumes:
-  forwarder_logs:
-  forwarder_out:
-  mergable_changes_logs:
-  mergable_changes_out:
+  logs:
+  outputs:
 
 networks:
   gerrit:
