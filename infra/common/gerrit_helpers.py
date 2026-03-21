@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 
 from pygerrit2 import GerritRestAPI
+from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,36 @@ logger = logging.getLogger(__name__)
 def get_gerrit_client(url: str) -> GerritRestAPI:
     """Create a pygerrit2 REST API client."""
     return GerritRestAPI(url=url)
+
+
+def post_review(gerrit_url: str, change_number: int, patchset_number: int,
+                label: str, value: int, message: str,
+                username: str | None = None,
+                password: str | None = None) -> bool:
+    """Post a review (label + message) to a Gerrit change revision.
+
+    Returns True on success, False on failure.  Errors are logged but
+    never propagated so callers don't need to handle exceptions.
+    """
+    if not username or not password:
+        logger.warning("Gerrit credentials not provided — skipping review post")
+        return False
+
+    try:
+        auth = HTTPBasicAuth(username, password)
+        gerrit = GerritRestAPI(url=gerrit_url, auth=auth)
+        body = {"labels": {label: value}, "message": message}
+        gerrit.post(
+            f"/changes/{change_number}/revisions/{patchset_number}/review",
+            json=body,
+        )
+        logger.info("Posted %s %+d to change %d/%d",
+                     label, value, change_number, patchset_number)
+        return True
+    except Exception as exc:
+        logger.error("Failed to post review to change %d/%d: %s",
+                     change_number, patchset_number, exc)
+        return False
 
 
 def get_current_revision(change: dict) -> dict:

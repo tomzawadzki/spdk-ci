@@ -154,3 +154,57 @@ def test_validate_change_for_ci_no_patchset_check(mock_client):
         "https://review.example.com", 12345, patchset_number=None)
 
     assert result["valid"] is True
+
+
+# ---------------------------------------------------------------------------
+# post_review
+# ---------------------------------------------------------------------------
+
+@patch("common.gerrit_helpers.GerritRestAPI")
+def test_post_review_success(mock_api_cls):
+    """Successful review posting returns True."""
+    mock_api = MagicMock()
+    mock_api_cls.return_value = mock_api
+
+    result = gerrit_helpers.post_review(
+        "https://review.example.com", 12345, 3,
+        "Verified", 1, "Build Successful: all CI jobs passed.",
+        username="ci-user", password="ci-pass",
+    )
+
+    assert result is True
+    mock_api.post.assert_called_once_with(
+        "/changes/12345/revisions/3/review",
+        json={"labels": {"Verified": 1},
+              "message": "Build Successful: all CI jobs passed."},
+    )
+
+
+@patch("common.gerrit_helpers.GerritRestAPI")
+def test_post_review_failure(mock_api_cls):
+    """When GerritRestAPI raises, post_review returns False."""
+    mock_api_cls.return_value.post.side_effect = Exception("connection refused")
+
+    result = gerrit_helpers.post_review(
+        "https://review.example.com", 12345, 3,
+        "Verified", -1, "Build Failed.",
+        username="ci-user", password="ci-pass",
+    )
+
+    assert result is False
+
+
+def test_post_review_missing_credentials():
+    """post_review returns False when username or password is missing."""
+    assert gerrit_helpers.post_review(
+        "https://review.example.com", 12345, 3,
+        "Verified", 1, "msg", username=None, password="pass") is False
+    assert gerrit_helpers.post_review(
+        "https://review.example.com", 12345, 3,
+        "Verified", 1, "msg", username="user", password=None) is False
+    assert gerrit_helpers.post_review(
+        "https://review.example.com", 12345, 3,
+        "Verified", 1, "msg", username="", password="pass") is False
+    assert gerrit_helpers.post_review(
+        "https://review.example.com", 12345, 3,
+        "Verified", 1, "msg", username="user", password="") is False

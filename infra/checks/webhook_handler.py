@@ -6,6 +6,7 @@ import logging
 import re
 
 from config import config
+from common.gerrit_helpers import post_review
 import database
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,42 @@ def handle_workflow_run(payload: dict):
         html_url=run.get("html_url"),
         event_type=run.get("event"),
     )
+
+    if action == "completed":
+        _post_verified_vote(change, patchset, run.get("conclusion"))
+
+
+def _post_verified_vote(change: int, patchset: int, conclusion: str | None):
+    """Post a Verified label to Gerrit based on the workflow conclusion."""
+    if not config.gerrit_user or not config.gerrit_password:
+        logger.info("Gerrit credentials not configured — skipping Verified vote")
+        return
+
+    if conclusion == "success":
+        value = 1
+        message = "Build Successful: all CI jobs passed."
+    elif conclusion == "failure":
+        value = -1
+        message = "Build Failed: one or more CI jobs failed."
+    else:
+        logger.info("Workflow conclusion is '%s' — not posting a Verified vote",
+                     conclusion)
+        return
+
+    try:
+        post_review(
+            gerrit_url=config.gerrit_url,
+            change_number=change,
+            patchset_number=patchset,
+            label="Verified",
+            value=value,
+            message=message,
+            username=config.gerrit_user,
+            password=config.gerrit_password,
+        )
+    except Exception as exc:
+        logger.error("Error posting Verified vote for change %d/%d: %s",
+                     change, patchset, exc)
 
 
 def handle_workflow_job(payload: dict):

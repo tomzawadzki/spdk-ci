@@ -286,3 +286,117 @@ def test_extract_gerrit_info_change_variant():
     change, patchset, project = webhook_handler._extract_gerrit_info(run)
     assert change == 12345
     assert patchset == 7
+
+
+# ---------------------------------------------------------------------------
+# Verified vote on workflow_run completed
+# ---------------------------------------------------------------------------
+
+def test_workflow_run_completed_success_posts_verified_plus_one(monkeypatch):
+    """workflow_run completed with success triggers Verified +1."""
+    from unittest.mock import patch, call
+
+    monkeypatch.setattr(checks_config, "gerrit_user", "ci-user")
+    monkeypatch.setattr(checks_config, "gerrit_password", "ci-pass")
+
+    database.upsert_workflow_run(
+        gerrit_change_number=5000,
+        gerrit_patchset_number=2,
+        github_run_id=5001,
+        status="in_progress",
+    )
+
+    payload = _run_payload(
+        "completed", 5001, status="completed", conclusion="success",
+    )
+
+    with patch("webhook_handler.post_review") as mock_review:
+        webhook_handler.handle_workflow_run(payload)
+        mock_review.assert_called_once_with(
+            gerrit_url=checks_config.gerrit_url,
+            change_number=5000,
+            patchset_number=2,
+            label="Verified",
+            value=1,
+            message="Build Successful: all CI jobs passed.",
+            username="ci-user",
+            password="ci-pass",
+        )
+
+
+def test_workflow_run_completed_failure_posts_verified_minus_one(monkeypatch):
+    """workflow_run completed with failure triggers Verified -1."""
+    from unittest.mock import patch
+
+    monkeypatch.setattr(checks_config, "gerrit_user", "ci-user")
+    monkeypatch.setattr(checks_config, "gerrit_password", "ci-pass")
+
+    database.upsert_workflow_run(
+        gerrit_change_number=5100,
+        gerrit_patchset_number=3,
+        github_run_id=5101,
+        status="in_progress",
+    )
+
+    payload = _run_payload(
+        "completed", 5101, status="completed", conclusion="failure",
+    )
+
+    with patch("webhook_handler.post_review") as mock_review:
+        webhook_handler.handle_workflow_run(payload)
+        mock_review.assert_called_once_with(
+            gerrit_url=checks_config.gerrit_url,
+            change_number=5100,
+            patchset_number=3,
+            label="Verified",
+            value=-1,
+            message="Build Failed: one or more CI jobs failed.",
+            username="ci-user",
+            password="ci-pass",
+        )
+
+
+def test_workflow_run_completed_cancelled_no_vote(monkeypatch):
+    """workflow_run completed with cancelled does NOT trigger a vote."""
+    from unittest.mock import patch
+
+    monkeypatch.setattr(checks_config, "gerrit_user", "ci-user")
+    monkeypatch.setattr(checks_config, "gerrit_password", "ci-pass")
+
+    database.upsert_workflow_run(
+        gerrit_change_number=5200,
+        gerrit_patchset_number=1,
+        github_run_id=5201,
+        status="in_progress",
+    )
+
+    payload = _run_payload(
+        "completed", 5201, status="completed", conclusion="cancelled",
+    )
+
+    with patch("webhook_handler.post_review") as mock_review:
+        webhook_handler.handle_workflow_run(payload)
+        mock_review.assert_not_called()
+
+
+def test_workflow_run_completed_no_gerrit_creds_no_vote(monkeypatch):
+    """When Gerrit credentials are empty, no vote is posted."""
+    from unittest.mock import patch
+
+    monkeypatch.setattr(checks_config, "gerrit_user", "")
+    monkeypatch.setattr(checks_config, "gerrit_password", "")
+
+    database.upsert_workflow_run(
+        gerrit_change_number=5300,
+        gerrit_patchset_number=1,
+        github_run_id=5301,
+        status="in_progress",
+    )
+
+    payload = _run_payload(
+        "completed", 5301, status="completed", conclusion="success",
+    )
+
+    with patch("webhook_handler.post_review") as mock_review:
+        webhook_handler.handle_workflow_run(payload)
+        mock_review.assert_not_called()
