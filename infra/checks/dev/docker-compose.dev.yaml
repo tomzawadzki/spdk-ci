@@ -6,7 +6,7 @@ services:
       - gerrit-dev-data:/var/gerrit
       - ../frontend/dist/spdk-checks.js:/var/gerrit/plugins/spdk-checks.js:ro
     environment:
-      - CANONICAL_WEB_URL=http://localhost:8080
+      - CANONICAL_WEB_URL=http://localhost:9080
     networks:
       - dev
 
@@ -31,7 +31,7 @@ services:
     image: nginx:1.22.1
     container_name: nginx-dev
     ports:
-      - "8080:80"
+      - "9080:80"
     depends_on:
       - gerrit
       - checks-api
