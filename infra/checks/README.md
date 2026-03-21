@@ -2,7 +2,8 @@
 
 Displays GitHub Actions CI status in Gerrit's **Checks** tab. Each GitHub
 Actions job appears as a separate check run with status, duration, and a
-direct link to the job in GitHub.
+direct link to the job in GitHub. Posts Verified +1/−1 labels based on
+CI results.
 
 ## Architecture
 
@@ -14,7 +15,9 @@ Browser (Gerrit)         checks-api (FastAPI)        GitHub Actions
 │              │  POST  │   /trigger       │        │ workflow_job  │
 │ Checks Tab   ├───────►│   /rerun         ├───────►│              │
 │              │        │   /webhook/github│        │ dispatches   │
-└──────────────┘        │   /runs/register │        └──────────────┘
+└──────────────┘        │   /webhook/gerrit│        └──────────────┘
+                        │   /runs/register │
+                        │   /queue/status  │
                         └──────────────────┘
                           SQLite (WAL mode)
 ```
@@ -22,7 +25,8 @@ Browser (Gerrit)         checks-api (FastAPI)        GitHub Actions
 - **Frontend**: TypeScript plugin (`frontend/dist/spdk-checks.js`) loaded by
   Gerrit. Registers a `ChecksProvider` that polls the backend every 30 seconds.
 - **Backend**: Python FastAPI service. Receives GitHub webhook events, stores
-  run/job status in SQLite, serves it to the frontend.
+  run/job status in SQLite, serves it to the frontend. Posts Verified labels
+  to Gerrit when CI completes. Includes a fair-scheduling queue manager.
 - **Proxy**: nginx on the same domain (`review.spdk.io/checks-api/`) avoids
   CORS issues.
 
@@ -34,11 +38,12 @@ Browser (Gerrit)         checks-api (FastAPI)        GitHub Actions
 | `config.py` | `ChecksConfig` dataclass, loads from `CHECKS_*` env vars |
 | `database.py` | SQLite schema and CRUD operations |
 | `github_client.py` | GitHub API client with retry logic |
-| `webhook_handler.py` | GitHub webhook processing + HMAC validation |
+| `webhook_handler.py` | GitHub webhook processing, HMAC validation, Verified votes |
+| `queue_manager.py` | Fair-scheduling queue (owner-based round-robin) |
 | `Dockerfile` | Container image (python:3.13-alpine) |
 | `frontend/` | TypeScript Gerrit plugin source + built JS |
-| `tests/` | pytest backend tests (55 tests) |
-| `dev/` | Development environment for manual testing |
+| `tests/` | pytest backend tests (136 tests) |
+| `dev/` | Development environment and E2E tests |
 
 ## Setup
 
@@ -63,6 +68,10 @@ cp .env.checks.example .env.checks
 | `CHECKS_GITHUB_REPO` | No | GitHub repo (default: `spdk/spdk-ci`) |
 | `CHECKS_DATABASE_PATH` | No | SQLite path (default: `/app/data/checks.db`) |
 | `CHECKS_API_KEY` | No | API key for trigger/rerun/register endpoints |
+| `CHECKS_GERRIT_USER` | No | Gerrit username for Verified votes |
+| `CHECKS_GERRIT_PASSWORD` | No | Gerrit password for Verified votes |
+| `CHECKS_QUEUE_MAX_RUNNING` | No | Max concurrent workflows (default: 3) |
+| `CHECKS_QUEUE_POLL_INTERVAL` | No | Queue poll interval in seconds (default: 10) |
 | `LOG_LEVEL` | No | Logging level (default: `INFO`) |
 
 ### Deployment
@@ -94,26 +103,46 @@ Configure a webhook in GitHub (repo Settings → Webhooks):
 | `POST` | `/checks-api/v1/changes/{change}/patchsets/{ps}/trigger` | Trigger a new CI run |
 | `POST` | `/checks-api/v1/changes/{change}/patchsets/{ps}/rerun` | Rerun failed jobs |
 | `POST` | `/checks-api/v1/webhook/github` | GitHub webhook receiver |
+| `POST` | `/checks-api/v1/webhook/gerrit` | Gerrit webhook for queue manager |
 | `POST` | `/checks-api/v1/runs/register` | Register Gerrit→GitHub run mapping |
+| `GET` | `/checks-api/v1/queue/status` | Queue status (pending, running counts) |
+
+## Verified Votes
+
+When a GitHub Actions workflow completes, the backend automatically posts
+a Verified label to Gerrit:
+
+- **Success** → Verified +1 with "Build Successful: all CI jobs passed."
+- **Failure** → Verified −1 with "Build Failed: one or more CI jobs failed."
+- **Cancelled** → No vote posted.
+
+Requires `CHECKS_GERRIT_USER` and `CHECKS_GERRIT_PASSWORD` to be configured.
 
 ## Testing
 
 ### Automated Tests
+
+Run all 136 unit/integration tests:
 
 ```bash
 cd infra/checks/
 ./run_tests.sh
 ```
 
-Or run backend and frontend tests separately:
+### End-to-End Tests
+
+Run the full E2E suite (builds from clean state, deploys, tests everything):
 
 ```bash
-# Backend (55 tests)
-python3 -m pytest tests/ -v
-
-# Frontend (13 assertions)
-cd frontend/ && npm test
+cd infra/checks/dev/
+./run-e2e-tests.sh           # run 38 tests, then tear down
+./run-e2e-tests.sh --keep    # run tests, leave env for inspection
+./run-e2e-tests.sh --cleanup # just tear down
 ```
+
+The E2E tests verify: Gerrit setup, change creation, checks data via REST API,
+Verified vote posting, idempotency, edge cases, queue status, frontend plugin
+serving, and container health.
 
 ### Manual Testing
 
@@ -124,11 +153,11 @@ cd infra/checks/dev/
 ./start-dev.sh --seed
 ```
 
-This starts Gerrit + checks-api + nginx on `http://localhost:8080` and seeds
+This starts Gerrit + checks-api + nginx on `http://localhost:9080` and seeds
 4 test changes with various CI statuses (completed, running, queued, all-pass).
 
 To test manually:
-1. Open http://localhost:8080
+1. Open http://localhost:9080
 2. Create a change: clone `test-project`, commit, push to `refs/for/master`
 3. Navigate to the change and click the **Checks** tab
 4. Seeded data appears for changes 1–4
@@ -180,3 +209,8 @@ The plugin runs alongside the existing `summary.yml` workflow initially:
 **"Run CI" button returns error**
 - Verify `CHECKS_GITHUB_TOKEN` has `repo` and `actions:write` scopes
 - Check if the change is WIP, private, or not the latest patchset
+
+**Verified vote not posted**
+- Verify `CHECKS_GERRIT_USER` and `CHECKS_GERRIT_PASSWORD` are set
+- Check that the Verified label exists on the Gerrit project
+- Check checks-api logs for "Error posting Verified vote" messages

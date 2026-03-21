@@ -39,5 +39,13 @@ Checks tab. It requires its own env file:
 1. Copy the example: `cp .env.checks.example .env.checks`
 2. Set `CHECKS_GITHUB_TOKEN` to a GitHub PAT with `actions:read` and `actions:write` scopes.
 3. Set `CHECKS_GITHUB_WEBHOOK_SECRET` to the same secret configured in the GitHub webhook.
+4. Set `CHECKS_GERRIT_USER` and `CHECKS_GERRIT_PASSWORD` for Verified vote posting.
 
-See [`checks/README.md`](checks/README.md) for full details.
+See [`checks/README.md`](checks/README.md) for full details including the queue
+manager, Verified votes, and API endpoints.
+
+### Shared Code
+
+The `common/` module contains code shared between the forwarder and the checks
+plugin: `github_api.py` (HTTP retry, repository dispatch, workflow queries) and
+`gerrit_helpers.py` (pygerrit2 client, change validation, Verified vote posting).
