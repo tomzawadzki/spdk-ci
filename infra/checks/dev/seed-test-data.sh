@@ -3,7 +3,8 @@
 # Idempotent: safe to run multiple times (the backend uses upsert).
 set -euo pipefail
 
-API="http://localhost:8080/checks-api/v1"
+DEV_PORT="${DEV_PORT:-9080}"
+API="http://localhost:$DEV_PORT/checks-api/v1"
 
 # --- helpers ----------------------------------------------------------------
 wait_healthy() {
@@ -29,18 +30,22 @@ register_run() {
 
 send_workflow_run() {
     local run_id=$1 name=$2 run_number=$3 status=$4 conclusion=$5 title=$6
+    local action="in_progress"
+    [ "$status" = "completed" ] && action="completed"
+    local concl_json="null"
+    [ -n "$conclusion" ] && concl_json="\"$conclusion\""
     curl -sf -X POST "$API/webhook/github" \
         -H 'Content-Type: application/json' \
         -H 'X-GitHub-Event: workflow_run' \
         -d "{
-            \"action\": \"$( [ \"$status\" = completed ] && echo completed || echo in_progress )\",
+            \"action\": \"$action\",
             \"workflow_run\": {
                 \"id\": $run_id,
                 \"name\": \"$name\",
                 \"run_number\": $run_number,
                 \"run_attempt\": 1,
                 \"status\": \"$status\",
-                \"conclusion\": $( [ -z "$conclusion" ] && echo null || echo "\"$conclusion\"" ),
+                \"conclusion\": $concl_json,
                 \"html_url\": \"https://github.com/spdk/spdk-ci/actions/runs/$run_id\",
                 \"event\": \"repository_dispatch\",
                 \"display_title\": \"$title\"
@@ -50,20 +55,28 @@ send_workflow_run() {
 
 send_workflow_job() {
     local job_id=$1 run_id=$2 name=$3 status=$4 conclusion=$5 started=$6 completed=$7
+    local action="$status"
+    [ "$status" = "completed" ] && action="completed"
+    local concl_json="null"
+    [ -n "$conclusion" ] && concl_json="\"$conclusion\""
+    local start_json="null"
+    [ -n "$started" ] && start_json="\"$started\""
+    local end_json="null"
+    [ -n "$completed" ] && end_json="\"$completed\""
     curl -sf -X POST "$API/webhook/github" \
         -H 'Content-Type: application/json' \
         -H 'X-GitHub-Event: workflow_job' \
         -d "{
-            \"action\": \"$( [ \"$status\" = completed ] && echo completed || echo "$status" )\",
+            \"action\": \"$action\",
             \"workflow_job\": {
                 \"id\": $job_id,
                 \"run_id\": $run_id,
                 \"name\": \"$name\",
                 \"status\": \"$status\",
-                \"conclusion\": $( [ -z "$conclusion" ] && echo null || echo "\"$conclusion\"" ),
+                \"conclusion\": $concl_json,
                 \"html_url\": \"https://github.com/spdk/spdk-ci/actions/runs/$run_id/job/$job_id\",
-                \"started_at\": $( [ -z "$started" ] && echo null || echo "\"$started\"" ),
-                \"completed_at\": $( [ -z "$completed" ] && echo null || echo "\"$completed\"" ),
+                \"started_at\": $start_json,
+                \"completed_at\": $end_json,
                 \"runner_name\": \"ubuntu-latest\"
             }
         }" > /dev/null
