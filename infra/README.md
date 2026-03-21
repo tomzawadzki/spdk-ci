@@ -30,3 +30,14 @@ To set up the environment:
 - `OUTPUT_DIR`: The directory where the forwarder and mergable_changes scripts write their output files (mapped to `/output` inside containers).
 
 The Python scripts use fail-fast validation for these variables, meaning they will exit immediately with a clear error message if a required variable is missing or if a variable has an invalid type (e.g., a non-integer for `FORWARDER_QUEUE_PROCESS_INTERVAL`).
+
+### Checks Plugin
+
+The Checks plugin (`checks/`) integrates GitHub Actions CI status into Gerrit's
+Checks tab. It requires its own env file:
+
+1. Copy the example: `cp .env.checks.example .env.checks`
+2. Set `CHECKS_GITHUB_TOKEN` to a GitHub PAT with `actions:read` and `actions:write` scopes.
+3. Set `CHECKS_GITHUB_WEBHOOK_SECRET` to the same secret configured in the GitHub webhook.
+
+See [`checks/README.md`](checks/README.md) for full details.
