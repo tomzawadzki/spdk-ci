@@ -7,10 +7,12 @@ import requests as http_requests
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
 from config import config
 from common.gerrit_helpers import validate_change_for_ci
 import database
 import github_client
+import queue_manager
 import webhook_handler
 
 # ---------------------------------------------------------------------------
@@ -30,8 +32,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     database.init_db()
     database.cleanup_old_runs()
+    queue_manager.start()
     logger.info("SPDK Checks backend started (repo=%s)", config.github_repo)
     yield
+    queue_manager.stop()
 
 app = FastAPI(title="SPDK Checks Backend", version="0.1.0", lifespan=lifespan)
 
@@ -205,3 +209,39 @@ def register_run(body: RegisterRequest,
     logger.info("Registered run mapping: change %d/%d → run %d",
                 body.gerrit_change, body.gerrit_patchset, body.github_run_id)
     return {"message": "Run registered", "github_run_id": body.github_run_id}
+
+
+# ---------------------------------------------------------------------------
+# POST Gerrit webhook (queue events for dispatch to GitHub)
+# ---------------------------------------------------------------------------
+@app.post("/checks-api/v1/webhook/gerrit")
+async def gerrit_webhook(request: Request):
+    """Accept Gerrit webhook events (patchset-created, etc.) and queue them.
+
+    The queue manager handles deduplication, filtering, fair scheduling,
+    and throttled dispatch to GitHub Actions.
+    """
+    payload = await request.json()
+    event_type = payload.get("type", "")
+
+    change = payload.get("change", {})
+    change_number = change.get("number")
+    if not change_number:
+        raise HTTPException(status_code=400, detail="Missing change number")
+
+    event_data = {
+        "type": event_type,
+        "change_number": change_number,
+        "payload": payload,
+    }
+    queue_manager.enqueue(event_data)
+    return {"status": "queued", "change": change_number}
+
+
+# ---------------------------------------------------------------------------
+# GET queue status
+# ---------------------------------------------------------------------------
+@app.get("/checks-api/v1/queue/status")
+def queue_status():
+    """Return the current dispatch queue state."""
+    return queue_manager.get_status()

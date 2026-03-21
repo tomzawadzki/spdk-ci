@@ -19,6 +19,10 @@ class ChecksConfig:
     api_key: str = ""
     cors_origins: list = field(default_factory=lambda: ["http://localhost:8080"])
     log_level: str = "INFO"
+    queue_process_interval: int = 60
+    max_running_workflows: int = 3
+    recovery_window_days: int = 7
+    gerrit_query_limit: int = 300
 
     def __post_init__(self):
         self.github_token = os.getenv("CHECKS_GITHUB_TOKEN", self.github_token)
@@ -31,6 +35,16 @@ class ChecksConfig:
         origins = os.getenv("CHECKS_CORS_ORIGINS", "")
         if origins:
             self.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
+
+        for attr in ["queue_process_interval", "max_running_workflows",
+                     "recovery_window_days", "gerrit_query_limit"]:
+            env_val = os.getenv(f"CHECKS_{attr.upper()}")
+            if env_val is not None:
+                try:
+                    setattr(self, attr, int(env_val))
+                except ValueError:
+                    logger.warning("CHECKS_%s must be an integer, keeping default %s",
+                                   attr.upper(), getattr(self, attr))
 
         if not self.github_token:
             logger.warning("CHECKS_GITHUB_TOKEN not set — trigger/rerun will fail")
