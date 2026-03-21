@@ -87,10 +87,10 @@ def _mock_gerrit_api():
 
 
 @patch("app.github_client.trigger_workflow")
-@patch("app.GerritRestAPI")
-def test_trigger_success(mock_gerrit_cls, mock_trigger, client, monkeypatch):
+@patch("common.gerrit_helpers.get_gerrit_client")
+def test_trigger_success(mock_gerrit_client, mock_trigger, client, monkeypatch):
     monkeypatch.setattr(checks_config, "api_key", "")
-    mock_gerrit_cls.return_value = _mock_gerrit_api()
+    mock_gerrit_client.return_value = _mock_gerrit_api()
     mock_trigger.return_value = MagicMock(status_code=204)
 
     resp = client.post("/checks-api/v1/changes/12345/patchsets/3/trigger")
@@ -102,8 +102,8 @@ def test_trigger_success(mock_gerrit_cls, mock_trigger, client, monkeypatch):
     mock_trigger.assert_called_once()
 
 
-@patch("app.GerritRestAPI")
-def test_trigger_gerrit_wip(mock_gerrit_cls, client, monkeypatch):
+@patch("common.gerrit_helpers.get_gerrit_client")
+def test_trigger_gerrit_wip(mock_gerrit_client, client, monkeypatch):
     monkeypatch.setattr(checks_config, "api_key", "")
     mock_gerrit = MagicMock()
     mock_gerrit.get.return_value = {
@@ -113,7 +113,7 @@ def test_trigger_gerrit_wip(mock_gerrit_cls, client, monkeypatch):
         "revisions": {"abc": {"_number": 1}},
         "labels": {},
     }
-    mock_gerrit_cls.return_value = mock_gerrit
+    mock_gerrit_client.return_value = mock_gerrit
 
     resp = client.post("/checks-api/v1/changes/12345/patchsets/1/trigger")
     assert resp.status_code == 409
@@ -121,10 +121,10 @@ def test_trigger_gerrit_wip(mock_gerrit_cls, client, monkeypatch):
 
 
 @patch("app.github_client.trigger_workflow")
-@patch("app.GerritRestAPI")
-def test_trigger_github_error(mock_gerrit_cls, mock_trigger, client, monkeypatch):
+@patch("common.gerrit_helpers.get_gerrit_client")
+def test_trigger_github_error(mock_gerrit_client, mock_trigger, client, monkeypatch):
     monkeypatch.setattr(checks_config, "api_key", "")
-    mock_gerrit_cls.return_value = _mock_gerrit_api()
+    mock_gerrit_client.return_value = _mock_gerrit_api()
     mock_trigger.side_effect = http_requests.HTTPError("502 Bad Gateway")
 
     resp = client.post("/checks-api/v1/changes/12345/patchsets/3/trigger")

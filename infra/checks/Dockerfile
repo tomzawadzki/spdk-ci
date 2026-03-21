@@ -4,7 +4,8 @@ RUN pip install --no-cache-dir fastapi \
 	uvicorn \
 	requests \
 	pygerrit2
-COPY *.py /app/
+COPY common/ /app/common/
+COPY checks/*.py /app/
 WORKDIR /app
 RUN mkdir -p /app/data
 EXPOSE 8001

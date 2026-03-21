@@ -3,10 +3,14 @@
 import sys
 import os
 
-# Add the checks directory to sys.path so we can import the flat modules.
+# Add the checks directory and the infra directory to sys.path so we can
+# import flat modules (config, database, …) and the common package.
 CHECKS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+INFRA_DIR = os.path.dirname(CHECKS_DIR)
 if CHECKS_DIR not in sys.path:
     sys.path.insert(0, CHECKS_DIR)
+if INFRA_DIR not in sys.path:
+    sys.path.insert(0, INFRA_DIR)
 
 import pytest
 

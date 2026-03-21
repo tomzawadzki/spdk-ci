@@ -48,8 +48,8 @@ services:
   forwarder:
     image: forwarder:latest
     build:
-      context: ./forwarder
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: forwarder/Dockerfile
     container_name: webhook_forwarder
     restart: always
     env_file:
@@ -66,8 +66,8 @@ services:
   checks-api:
     image: checks-api:latest
     build:
-      context: ./checks
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: checks/Dockerfile
     container_name: checks_api
     restart: always
     env_file:

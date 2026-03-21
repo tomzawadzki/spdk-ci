@@ -7,9 +7,8 @@ import requests as http_requests
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from pygerrit2 import GerritRestAPI
-
 from config import config
+from common.gerrit_helpers import validate_change_for_ci
 import database
 import github_client
 import webhook_handler
@@ -114,35 +113,15 @@ def trigger(change_number: int, patchset_number: int,
 
 
 def _validate_gerrit_change(change_number: int, patchset_number: int):
-    """Check change state via the Gerrit REST API using pygerrit2."""
-    gerrit = GerritRestAPI(url=config.gerrit_url)
-    try:
-        data = gerrit.get(f"/changes/{change_number}?o=CURRENT_REVISION&o=DETAILED_LABELS")
-    except Exception as exc:
-        logger.error("Failed to query Gerrit for change %d: %s", change_number, exc)
-        raise HTTPException(status_code=502, detail="Failed to validate change with Gerrit")
+    """Check change state via the Gerrit REST API using common helpers."""
+    result = validate_change_for_ci(config.gerrit_url, change_number, patchset_number)
+    if not result["valid"]:
+        error = result["error"]
+        status = 502 if error.startswith("Failed to validate") else 409
+        raise HTTPException(status_code=status, detail=error)
 
-    if data.get("work_in_progress"):
-        raise HTTPException(status_code=409, detail="Change is marked WIP")
-    if data.get("is_private"):
-        raise HTTPException(status_code=409, detail="Change is private")
-    if data.get("status") != "NEW":
-        raise HTTPException(status_code=409, detail=f"Change status is {data.get('status')}, expected NEW")
-
-    # Check that requested patchset is the latest
-    current_rev = data.get("revisions", {})
-    latest_patchset = 0
-    for rev_info in current_rev.values():
-        ps = rev_info.get("_number", 0)
-        if ps > latest_patchset:
-            latest_patchset = ps
-    if latest_patchset and patchset_number != latest_patchset:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Patchset {patchset_number} is not the latest (latest is {latest_patchset})",
-        )
-
-    # Check for existing Verified vote from CI
+    # Check for existing Verified vote from CI (app-specific)
+    data = result["data"]
     labels = data.get("labels", {})
     verified = labels.get("Verified", {})
     for vote in verified.get("all", []):

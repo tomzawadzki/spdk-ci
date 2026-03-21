@@ -3,7 +3,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 from datetime import datetime, timedelta, timezone
-from pygerrit2 import GerritRestAPI
 import os
 import sys
 from dataclasses import dataclass, field
@@ -17,6 +16,20 @@ import queue
 import jinja2
 from collections import deque
 
+# Allow imports from infra/ so ``from common.…`` works when running locally
+# and inside the Docker container (where common/ lives alongside forwarder.py).
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from common.github_api import (
+    trigger_repository_dispatch,
+    get_workflow_runs as _get_workflow_runs_common,
+)
+from common.gerrit_helpers import (
+    get_gerrit_client,
+    get_current_revision,
+    parse_gerrit_timestamp,
+)
+
 @dataclass
 class ForwarderConfig:
     test_mode: bool = False
@@ -29,8 +42,6 @@ class ForwarderConfig:
     gerrit_url: str = "https://review.spdk.io"
     recovery_window_days: int = 7
     gerrit_query_limit: int = 300
-    github_dispatch_url: str = field(init=False)
-    github_workflow_runs_url: str = field(init=False)
 
     def __post_init__(self):
         self.test_mode = os.getenv("FORWARDER_TEST_MODE", str(self.test_mode)).lower() == "true"
@@ -42,9 +53,6 @@ class ForwarderConfig:
             sys.exit(1)
 
         self.github_repo = os.getenv("FORWARDER_GITHUB_REPO", self.github_repo)
-        github_repo_url = f"https://api.github.com/repos/{self.github_repo}"
-        self.github_dispatch_url = f"{github_repo_url}/dispatches"
-        self.github_workflow_runs_url = f"{github_repo_url}/actions/workflows/gerrit-webhook-handler.yml/runs"
 
         self.output_dir = os.getenv("OUTPUT_DIR", self.output_dir)
         self.gerrit_url = os.getenv("GERRIT_URL", self.gerrit_url).rstrip("/")
@@ -62,52 +70,25 @@ DISPLAY_TITLE_RE = re.compile(r"^\((\d+)/(\d+)\)(.*)")
 event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
 
-def _github_headers():
-    return {
-        "Authorization": f"Bearer {config.github_token}",
-        "Accept": "application/vnd.github+json",
-    }
-
-
 def _get_workflow_runs():
     """Fetch all active workflow runs (in_progress, waiting, queued) from GitHub."""
-    runs = []
-    for status in ("in_progress", "waiting", "queued"):
-        try:
-            response = requests.get(
-                config.github_workflow_runs_url, headers=_github_headers(),
-                params={"status": status, "per_page": 100})
-            if response.status_code == 200:
-                runs.extend(response.json().get("workflow_runs", []))
-            else:
-                logging.warning(f"Failed to query workflow runs (status={status}): {response.status_code}")
-        except requests.RequestException as exc:
-            logging.warning(f"Error querying workflow runs (status={status}): {exc}")
-    return runs
+    return _get_workflow_runs_common(
+        config.github_token, config.github_repo,
+        workflow_file="gerrit-webhook-handler.yml")
 
 
 def post_event_to_github(event_type, payload):
-    body = {
-        "event_type": event_type,
-        "client_payload": payload
-    }
-
     if config.test_mode:
         logging.info("Test mode; not forwarding to GitHub Actions.")
         return True
 
     try:
-        response = requests.post(config.github_dispatch_url, headers=_github_headers(), json=body)
-    except requests.RequestException as exc:
-        logging.warning(f"GitHub action trigger failed with request error: {exc}")
-        return False
-
-    if 200 <= response.status_code < 300:
-        logging.info(f"GitHub Action Trigger Response: {response.status_code} {response.text}")
+        trigger_repository_dispatch(
+            config.github_token, config.github_repo, event_type, payload)
         return True
-
-    logging.warning(f"GitHub Action Trigger failed: {response.status_code} {response.text}")
-    return False
+    except Exception as exc:
+        logging.warning(f"GitHub action trigger failed: {exc}")
+        return False
 
 
 def get_active_workflow_count():
@@ -177,33 +158,18 @@ def write_queue_snapshot(pending_events, dispatched_owners):
 
 
 def _parse_gerrit_timestamp_to_unix(timestamp):
-    """Parse Gerrit REST timestamp (e.g. "2025-01-15 10:30:00.000000000") to Unix epoch int."""
-    if not timestamp:
-        return None
-    try:
-        return int(datetime.fromisoformat(timestamp).timestamp())
-    except Exception:
-        logging.warning(f"Failed to parse Gerrit timestamp: {timestamp}")
-        return None
+    """Parse Gerrit REST timestamp to Unix epoch int."""
+    return parse_gerrit_timestamp(timestamp)
 
 
 def _get_current_revision(change):
     """Extract the current revision dict from a Gerrit change object."""
-    revisions = change.get("revisions")
-    if not isinstance(revisions, dict):
-        return {}
-    current_revision = change.get("current_revision")
-    if not current_revision:
-        return {}
-    current_revision_data = revisions.get(current_revision)
-    if not isinstance(current_revision_data, dict):
-        return {}
-    return current_revision_data
+    return get_current_revision(change)
 
 
 def query_gerrit_for_recovery():
     """Query Gerrit REST API for open changes without a Verified label."""
-    gerrit = GerritRestAPI(url=config.gerrit_url)
+    gerrit = get_gerrit_client(config.gerrit_url)
     query = "".join([
         "/changes/",
         "?q=project:spdk/spdk status:open -is:wip -is:private"
