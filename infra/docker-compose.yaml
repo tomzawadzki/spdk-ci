@@ -32,6 +32,7 @@ services:
     - ${GERRIT_DIR}/lib:/var/gerrit/lib
     - ${GERRIT_DIR}/logs:/var/gerrit/logs
     - ${GERRIT_DIR}/plugins:/var/gerrit/plugins
+    - ./checks/frontend/dist/spdk-checks.js:/var/gerrit/plugins/spdk-checks.js:ro
     - ${GERRIT_DIR}/static:/var/gerrit/static
     - ${GERRIT_DIR}/tmp:/var/gerrit/tmp
     - ${GERRIT_DIR}/.ssh:/var/gerrit/.ssh
@@ -62,6 +63,23 @@ services:
     networks:
     - gerrit
 
+  checks-api:
+    image: checks-api:latest
+    build:
+      context: ./checks
+      dockerfile: Dockerfile
+    container_name: checks_api
+    restart: always
+    env_file:
+    - .env
+    - .env.checks
+    depends_on:
+    - gerrit
+    volumes:
+    - checks-data:/app/data
+    networks:
+    - gerrit
+
   mergable_changes:
     image: mergable_changes:latest
     build:
@@ -81,6 +99,7 @@ services:
 volumes:
   logs:
   outputs:
+  checks-data:
 
 networks:
   gerrit:

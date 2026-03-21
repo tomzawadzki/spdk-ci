@@ -21,19 +21,19 @@ class ChecksConfig:
     log_level: str = "INFO"
 
     def __post_init__(self):
-        self.github_token = os.getenv("GITHUB_TOKEN", self.github_token)
-        self.github_webhook_secret = os.getenv("GITHUB_WEBHOOK_SECRET", self.github_webhook_secret)
-        self.github_repo = os.getenv("GITHUB_REPO", self.github_repo)
+        self.github_token = os.getenv("CHECKS_GITHUB_TOKEN", self.github_token)
+        self.github_webhook_secret = os.getenv("CHECKS_GITHUB_WEBHOOK_SECRET", self.github_webhook_secret)
+        self.github_repo = os.getenv("CHECKS_GITHUB_REPO", self.github_repo)
         self.gerrit_url = os.getenv("GERRIT_URL", self.gerrit_url).rstrip("/")
-        self.database_path = os.getenv("DATABASE_PATH", self.database_path)
-        self.api_key = os.getenv("API_KEY", self.api_key)
+        self.database_path = os.getenv("CHECKS_DATABASE_PATH", self.database_path)
+        self.api_key = os.getenv("CHECKS_API_KEY", self.api_key)
         self.log_level = os.getenv("LOG_LEVEL", self.log_level).upper()
-        origins = os.getenv("CORS_ORIGINS", "")
+        origins = os.getenv("CHECKS_CORS_ORIGINS", "")
         if origins:
             self.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
 
         if not self.github_token:
-            logger.warning("GITHUB_TOKEN not set — trigger/rerun will fail")
+            logger.warning("CHECKS_GITHUB_TOKEN not set — trigger/rerun will fail")
 
 
 config = ChecksConfig()
