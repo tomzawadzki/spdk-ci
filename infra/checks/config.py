@@ -23,6 +23,8 @@ class ChecksConfig:
     max_running_workflows: int = 3
     recovery_window_days: int = 7
     gerrit_query_limit: int = 300
+    gerrit_user: str = ""
+    gerrit_password: str = ""
 
     def __post_init__(self):
         self.github_token = os.getenv("CHECKS_GITHUB_TOKEN", self.github_token)
@@ -32,6 +34,8 @@ class ChecksConfig:
         self.database_path = os.getenv("CHECKS_DATABASE_PATH", self.database_path)
         self.api_key = os.getenv("CHECKS_API_KEY", self.api_key)
         self.log_level = os.getenv("LOG_LEVEL", self.log_level).upper()
+        self.gerrit_user = os.getenv("CHECKS_GERRIT_USER", self.gerrit_user)
+        self.gerrit_password = os.getenv("CHECKS_GERRIT_PASSWORD", self.gerrit_password)
         origins = os.getenv("CHECKS_CORS_ORIGINS", "")
         if origins:
             self.cors_origins = [o.strip() for o in origins.split(",") if o.strip()]
@@ -48,6 +52,8 @@ class ChecksConfig:
 
         if not self.github_token:
             logger.warning("CHECKS_GITHUB_TOKEN not set — trigger/rerun will fail")
+        if not self.gerrit_user or not self.gerrit_password:
+            logger.warning("CHECKS_GERRIT_USER/PASSWORD not set — Verified voting disabled")
 
 
 config = ChecksConfig()

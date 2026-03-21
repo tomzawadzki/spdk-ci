@@ -3,8 +3,10 @@
 set -e
 cd "$(dirname "$0")"
 
+DEV_PORT="${DEV_PORT:-9080}"
+
 echo "Starting SPDK Checks development environment..."
-echo "This will start Gerrit + checks-api + nginx on http://localhost:8080"
+echo "This will start Gerrit + checks-api + nginx on http://localhost:$DEV_PORT"
 echo ""
 
 # Build and start services
@@ -15,7 +17,7 @@ echo "Waiting for services to be ready..."
 
 # Wait for checks-api (proxied through nginx)
 for i in $(seq 1 60); do
-    if curl -sf http://localhost:8080/checks-api/v1/health > /dev/null 2>&1; then
+    if curl -sf "http://localhost:$DEV_PORT/checks-api/v1/health" > /dev/null 2>&1; then
         echo "checks-api is ready!"
         break
     fi
@@ -40,11 +42,11 @@ fi
 echo ""
 echo "=== Development environment is ready ==="
 echo ""
-echo "  Gerrit UI:   http://localhost:8080"
-echo "  Checks API:  http://localhost:8080/checks-api/v1/health"
+echo "  Gerrit UI:   http://localhost:$DEV_PORT"
+echo "  Checks API:  http://localhost:$DEV_PORT/checks-api/v1/health"
 echo ""
 echo "Quick start:"
-echo "  1. Open http://localhost:8080 in your browser"
+echo "  1. Open http://localhost:$DEV_PORT in your browser"
 echo "  2. Run ./setup-gerrit.sh to create a test project"
 echo "  3. Run ./seed-test-data.sh to populate CI check data"
 echo "  4. Navigate to a change and click the 'Checks' tab"

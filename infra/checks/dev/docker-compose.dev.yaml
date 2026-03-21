@@ -14,13 +14,15 @@ services:
     image: checks-api-dev:latest
     container_name: checks-api-dev
     build:
-      context: ..
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: checks/Dockerfile
     environment:
       - CHECKS_GITHUB_TOKEN=fake-dev-token
       - CHECKS_GITHUB_WEBHOOK_SECRET=
       - CHECKS_DATABASE_PATH=/app/data/checks.db
       - GERRIT_URL=http://gerrit:8080
+      - CHECKS_GERRIT_USER=admin
+      - CHECKS_GERRIT_PASSWORD=secret
       - LOG_LEVEL=DEBUG
     volumes:
       - checks-dev-data:/app/data
