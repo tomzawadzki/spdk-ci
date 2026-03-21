@@ -2,8 +2,20 @@
 set -e
 cd "$(dirname "$0")"
 
-echo "=== Backend tests ==="
-python3 -m pytest tests/ -v
+# Ensure infra/ is on PYTHONPATH for the common package
+INFRA_DIR="$(cd .. && pwd)"
+export PYTHONPATH="$INFRA_DIR:$(pwd):${PYTHONPATH:-}"
+
+echo "=== Common module tests ==="
+python3 -m pytest "$INFRA_DIR/common/tests/" -v
+
+echo ""
+echo "=== Backend unit tests ==="
+python3 -m pytest tests/ -v --ignore=tests/test_functional.py
+
+echo ""
+echo "=== Backend functional tests ==="
+python3 -m pytest tests/test_functional.py -v
 
 echo ""
 echo "=== Frontend tests ==="
