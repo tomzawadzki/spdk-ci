@@ -42,6 +42,7 @@ jobs:
         NET_TYPE=phy
         SPDK_RUN_ASAN=0
         SPDK_RUN_UBSAN=1
+        AUTOTEST_COLORS_ENABLED=no
         EOF
         ./spdk/autorun.sh ./funtest.conf
     - name: Upload Artifacts
