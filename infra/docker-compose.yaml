@@ -56,6 +56,7 @@ services:
     - .env.forwarder
     depends_on:
     - gerrit
+    - nginx
     volumes:
     - logs:/var/log
     - outputs:/output
@@ -72,6 +73,7 @@ services:
     env_file: ".env"
     depends_on:
     - gerrit
+    - nginx
     volumes:
     - logs:/var/log
     - outputs:/output
