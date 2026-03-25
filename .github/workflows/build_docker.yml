@@ -115,7 +115,7 @@ jobs:
         key: vm-image-${{ inputs.distro }}_x86_64
 
     - name: Download VM Qcow2 image artifact
-      uses: actions/download-artifact@v4.1.8
+      uses: actions/download-artifact@v8.0.1
       if: hashFiles(format('{0}_x86_64.qcow2', inputs.distro)) == ''
       with:
         name: vm-image-${{ inputs.distro }}_x86_64

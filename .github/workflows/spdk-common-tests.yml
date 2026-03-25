@@ -131,7 +131,7 @@ jobs:
       DISTRO: ${{ matrix.container }}
     container: ${{ matrix.container != '' && matrix.container || null }}
     steps:
-    - uses: actions/download-artifact@v4.1.8
+    - uses: actions/download-artifact@v8.0.1
       with:
         name: repo-spdk
     - if: contains(matrix.container, 'ubuntu') || contains(matrix.container, 'debian') || contains(matrix.os, 'ubuntu-22.04-arm')
@@ -256,12 +256,12 @@ jobs:
         path: ci
 
     - name: Download the SPDK repository
-      uses: actions/download-artifact@v4.1.8
+      uses: actions/download-artifact@v8.0.1
       with:
         name: repo-spdk
 
     - name: Download the SPDK ABI repository
-      uses: actions/download-artifact@v4.1.8
+      uses: actions/download-artifact@v8.0.1
       with:
         name: repo-spdk-abi
 
@@ -279,7 +279,7 @@ jobs:
         key: vm-image-${{matrix.distro}}_x86_64
 
     - name: Download VM Qcow2 image artifact
-      uses: actions/download-artifact@v4.1.8
+      uses: actions/download-artifact@v8.0.1
       if: (contains(matrix.workflow.name, 'vm')  || contains(matrix.workflow.name, 'vfio-user')) && hashFiles(format('{0}_x86_64.qcow2',
         matrix.distro)) == ''
       with:
