@@ -18,7 +18,7 @@ services:
     - gerrit
 
   gerrit:
-    image: gerritcodereview/gerrit:3.13.4
+    image: gerritcodereview/gerrit:3.13.5
     container_name: gerrit
     restart: always
     volumes:
