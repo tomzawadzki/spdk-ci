@@ -185,7 +185,7 @@ jobs:
 
     - name: Cache qcow2 image
       id: cache-qcow2
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: ${{ matrix.distro }}_x86_64.qcow2
         key: vm-image-${{ matrix.distro }}_x86_64

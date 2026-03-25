@@ -273,7 +273,7 @@ jobs:
     - name: Restore qcow2 image from cache
       if: contains(matrix.workflow.name, 'vm')  || contains(matrix.workflow.name, 'vfio-user')
       id: restore-qcow2
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: ${{matrix.distro}}_x86_64.qcow2
         key: vm-image-${{matrix.distro}}_x86_64
