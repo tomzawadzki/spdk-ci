@@ -131,7 +131,7 @@ jobs:
         --workflow workflows/build_docker_using_qcow2.yaml
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4.4.0
+      uses: actions/upload-artifact@v7.0.0
       if: always()
       with:
         path: ci/cijoe/cijoe-output

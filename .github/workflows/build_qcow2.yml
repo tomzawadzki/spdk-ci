@@ -91,7 +91,7 @@ jobs:
         tar -C spdk -czf ./spdk.tar.gz .
 
     - name: Upload the repository as an artifact
-      uses: actions/upload-artifact@v4.4.0
+      uses: actions/upload-artifact@v7.0.0
       with:
         name: repo-spdk
         path: spdk.tar.gz
@@ -141,7 +141,7 @@ jobs:
         --workflow workflows/build_${{ matrix.distro }}_qcow2_using_qemu.yaml
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4.4.0
+      uses: actions/upload-artifact@v7.0.0
       if: always()
       with:
         path: ci/cijoe/cijoe-output
@@ -152,7 +152,7 @@ jobs:
         qemu-img convert $HOME/guests/generic-bios-kvm-x86_64/boot.img ${{ matrix.distro }}_x86_64.qcow2 -O qcow2 -c
 
     - name: Store Qcow2 build artifacts
-      uses: actions/upload-artifact@v4.4.0
+      uses: actions/upload-artifact@v7.0.0
       with:
         name: vm-image-${{ matrix.distro }}_x86_64
         compression-level: 0

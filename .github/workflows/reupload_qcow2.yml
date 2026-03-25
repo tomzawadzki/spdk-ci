@@ -58,7 +58,7 @@ jobs:
         exit 1
 
     - name: Upload Qcow2 image artifact
-      uses: actions/upload-artifact@v4.4.0
+      uses: actions/upload-artifact@v7.0.0
       with:
         name: vm-image-${{ matrix.distro }}_x86_64
         compression-level: 0
