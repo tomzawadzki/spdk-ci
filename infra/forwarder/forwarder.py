@@ -473,7 +473,7 @@ if __name__ == "__main__":
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler("/var/log/webhook_forwarder.log", mode="a")
+            logging.FileHandler("/var/log/forwarder.log", mode="a")
         ]
     )
 

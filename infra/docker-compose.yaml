@@ -49,7 +49,7 @@ services:
     build:
       context: ./forwarder
       dockerfile: Dockerfile
-    container_name: webhook_forwarder
+    container_name: forwarder
     restart: always
     env_file:
     - .env
