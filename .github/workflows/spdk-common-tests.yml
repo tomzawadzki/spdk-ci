@@ -48,7 +48,7 @@ jobs:
     steps:
       # Required to use locally defined actions
     - name: Checkout the spdk-ci repo locally
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v6
 
     - name: Prepare SPDK repo by checking out from Gerrit
       uses: ./.github/actions/checkout_gerrit
@@ -66,7 +66,7 @@ jobs:
         path: spdk.tar.gz
 
     - name: Checkout the spdk-abi repo
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v6
       with:
         repository: 'spdk/spdk-abi'
         path: './spdk-abi'
@@ -251,7 +251,7 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Checkout CI repository
-      uses: actions/checkout@v4.1.7
+      uses: actions/checkout@v6
       with:
         path: ci
 

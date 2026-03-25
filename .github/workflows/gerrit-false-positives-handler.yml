@@ -34,7 +34,7 @@ jobs:
     env:
       client_payload: ${{ github.event.client_payload && toJson(github.event.client_payload) || inputs.client_payload }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Parse for false positive
       run: .github/scripts/parse_false_positive_comment.sh
       env:

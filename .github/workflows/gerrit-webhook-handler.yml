@@ -53,7 +53,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       client_payload: ${{ github.event.client_payload != '' && toJson(github.event.client_payload) || '' }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Check patch set status
       id: patch
       env:
