@@ -23,7 +23,7 @@ gerrit_format_q="o=DETAILED_ACCOUNTS&o=MESSAGES&o=LABELS&o=SKIP_DIFFSTAT"
 # Looking for comment thats only content is "false positive: 123", with a leeway for no spaces
 # or hashtag symbol before number
 if [[ ! ${gerrit_comment,,} =~ "patch set "[0-9]+:$'\n\nfalse positive:'[[:space:]]*[#]?([0-9]+)$ ]]; then
-	echo "Ignore. Comment does not include false positive phrase."
+	echo "::notice title=Skipped::Comment does not include false positive phrase."
 	exit 0
 fi
 gh_issue=${BASH_REMATCH[1]}
@@ -38,7 +38,7 @@ if ! gh_status=$(gh issue -R "$spdk_repo" view "$gh_issue" --json state --jq .st
 		--data "{'message': 'Issue #$gh_issue does not exist or is already closed.'}" \
 		--fail-with-body \
 		"$gerrit_url/$change_num/revisions/$patch_set/review"
-	echo "Comment points to incorrect GitHub issue."
+	echo "::error title=Invalid Issue::Comment points to incorrect GitHub issue #$gh_issue."
 	exit 0
 fi
 
@@ -49,8 +49,7 @@ curl -s -X GET \
 	| tail -n +2 | jq . | tee change.json
 
 if [[ ! -s change.json ]]; then
-	echo "Change $change_num not found, exiting."
-	echo "Either it's a private change or in restricted branch."
+	echo "::warning title=Change Not Found::Change $change_num not found. Either it's a private change or in restricted branch."
 	exit 0
 fi
 
@@ -58,21 +57,21 @@ fi
 # .work_in_progress is not set when false
 work_in_progress="$(jq -r '.work_in_progress' change.json)"
 if [[ "$work_in_progress" == "true" ]]; then
-	echo "Ignore. Comment posted to WIP change."
+	echo "::notice title=Skipped::Comment posted to WIP change."
 	exit 0
 fi
 
 # Only test latest patch set
 current_patch_set="$(jq -r '.current_revision_number' change.json)"
 if ((current_patch_set != patch_set)); then
-  echo "Ignore. Comment posted to different ($current_patch_set) patch set."
+  echo "::notice title=Skipped::Comment posted to different ($current_patch_set) patch set."
 	exit 0
 fi
 
 # False positive should be used only on changes that already have a negative Verified vote
 verified=$(jq -r ".labels.Verified.all[]? | select(.username==\"$GERRIT_BOT_USER\") | .value // 0" change.json)
 if [[ $verified != -1 ]]; then
-	echo "Ignore. Comment posted with no negative vote from CI."
+	echo "::notice title=Skipped::Comment posted with no negative vote from CI."
 	exit 0
 fi
 
@@ -89,7 +88,7 @@ mapfile -t fp_run_failed_messages < <(
 )
 
 if ((${#fp_run_failed_messages[@]} == 0)); then
-  echo "Did not find comments indicating build failure"
+  echo "::error title=No Build Failure::Did not find comments indicating build failure."
   exit 1
 fi
 
