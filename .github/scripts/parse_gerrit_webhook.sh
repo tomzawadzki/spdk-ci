@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -ex
 
-echo "SPDK: (${CHANGE_NUM}/${PATCH_SET}) ${TITLE}" >> "${GITHUB_STEP_SUMMARY}"
-echo "Gerrit: <https://review.spdk.io/c/spdk/spdk/+/${CHANGE_NUM}/${PATCH_SET}>" >> "${GITHUB_STEP_SUMMARY}"
+: "${GERRIT_PROJECT:=spdk/spdk}"
+GERRIT_REPO="${GERRIT_PROJECT#*/}"
+
+echo "spdk/${GERRIT_REPO}: (${CHANGE_NUM}/${PATCH_SET}) ${TITLE}" >> "${GITHUB_STEP_SUMMARY}"
+echo "Gerrit: <https://review.spdk.io/c/spdk/${GERRIT_REPO}/+/${CHANGE_NUM}/${PATCH_SET}>" >> "${GITHUB_STEP_SUMMARY}"
 
 # Get latest info about a change itself
-curl -s -X GET "https://review.spdk.io/changes/spdk%2Fspdk~${CHANGE_NUM}?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT&o=CURRENT_REVISION&o=ALL_FILES" \
+curl -s -X GET "https://review.spdk.io/changes/spdk%2F${GERRIT_REPO}~${CHANGE_NUM}?o=DETAILED_ACCOUNTS&o=LABELS&o=SKIP_DIFFSTAT&o=CURRENT_REVISION&o=ALL_FILES" \
 | tail -n +2 >  change.json
 
 if [[ ! -s change.json ]]; then
