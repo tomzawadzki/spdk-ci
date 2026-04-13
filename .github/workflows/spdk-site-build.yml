@@ -1,0 +1,120 @@
+---
+name: Validate SPDK Website
+
+run-name: >-
+  ${{
+    github.event.action == 'spdk-site-validation'
+    && format('({0}/{1}){2}',
+       github.event.client_payload.change.number,
+       github.event.client_payload.patchSet.number,
+       github.event.client_payload.change.subject)
+    || github.event_name == 'workflow_dispatch' && inputs.client_payload != ''
+    && format('Manual: ({0}/{1}){2}',
+       fromJson(inputs.client_payload).change.number,
+       fromJson(inputs.client_payload).patchSet.number,
+       fromJson(inputs.client_payload).change.subject)
+    || 'Validate SPDK Website'
+  }}
+
+on:
+  repository_dispatch:
+    types:
+    - spdk-site-validation
+  workflow_dispatch:
+    inputs:
+      client_payload:
+        required: false
+        type: string
+        default: ''
+      site_gerrit_ref:
+        description: 'Gerrit refspec for spdk.github.io (e.g. refs/changes/XX/12345/5)'
+        required: false
+        type: string
+        default: ''
+      site_repo:
+        description: 'GitHub owner/repo for spdk.github.io'
+        required: false
+        type: string
+        default: ''
+
+concurrency:
+  group: >-
+    site-validate-${{ github.event.client_payload.change.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+
+  patch_set_status:
+    name: Verify patch set state
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.action == 'spdk-site-validation'
+      || (github.event_name == 'workflow_dispatch' && inputs.client_payload != '')
+    outputs:
+      client_payload: ${{ env.client_payload }}
+      site_gerrit_ref: ${{ steps.refs.outputs.site_gerrit_ref }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      client_payload: >-
+        ${{ github.event.client_payload != ''
+            && toJson(github.event.client_payload)
+            || inputs.client_payload }}
+    steps:
+    - uses: actions/checkout@v6
+    - name: Check patch set status
+      env:
+        CHANGE_NUM: ${{ fromJSON(env.client_payload).change.number }}
+        PATCH_SET: ${{ fromJSON(env.client_payload).patchSet.number }}
+        TITLE: ${{ fromJSON(env.client_payload).change.subject }}
+        GERRIT_PROJECT: ${{ fromJSON(env.client_payload).change.project }}
+        GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
+      run: .github/scripts/parse_gerrit_webhook.sh
+    - name: Extract Gerrit ref
+      id: refs
+      run: |
+        echo "site_gerrit_ref=$(jq -r '.patchSet.ref // empty' <<< "$client_payload")" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build website
+    needs: [patch_set_status]
+    if: ${{ !cancelled() && needs.patch_set_status.result != 'failure' }}
+    # NOTE: uses: must be a static string (GitHub limitation). For fork
+    # testing, change 'spdk' below to your GitHub username. Patches that
+    # modify build-site.yml itself are validated against the master version.
+    uses: spdk/spdk.github.io/.github/workflows/build-site.yml@master
+    with:
+      site_gerrit_ref: >-
+        ${{ needs.patch_set_status.outputs.site_gerrit_ref
+            || inputs.site_gerrit_ref }}
+      site_repo: >-
+        ${{ inputs.site_repo
+            || format('{0}/spdk.github.io', github.repository_owner) }}
+      spdk_repo: ${{ format('{0}/spdk', github.repository_owner) }}
+
+  report:
+    name: Report results to Gerrit
+    needs: [patch_set_status, build]
+    if: >-
+      always()
+      && needs.patch_set_status.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      client_payload: ${{ needs.patch_set_status.outputs.client_payload }}
+    steps:
+    - name: Post Gerrit review
+      run: |
+        set -e
+        vote="-1"; message="Build failed. "
+        if [[ "${{ needs.build.result }}" == "success" ]]; then
+          vote="1"; message="Build successful. "
+        fi
+        message+="Results: [${{ github.run_id }}/${{ github.run_attempt }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }})"
+
+        change_num="${{ fromJson(env.client_payload).change.number }}"
+        patch_set="${{ fromJson(env.client_payload).patchSet.number }}"
+
+        curl -L -X POST "https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review" \
+          --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
+          --header "Content-Type: application/json" \
+          --data "{'message': '$message', 'labels': {'Verified': $vote}}" \
+          --fail-with-body
