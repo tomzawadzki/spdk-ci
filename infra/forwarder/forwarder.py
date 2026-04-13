@@ -171,7 +171,7 @@ def write_queue_snapshot(pending_events, dispatched_owners):
             "run_url": "",
         })
 
-    env = jinja2.Environment(loader=jinja2.FileSystemLoader("./"))
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(["./", "./templates/"]))
     template = env.get_template("queue_status_template.html")
     html = template.render(
         in_progress_rows=in_progress_rows,

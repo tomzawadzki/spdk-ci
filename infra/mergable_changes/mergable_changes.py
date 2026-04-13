@@ -159,45 +159,92 @@ def get_merge_conflict_changes(all_changes):
 def get_blocked_by_changes(all_changes):
     return [c for c in all_changes if c.blocked_by]
 
+def build_sections(all_changes):
+    return [
+        {
+            "title": "Changes ready for merge",
+            "css_class": "section-success",
+            "columns": ["Number", "Subject", "Owner", "Age"],
+            "changes": get_ready_changes(all_changes),
+            "empty_msg": "No changes are ready for merge at this time.",
+        },
+        {
+            "title": "Changes needing another +2 CR vote",
+            "css_class": "section-warning",
+            "columns": ["Number", "Subject", "Owner", "Age", "Reviewed by"],
+            "changes": get_needs_plus_two_changes(all_changes),
+            "empty_msg": "No changes need another +2 CR vote at this time.",
+        },
+        {
+            "title": "Changes with -1 CR votes",
+            "css_class": "section-warning",
+            "columns": ["Number", "Subject", "Owner", "Age"],
+            "changes": get_minus_one_changes(all_changes),
+            "empty_msg": "No -1 CR voted changes at this time.",
+        },
+        {
+            "title": "Changes with merge conflicts",
+            "css_class": "section-danger",
+            "columns": ["Number", "Subject", "Owner", "Age"],
+            "changes": get_merge_conflict_changes(all_changes),
+            "empty_msg": "No changes have merge conflicts at this time.",
+        },
+        {
+            "title": "Changes blocked by parent changes",
+            "css_class": "section-danger",
+            "columns": ["Number", "Subject", "Owner", "Age", "Blocked by"],
+            "changes": get_blocked_by_changes(all_changes),
+            "empty_msg": "No changes blocked by their parent changes.",
+        },
+    ]
+
+
+_TEXT_CELL = {
+    "Number": lambda c: c.number,
+    "Subject": lambda c: c.subject,
+    "Owner": lambda c: c.owner,
+    "Age": lambda c: f"{c.age.days} days {c.hours} hours",
+    "Reviewed by": lambda c: c.reviewed_by,
+    "Blocked by": lambda c: c.blocked_by.url,
+}
+
+
 def write_text_summary(all_changes):
     def write_and_log(line, fh):
         fh.write(line + "\n")
         logging.debug(line)
 
-    sections = {
-        "Changes ready for merge": get_ready_changes(all_changes),
-        "Changes needing another +2 CR vote": get_needs_plus_two_changes(all_changes),
-        "Changes with a -1 CR vote": get_minus_one_changes(all_changes),
-        "Changes with a merge conflict": get_merge_conflict_changes(all_changes),
-        "Changes blocked by parents in series": get_blocked_by_changes(all_changes)
-    }
+    sections = build_sections(all_changes)
 
     timestamp = datetime.datetime.now(datetime.timezone.utc)
     with open(os.path.join(config.output_dir, "mergable_changes.txt"), "w") as fh:
         fh.write(f"Generated at {timestamp}\n")
         fh.write("Contents are re-generated every 5 minutes.\n\n\n")
-        for section_name, changes in sections.items():
-            write_and_log(f"{section_name}", fh)
-            write_and_log("-" * len(section_name), fh)
+        for section in sections:
+            write_and_log(section["title"], fh)
+            write_and_log("-" * len(section["title"]), fh)
 
-            if changes:
+            if section["changes"]:
                 table = PrettyTable()
                 table.align = "l"
-                field_names = ["Number", "Subject", "Owner", "URL", "Age"]
-                field_names.append("Reviewed by") if "another +2 CR" in section_name else None
-                field_names.append("Blocked by") if "blocked" in section_name else None
-                    
-                table.field_names = field_names
-                for change in changes:
-                    row_values = [change.number, change.subject, change.owner, change.url, f"{change.age.days:} days {change.hours} hours"]
-                    row_values.append(change.reviewed_by) if "another +2 CR" in section_name else None
-                    row_values.append(change.blocked_by.url) if "blocked" in section_name else None
-                    table.add_row(row_values)
+                cols = []
+                for col in section["columns"]:
+                    cols.append(col)
+                    if col == "Owner":
+                        cols.append("URL")
+                table.field_names = cols
+                for change in section["changes"]:
+                    row = []
+                    for col in section["columns"]:
+                        row.append(_TEXT_CELL[col](change))
+                        if col == "Owner":
+                            row.append(change.url)
+                    table.add_row(row)
                 write_and_log(table.get_string() + "\n", fh)
             else:
                 write_and_log("No changes in this category.\n", fh)
 
-    template = jinja2.Environment(loader=jinja2.FileSystemLoader('./')).get_template("template.html")
+    template = jinja2.Environment(loader=jinja2.FileSystemLoader(["./", "./templates/"])).get_template("template.html")
     with open(os.path.join(config.output_dir, "mergable_changes.html"), "w+") as output:
         output.write(template.render(sections=sections, timestamp=timestamp.strftime("%B %d %H:%M")))
 
