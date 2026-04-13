@@ -10,7 +10,7 @@ inputs:
   spdk_path:
     description: 'Path where SPDK will be cloned'
     required: false
-    default: '$GITHUB_WORKSPACE/spdk'
+    default: 'spdk'
   spdk_branch:
     description: 'Branch to clone'
     required: false
@@ -19,24 +19,29 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: Checkout the spdk repo from GitHub
-    uses: actions/checkout@v7.0.0
-    with:
-      repository: spdk/spdk
-      ref: ${{ inputs.spdk_branch }}
-      submodules: recursive
-      fetch-tags: true
-      path: ${{ inputs.spdk_path }}
-  - name: Fetch the specific change from Gerrit
-    if: ${{ inputs.gerrit_ref != '' }}    # Skip if only pulling from GitHub
-    working-directory: ${{ inputs.spdk_path }}
-    run: |
-      git fetch https://review.spdk.io/spdk/spdk ${{ inputs.gerrit_ref }} &&
-      git checkout FETCH_HEAD &&
-      git submodule update --init
-    shell: bash
-  - name: Unshallow SPDK repository
-    working-directory: ${{ inputs.spdk_path }}
-    run: |
-      git fetch --unshallow --recurse-submodules=no
-    shell: bash
+    - name: Checkout the spdk repo from GitHub
+      uses: actions/checkout@v7.0.0
+      with:
+        repository: ${{ github.repository_owner }}/spdk
+        ref: ${{ inputs.spdk_branch }}
+        submodules: recursive
+        fetch-tags: true
+        path: ${{ inputs.spdk_path }}
+        persist-credentials: false
+    - name: Fetch the specific change from Gerrit
+      if: ${{ inputs.gerrit_ref != '' }}    # Skip if only pulling from GitHub
+      working-directory: ${{ inputs.spdk_path }}
+      env:
+        GERRIT_REF: ${{ inputs.gerrit_ref }}
+      run: |
+        set -euo pipefail
+        [[ "$GERRIT_REF" =~ ^refs/changes/[0-9]{2}/[0-9]+/[0-9]+$ ]]
+        git fetch -- https://review.spdk.io/spdk/spdk "$GERRIT_REF"
+        git checkout --detach FETCH_HEAD
+        git submodule update --init
+      shell: bash
+    - name: Unshallow SPDK repository
+      working-directory: ${{ inputs.spdk_path }}
+      run: |
+        git fetch --unshallow --recurse-submodules=no
+      shell: bash
