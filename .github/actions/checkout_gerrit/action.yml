@@ -22,7 +22,7 @@ runs:
   - name: Checkout the spdk repo from GitHub
     uses: actions/checkout@v6.0.2
     with:
-      repository: spdk/spdk
+      repository: ${{ github.repository_owner }}/spdk
       ref: ${{ inputs.spdk_branch }}
       submodules: recursive
       fetch-tags: true
