@@ -47,8 +47,8 @@ services:
   forwarder:
     image: forwarder:latest
     build:
-      context: ./forwarder
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: forwarder/Dockerfile
     container_name: forwarder
     restart: always
     env_file:
@@ -66,8 +66,8 @@ services:
   mergable_changes:
     image: mergable_changes:latest
     build:
-      context: ./mergable_changes
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: mergable_changes/Dockerfile
     container_name: mergable_changes
     restart: always
     env_file: ".env"
