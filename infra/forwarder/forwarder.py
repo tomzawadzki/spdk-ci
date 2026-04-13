@@ -30,7 +30,7 @@ class ForwarderConfig:
     recovery_window_days: int = 7
     gerrit_query_limit: int = 300
     github_dispatch_url: str = field(init=False)
-    github_workflow_runs_url: str = field(init=False)
+    github_workflow_runs_urls: list = field(init=False)
 
     def __post_init__(self):
         self.test_mode = os.getenv("FORWARDER_TEST_MODE", str(self.test_mode)).lower() == "true"
@@ -44,7 +44,10 @@ class ForwarderConfig:
         self.github_repo = os.getenv("FORWARDER_GITHUB_REPO", self.github_repo)
         github_repo_url = f"https://api.github.com/repos/{self.github_repo}"
         self.github_dispatch_url = f"{github_repo_url}/dispatches"
-        self.github_workflow_runs_url = f"{github_repo_url}/actions/workflows/gerrit-webhook-handler.yml/runs"
+        self.github_workflow_runs_urls = [
+            f"{github_repo_url}/actions/workflows/gerrit-webhook-handler.yml/runs",
+            f"{github_repo_url}/actions/workflows/spdk-site-build.yml/runs",
+        ]
 
         self.output_dir = os.getenv("OUTPUT_DIR", self.output_dir)
         self.gerrit_url = os.getenv("GERRIT_URL", self.gerrit_url).rstrip("/")
@@ -72,17 +75,18 @@ def _github_headers():
 def _get_workflow_runs():
     """Fetch all active workflow runs (in_progress, waiting, queued) from GitHub."""
     runs = []
-    for status in ("in_progress", "waiting", "queued"):
-        try:
-            response = requests.get(
-                config.github_workflow_runs_url, headers=_github_headers(),
-                params={"status": status, "per_page": 100})
-            if response.status_code == 200:
-                runs.extend(response.json().get("workflow_runs", []))
-            else:
-                logging.warning(f"Failed to query workflow runs (status={status}): {response.status_code}")
-        except requests.RequestException as exc:
-            logging.warning(f"Error querying workflow runs (status={status}): {exc}")
+    for url in config.github_workflow_runs_urls:
+        for status in ("in_progress", "waiting", "queued"):
+            try:
+                response = requests.get(
+                    url, headers=_github_headers(),
+                    params={"status": status, "event": "repository_dispatch", "per_page": 100})
+                if response.status_code == 200:
+                    runs.extend(response.json().get("workflow_runs", []))
+                else:
+                    logging.warning(f"Failed to query workflow runs (status={status}): {response.status_code}")
+            except requests.RequestException as exc:
+                logging.warning(f"Error querying workflow runs (status={status}): {exc}")
     return runs
 
 
@@ -122,8 +126,12 @@ def _build_in_progress_rows():
         if not m:
             continue
         change_number = int(m.group(1))
+        gerrit_repo = "spdk"
+        # Coupled to the workflow filename; update if spdk-site-build.yml is renamed.
+        if "spdk-site-build.yml" in run.get("path", ""):
+            gerrit_repo = "spdk.github.io"
         rows.append({
-            "change_url": f"{config.gerrit_url}/c/spdk/spdk/+/{change_number}",
+            "change_url": f"{config.gerrit_url}/c/spdk/{gerrit_repo}/+/{change_number}",
             "change_number": change_number,
             "patchset_number": int(m.group(2)),
             "subject": m.group(3).strip(),
@@ -206,7 +214,8 @@ def query_gerrit_for_recovery():
     gerrit = GerritRestAPI(url=config.gerrit_url)
     query = "".join([
         "/changes/",
-        "?q=project:spdk/spdk status:open -is:wip -is:private"
+        "?q=(project:spdk/spdk OR project:spdk/spdk.github.io)"
+        " status:open -is:wip -is:private"
         " -label:Verified<0 -label:Verified>0"
         f" -age:{config.recovery_window_days}d",
         "&o=CURRENT_REVISION",
@@ -256,21 +265,24 @@ def build_recovery_event(change):
         return {}
     patchset_ref = current_revision_data.get("ref")
     subject = change.get("subject")
+    project = change.get("project")
     owner = change.get("owner", {}).get("username")
 
     if not all([patchset_ref, subject]):
         return {}
 
+    event_type = "spdk-site-validation" if project == "spdk/spdk.github.io" else "patchset-created"
     # Extend the fields below if GitHub workflows start using them
     return {
-        "type": "patchset-created",
+        "type": event_type,
         "change_number": change_number,
         "payload": {
-            "type": "patchset-created",
+            "type": event_type,
             "change": {
                 "number": change_number,
                 "subject": subject,
-                "url": f"{config.gerrit_url}/c/spdk/spdk/+/{change_number}",
+                "project": project,
+                "url": f"{config.gerrit_url}/c/{project}/+/{change_number}",
                 "owner": {"username": owner},
             },
             "patchSet": {
@@ -456,6 +468,9 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
         change = payload.get("change", {})
         change_number = change.get("number")
+        project = change.get("project")
+        if project == "spdk/spdk.github.io":
+            event_type = "spdk-site-validation"
         if not change.get("owner", {}).get("username"):
             logging.warning(f"Event for change {change_number} is missing owner username")
         event_data = {
