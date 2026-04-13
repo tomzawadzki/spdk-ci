@@ -10,10 +10,10 @@ run-name: >-
        github.event.pull_request.number, github.event.pull_request.title)
     || github.event_name == 'workflow_dispatch' && inputs.client_payload != '' && format('Manual: ({0}/{1}){2}',
        fromJson(inputs.client_payload).change.number, fromJson(inputs.client_payload).patchSet.number, fromJson(inputs.client_payload).change.subject)
-    || github.event_name == 'workflow_dispatch' && inputs.client_payload == '' && format('Manual: SPDK master')
+    || github.event_name == 'workflow_dispatch' && inputs.client_payload == '' && 'Manual: SPDK master'
     || github.event_name == 'repository_dispatch' && github.event.client_payload != '' && format('({0}/{1}){2}',
        github.event.client_payload.change.number, github.event.client_payload.patchSet.number, github.event.client_payload.change.subject)
-    || format('SPDK per-patch')
+    || 'SPDK per-patch'
   }}
 
 on:
@@ -60,6 +60,7 @@ jobs:
         CHANGE_NUM: ${{ fromJSON(env.client_payload).change.number }}
         PATCH_SET: ${{ fromJSON(env.client_payload).patchSet.number }}
         TITLE: ${{ fromJSON(env.client_payload).change.subject }}
+        GERRIT_PROJECT: ${{ fromJSON(env.client_payload).change.project }}
         GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
       run: .github/scripts/parse_gerrit_webhook.sh
 

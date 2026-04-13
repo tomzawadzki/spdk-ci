@@ -8,10 +8,14 @@
 # GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
 # GERRIT_BOT_HTTP_PASSWD: ${{ secrets.GERRIT_BOT_HTTP_PASSWD }}
 # GH_ISSUES_PAT: ${{ secrets.GH_ISSUES_PAT }}
+# GERRIT_PROJECT: ${{ fromJSON(env.client_payload).change.project }}
 # change_num: ${{ fromJSON(needs.env_vars.outputs.client_payload).change.number }}
 # patch_set: ${{ fromJSON(needs.env_vars.outputs.client_payload).patchSet.number }}
 set -eu
 shopt -s extglob
+
+: "${GERRIT_PROJECT:=spdk/spdk}"
+GERRIT_REPO="${GERRIT_PROJECT#*/}"
 
 spdk_repo=$REPO
 gerrit_comment=$COMMENT
@@ -45,7 +49,7 @@ fi
 # Get latest info about a change itself - first line is the XSSI mitigation string, drop it
 curl -s -X GET \
 	--user "$GERRIT_BOT_USER:$GERRIT_BOT_HTTP_PASSWD" \
-	"$gerrit_url/spdk%2Fspdk~$change_num?$gerrit_format_q" \
+	"$gerrit_url/spdk%2F${GERRIT_REPO}~$change_num?$gerrit_format_q" \
 	| tail -n +2 | jq . | tee change.json
 
 if [[ ! -s change.json ]]; then
