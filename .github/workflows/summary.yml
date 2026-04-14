@@ -58,14 +58,7 @@ jobs:
         ./configure --without-nvme-cuse
         make -C include jsonrpc
         # Now can run post processing
-        if [[ -f "./autorun_post.py" ]]; then
-            ./autorun_post.py -d ../_autorun_summary -r ./
-        elif [[ -f "./script/autorun_post.py" ]]; then
-            ./script/autorun_post.py -d ../_autorun_summary -r ./
-        else
-            echo "Error: autorun_post.py not found in ./ or script/" >&2
-            exit 1
-        fi
+        ./script/autorun_post.py -d ../_autorun_summary -r ./
         echo "result=success" >> "$GITHUB_OUTPUT"
 
     - name: Upload artifacts
