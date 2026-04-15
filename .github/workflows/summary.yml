@@ -58,7 +58,7 @@ jobs:
         ./configure --without-nvme-cuse
         make -C include jsonrpc
         # Now can run post processing
-        ./script/autorun_post.py -d ../_autorun_summary -r ./
+        ./scripts/autorun_post.py -d ../_autorun_summary -r ./
         echo "result=success" >> "$GITHUB_OUTPUT"
 
     - name: Upload artifacts
