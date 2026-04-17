@@ -175,33 +175,33 @@ jobs:
     strategy:
       matrix:
         workflow:
-        - {name: nvme-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: raid-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: bdev-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: nvmf-tcp-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: nvmf-tcp-uring-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: iscsi-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: iscsi-uring-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: short-fuzz-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: vfio-user-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: check-format-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: unittest-gcc-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: unittest-clang-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: unittest-valgrind-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: release-build-gcc-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: release-build-clang-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: doc-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: build-files-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: scan-build-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: check-so-deps-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: packaging-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
+        - {name: nvme-vm-autotest, type: vm}
+        - {name: raid-vm-autotest, type: vm}
+        - {name: bdev-vm-autotest, type: vm}
+        - {name: nvmf-tcp-vm-autotest, type: vm}
+        - {name: nvmf-tcp-uring-vm-autotest, type: vm}
+        - {name: iscsi-vm-autotest, type: vm}
+        - {name: iscsi-uring-vm-autotest, type: vm}
+        - {name: short-fuzz-vm-autotest, type: vm}
+        - {name: vfio-user-container-autotest, type: container}
+        - {name: check-format-container-autotest, type: container}
+        - {name: unittest-gcc-container-autotest, type: container}
+        - {name: unittest-clang-container-autotest, type: container}
+        - {name: unittest-valgrind-container-autotest, type: container}
+        - {name: release-build-gcc-container-autotest, type: container}
+        - {name: release-build-clang-container-autotest, type: container}
+        - {name: doc-container-autotest, type: container}
+        - {name: build-files-container-autotest, type: container}
+        - {name: scan-build-container-autotest, type: container}
+        - {name: check-so-deps-container-autotest, type: container}
+        - {name: packaging-container-autotest, type: container}
         include:
         - distro: "fedora_43"
         - nvme_setup: "zns"
-        - workflow: {name: ftl-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
+        - workflow: {name: ftl-vm-autotest, type: vm}
           nvme_setup: "ftl"
           distro: "fedora_43"
-        - workflow: {name: freebsd-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
+        - workflow: {name: freebsd-vm-autotest, type: vm}
           nvme_setup: "default"
           distro: "freebsd_14"
 
@@ -212,10 +212,15 @@ jobs:
       NVME_SETUP: ${{ matrix.nvme_setup }}
       DISTRO: ${{ matrix.distro }}
       GITHUB_WORKSPACE: ${{ github.workspace }}
+      CIJOE_CONFIG_PREFIX: ${{ matrix.workflow.type == 'container' && 'container' || 'qemuhost-with-guest' }}
 
     # TODO: Figure out how to pass volumes variable to container context
+    # The container: context does not support env.*, so the image must be derived inline from matrix.workflow.type.
     container:
-      image: ${{ matrix.workflow.container_image }}
+      image: >-
+        ${{ matrix.workflow.type == 'container' &&
+            format('ghcr.io/{0}:fedora_43', github.repository) ||
+            'ghcr.io/refenv/cijoe-docker:v0.9.54' }}
       options: --device=/dev/kvm --privileged
       volumes:
       - "/dev/hugepages:/dev/hugepages"
@@ -293,7 +298,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_initialize guest_start guest_check \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
+        --config configs/$CIJOE_CONFIG_PREFIX-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }}_prep_guest \
         --monitor
 
@@ -301,7 +306,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_check tgz_transfer abi_transfer ci_configs_transfer tgz_unpack output_create \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
+        --config configs/$CIJOE_CONFIG_PREFIX-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }}_provision \
         --monitor
 
@@ -309,7 +314,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml ${{ matrix.workflow.name }} \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
+        --config configs/$CIJOE_CONFIG_PREFIX-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }} \
         --monitor
 
@@ -318,7 +323,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml output_listing retrieve_autorun_output \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
+        --config configs/$CIJOE_CONFIG_PREFIX-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }}_cleanup \
         --monitor
 
@@ -327,7 +332,7 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_shutdown \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
+        --config configs/$CIJOE_CONFIG_PREFIX-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }}_guest_shutdown \
         --monitor
 
