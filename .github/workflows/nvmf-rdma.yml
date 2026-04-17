@@ -17,8 +17,10 @@ on:
         default: ''
 
 jobs:
-  hpe-nvmf-rdma:
-    runs-on: [hpe-rdma-vm]
+  nvmf-rdma:
+    # shr_rdma is the self-hosted runner category for machines with RDMA
+    # hardware. See .github/scripts/detect_runners.sh for the label contract.
+    runs-on: [shr_rdma]
     timeout-minutes: 60
     env:
       gerrit_ref: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload).patchSet.ref || inputs.gerrit_ref }}
@@ -50,4 +52,4 @@ jobs:
       if: always()
       with:
         path: ./output
-        name: hpe-job-nvmf-rdma
+        name: nvmf-job-rdma

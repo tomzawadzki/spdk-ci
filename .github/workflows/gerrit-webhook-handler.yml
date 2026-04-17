@@ -63,6 +63,40 @@ jobs:
         GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
       run: .github/scripts/parse_gerrit_webhook.sh
 
+  # Queries the runners API and emits shr_<category>_online / _idle counts
+  # used to gate hardware-dependent jobs. See .github/scripts/detect_runners.sh.
+  detect_runners:
+    name: Detect self-hosted runners
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() }}
+    outputs:
+      shr_rdma_online: ${{ steps.probe.outputs.shr_rdma_online }}
+      shr_rdma_idle: ${{ steps.probe.outputs.shr_rdma_idle }}
+    steps:
+    - uses: actions/checkout@v6
+    - name: Probe runner categories
+      id: probe
+      env:
+        GH_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+      run: |
+        runners=""
+        other_workflows_running=0
+        if [[ -z "$GH_TOKEN" ]]; then
+          echo "::warning::RUNNER_STATUS_TOKEN is not set -- self-hosted jobs will skip"
+        else
+          runners=$(gh api "repos/${{ github.repository }}/actions/runners" 2>/dev/null) || {
+            echo "::warning::Failed to query runners API -- self-hosted jobs will skip"
+            runners=""
+          }
+          # Count OTHER gerrit-webhook-handler runs; bounded in practice by
+          # FORWARDER_MAX_RUNNING_WORKFLOWS (infra/forwarder/forwarder.py).
+          other_workflows_running=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/gerrit-webhook-handler.yml/runs?status=in_progress&per_page=100" \
+            --jq "[.workflow_runs[] | select(.id != ${{ github.run_id }})] | length" \
+            2>/dev/null) || other_workflows_running=0
+        fi
+        .github/scripts/detect_runners.sh "$runners" "$other_workflows_running"
+
   common:
     name: Common tests
     if: ${{ !cancelled() }}
@@ -75,11 +109,12 @@ jobs:
       changed_files: ${{ needs.patch_set_status.outputs.changed_files }}
       force_pkgdep: ${{ github.event_name == 'pull_request' }}
 
-  hpe:
+  nvmf_rdma:
     name: NVMe-oF RDMA tests
-    if: ${{ !cancelled() && github.repository == 'spdk/spdk-ci' }}
+    if: ${{ !cancelled() && fromJson(needs.detect_runners.outputs.shr_rdma_online || '0') > 0 }}
     needs:
     - patch_set_status
+    - detect_runners
     uses: ./.github/workflows/nvmf-rdma.yml
     with:
       client_payload: ${{ needs.patch_set_status.outputs.client_payload }}
@@ -93,11 +128,13 @@ jobs:
     needs:
     - patch_set_status
     - common
-    - hpe
+    - nvmf_rdma
     uses: ./.github/workflows/summary.yml
     with:
       client_payload: ${{ needs.patch_set_status.outputs.client_payload }}
+      nvmf_rdma_result: ${{ needs.nvmf_rdma.result }}
       result: >-
-        ${{ (needs.common.result == 'success' && (needs.hpe.result == 'success' || needs.hpe.result == 'skipped')) &&
-        'success' || 'failure' }}
+        ${{ (needs.common.result == 'success'
+        && (needs.nvmf_rdma.result == 'success' || needs.nvmf_rdma.result == 'skipped'))
+        && 'success' || 'failure' }}
     secrets: inherit

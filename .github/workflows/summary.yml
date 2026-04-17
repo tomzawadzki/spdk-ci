@@ -12,6 +12,10 @@ on:
         required: true
         type: string
         default: 'failure'
+      nvmf_rdma_result:
+        required: false
+        type: string
+        default: ''
 
 jobs:
   merge_outputs:
@@ -91,6 +95,9 @@ jobs:
         fi
 
         message+="Results: [${{ github.run_id }}/${{ github.run_attempt }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }})"
+        if [[ "${{ inputs.nvmf_rdma_result }}" == "skipped" ]]; then
+            message+="\nNVMe-oF RDMA tests skipped (no self-hosted runner carrying the shr_rdma label was online)."
+        fi
         echo "vote=$vote" >> $GITHUB_OUTPUT
         echo "message=$message" >> $GITHUB_OUTPUT
         echo "$message" >> $GITHUB_STEP_SUMMARY
