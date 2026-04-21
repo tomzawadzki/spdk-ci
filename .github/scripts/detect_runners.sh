@@ -23,8 +23,13 @@
 
 set -euo pipefail
 
-CATEGORIES=(rdma)
-declare -A RUNNERS_PER_WORKFLOW=()
+CATEGORIES=(generic rdma)
+declare -A RUNNERS_PER_WORKFLOW=(
+  # Keep in sync with the number of shr_generic_rank matrix entries in
+  # spdk-common-tests.yml; adding one without bumping this lets concurrent
+  # gerrit-webhook-handler workflows overcommit shr_generic.
+  [generic]=2
+)
 
 runners_json="${1:-}"
 other_workflows_running="${2:-0}"

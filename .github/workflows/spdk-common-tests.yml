@@ -17,6 +17,11 @@ on:
         required: true
         type: boolean
         default: false
+      shr_generic_idle:
+        description: 'Workflow-adjusted count of idle shr_generic self-hosted runners (from detect_runners)'
+        required: false
+        type: number
+        default: 0
   workflow_call:
     inputs:
       client_payload:
@@ -32,6 +37,11 @@ on:
         required: true
         type: boolean
         default: false
+      shr_generic_idle:
+        description: 'Workflow-adjusted count of idle shr_generic self-hosted runners (from detect_runners)'
+        required: false
+        type: number
+        default: 0
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{ inputs.client_payload != '' && fromJson(inputs.client_payload).change.number
@@ -170,7 +180,14 @@ jobs:
     name: ${{ matrix.workflow.name }}
     needs:
     - checkout_spdk
-    runs-on: ubuntu-latest
+    # Opt a matrix entry into shr_generic by setting shr_generic_rank (1, 2, ...).
+    # An entry runs on shr_generic when its rank is within the workflow-adjusted
+    # idle count; otherwise it falls back to ubuntu-latest so the pipeline
+    # never stalls. See docs/testing-runner-detection.md.
+    runs-on: >-
+      ${{ (matrix.workflow.shr_generic_rank
+      && matrix.workflow.shr_generic_rank <= inputs.shr_generic_idle)
+      && 'shr_generic' || 'ubuntu-latest' }}
     timeout-minutes: 60
     strategy:
       matrix:
@@ -178,8 +195,8 @@ jobs:
         - {name: nvme-vm-autotest, type: vm}
         - {name: raid-vm-autotest, type: vm}
         - {name: bdev-vm-autotest, type: vm}
-        - {name: nvmf-tcp-vm-autotest, type: vm}
-        - {name: nvmf-tcp-uring-vm-autotest, type: vm}
+        - {name: nvmf-tcp-vm-autotest, type: vm, shr_generic_rank: 1}
+        - {name: nvmf-tcp-uring-vm-autotest, type: vm, shr_generic_rank: 2}
         - {name: iscsi-vm-autotest, type: vm}
         - {name: iscsi-uring-vm-autotest, type: vm}
         - {name: short-fuzz-vm-autotest, type: vm}
