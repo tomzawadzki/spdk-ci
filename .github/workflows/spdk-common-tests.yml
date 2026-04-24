@@ -223,6 +223,29 @@ jobs:
       - "/usr/local:/host-usr-local"
 
     steps:
+    # Reserve on hugepages on node0 before any following steps fragment host memory
+    - name: Pre-allocate hugepages for vfio-user
+      if: matrix.workflow.name == 'vfio-user-container-autotest'
+      shell: bash
+      run: |
+        node0_nr=/sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+        want=1024
+
+        for attempt in {1..5}; do
+          sync
+          echo 3 > /proc/sys/vm/drop_caches || true
+          echo 1 > /proc/sys/vm/compact_memory || true
+
+          echo $want > "$node0_nr"
+          got=$(< "$node0_nr")
+          (( got >= want )) && exit 0
+
+          sleep 2
+        done
+
+        echo "FATAL: $got / $want hugepages on node0 after $attempt attempts"
+        exit 1
+
     # cijoe - for running cijoe workflows instead of writing own manual scrits;
     #         TODO: Installation doesn't take long but we should bake it into the container image.
     - name: Install cijoe
