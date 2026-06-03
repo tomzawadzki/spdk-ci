@@ -4,6 +4,7 @@ services:
     image: nginx:1.31.6
     container_name: nginx
     restart: always
+    env_file: ".env.nginx"
     ports:
     - "443:443"
     depends_on:
