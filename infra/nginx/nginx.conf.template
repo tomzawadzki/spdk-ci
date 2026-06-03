@@ -6,8 +6,8 @@ server {
         return 403;
     }
 
-    ssl_certificate /etc/letsencrypt/live/localhost/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/localhost/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/${NGINX_SSL_DOMAIN_NAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${NGINX_SSL_DOMAIN_NAME}/privkey.pem;
     ssl_protocols       TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
 
