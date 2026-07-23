@@ -153,8 +153,11 @@ def get_change_by_number(all_changes, number):
 def get_ready_changes(all_changes):
     return [c for c in all_changes if c.ready]
 
+def get_stale_needs_plus_two_changes(all_changes):
+    return [c for c in all_changes if c.needs_plus_two and c.age.days >= 14]
+
 def get_needs_plus_two_changes(all_changes):
-    return [c for c in all_changes if c.needs_plus_two]
+    return [c for c in all_changes if c.needs_plus_two and c.age.days < 14]
 
 def get_minus_one_changes(all_changes):
     return [c for c in all_changes if c.has_minus_one]
@@ -172,6 +175,7 @@ def write_text_summary(all_changes):
 
     sections = {
         "Changes ready for merge": get_ready_changes(all_changes),
+        "Stale changes needing another +2 CR vote": get_stale_needs_plus_two_changes(all_changes),
         "Changes needing another +2 CR vote": get_needs_plus_two_changes(all_changes),
         "Changes with a -1 CR vote": get_minus_one_changes(all_changes),
         "Changes with a merge conflict": get_merge_conflict_changes(all_changes),

@@ -54,6 +54,45 @@
         </div>
       </section>
 
+      <!-- Section: Stale Changes Needing Another +2 (14+ days) -->
+      <section class="mb-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Stale changes needing another +2 CR vote (14+ days old)</h5>
+          </div>
+          <div class="card-body">
+            {% if sections["Stale changes needing another +2 CR vote"] %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>Number</th>
+                      <th>Subject</th>
+                      <th>Owner</th>
+                      <th>Age</th>
+                      <th>Reviewed By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for change in sections["Stale changes needing another +2 CR vote"] %}
+                      <tr class="align-middle">
+                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
+                        <td>{{ change.subject }}</td>
+                        <td>{{ change.owner }}</td>
+                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
+                        <td>{{ change.reviewed_by }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted">No stale changes needing another +2 CR vote at this time.</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
       <!-- Section: Changes Needing Another +2 -->
       <section class="mb-5">
         <div class="card shadow-sm">
