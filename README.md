@@ -52,6 +52,10 @@ Workers use that digest even if its tag changes after preparation.
 Jobs that need a VM image use the exact unexpired artifact selected during
 preparation. A missing prepared image causes a failure.
 
+The preparation summary records the SPDK, SPDK ABI and SPDK-CI revisions,
+container digest, and any VM artifact identity. Runner hosts and runtime
+package downloads can still vary.
+
 ## Community CI Workflows
 
 Workflows to be executed on SPDK Community self-hosted runners should be
