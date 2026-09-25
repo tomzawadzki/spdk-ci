@@ -262,6 +262,7 @@ jobs:
       matrix: ${{ fromJSON(needs.checkout_spdk.outputs.matrix) }}
 
     env:
+      ARTIFACT_SUFFIX: ${{ inputs.job != '' && inputs.job != 'all' && format('-a{0}', github.run_attempt) || '' }}
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
       ABI_TARBALL_PATH: ${{ github.workspace }}/spdk-abi.tar.gz
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
@@ -411,7 +412,7 @@ jobs:
           ci/cijoe/report_${{ matrix.name }}
           ci/cijoe/report_${{ matrix.name }}_prep_guest
           ci/cijoe/report_${{ matrix.name }}_provision
-        name: common-cijoe-${{ matrix.name }}
+        name: common-cijoe-${{ matrix.name }}${{ env.ARTIFACT_SUFFIX }}
 
     - name: qemu-guest, list output
       if: always() && hashFiles('ci/cijoe/workflows/autorun.yaml')
@@ -436,7 +437,7 @@ jobs:
       if: always()
       with:
         path: /tmp/autorun_output
-        name: common-job-${{ matrix.name }}
+        name: common-job-${{ matrix.name }}${{ env.ARTIFACT_SUFFIX }}
 
     - name: qemu-guest, shutdown
       if: always() && matrix.guest && hashFiles('ci/cijoe/workflows/autorun.yaml') && (runner.environment == 'self-hosted'
@@ -456,4 +457,4 @@ jobs:
           ci/cijoe/report_${{ matrix.name }}_cleanup
           ci/cijoe/report_${{ matrix.name }}_retrieve
           ci/cijoe/report_${{ matrix.name }}_guest_shutdown
-        name: common-cijoe-${{ matrix.name }}-cleanup
+        name: common-cijoe-${{ matrix.name }}-cleanup${{ env.ARTIFACT_SUFFIX }}
