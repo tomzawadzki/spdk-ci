@@ -46,6 +46,9 @@ gh workflow run spdk-common-tests.yml -f job=nvme-vm-autotest
 
 Independent selected dispatches do not cancel each other or ordinary CI.
 
+Preparation resolves the selected container image to an immutable digest.
+Workers use that digest even if its tag changes after preparation.
+
 ## Community CI Workflows
 
 Workflows to be executed on SPDK Community self-hosted runners should be

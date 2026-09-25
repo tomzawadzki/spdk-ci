@@ -103,6 +103,10 @@ jobs:
             echo "Unknown or ambiguous common job: $SELECTED_JOB" >&2
             exit 1
           fi
+          image=$(jq -r '.[0].container_image' <<< "$jobs")
+          manifest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}')
+          digest=$(jq -er '.digest | select(. != null and . != "")' <<< "$manifest")
+          jobs=$(jq -c --arg image "$image@$digest" 'map(. + {container_image: $image})' <<< "$jobs")
         fi
         matrix=$(jq -c '{include: .}' <<< "$jobs")
         vm_distros=$(jq -c '[.[] | select(.needs_vm_image) | .distro] | unique' <<< "$jobs")
