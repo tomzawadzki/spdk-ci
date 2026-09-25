@@ -164,7 +164,7 @@ jobs:
         make -j
 
   autorun:
-    name: ${{ matrix.workflow.name }}
+    name: ${{ matrix.name }}
     needs:
     - checkout_spdk
     runs-on: ubuntu-latest
@@ -172,80 +172,50 @@ jobs:
     strategy:
       matrix:
         include:
-        - workflow: {name: nvme-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: raid-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: bdev-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: nvmf-tcp-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: nvmf-tcp-uring-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: iscsi-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: iscsi-uring-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: short-fuzz-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: vfio-user-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: check-format-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
-            cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: unittest-gcc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
-            cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: unittest-clang-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
-            cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: unittest-valgrind-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
-            cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: release-build-gcc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
-            cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: release-build-clang-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
-            cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: doc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: build-files-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
-            cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: scan-build-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: check-so-deps-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
-            cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: packaging-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container}
-          distro: fedora_43
-          nvme_setup: zns
-        - workflow: {name: ftl-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: fedora_43
-          nvme_setup: ftl
-        - workflow: {name: freebsd-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
-          distro: freebsd_14
-          nvme_setup: default
+        - {name: nvme-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: raid-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: bdev-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: nvmf-tcp-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: nvmf-tcp-uring-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: iscsi-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: iscsi-uring-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: short-fuzz-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: vfio-user-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: check-format-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: unittest-gcc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: unittest-clang-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: unittest-valgrind-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: release-build-gcc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: release-build-clang-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: doc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: build-files-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: scan-build-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: check-so-deps-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: packaging-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container,
+          distro: fedora_43, nvme_setup: zns}
+        - {name: ftl-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: fedora_43, nvme_setup: ftl}
+        - {name: freebsd-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest,
+          distro: freebsd_14, nvme_setup: default}
 
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
@@ -254,11 +224,11 @@ jobs:
       NVME_SETUP: ${{ matrix.nvme_setup }}
       DISTRO: ${{ matrix.distro }}
       GITHUB_WORKSPACE: ${{ github.workspace }}
-      CIJOE_DEFAULT_CONFIG: configs/${{ matrix.workflow.cijoe_config_prefix }}-${{ matrix.distro }}.toml
+      CIJOE_DEFAULT_CONFIG: configs/${{ matrix.cijoe_config_prefix }}-${{ matrix.distro }}.toml
 
     # TODO: Figure out how to pass volumes variable to container context
     container:
-      image: ${{ matrix.workflow.container_image }}
+      image: ${{ matrix.container_image }}
       options: --device=/dev/kvm --privileged
       volumes:
       - "/dev/hugepages:/dev/hugepages"
@@ -268,7 +238,7 @@ jobs:
     steps:
     # Reserve hugepages before any following steps fragment host memory.
     - name: Pre-allocate hugepages for vfio-user
-      if: matrix.workflow.name == 'vfio-user-container-autotest'
+      if: matrix.name == 'vfio-user-container-autotest'
       shell: bash
       run: |
         nr_hp=/proc/sys/vm/nr_hugepages
@@ -301,7 +271,7 @@ jobs:
     # cijoe - for running cijoe workflows instead of writing own manual scrits;
     #         TODO: Installation doesn't take long but we should bake it into the container image.
     - name: Install cijoe
-      if: ${{ contains(matrix.workflow.name, 'container') }}
+      if: ${{ contains(matrix.name, 'container') }}
       run: |
         pip install cijoe==0.9.54
 
@@ -347,7 +317,7 @@ jobs:
         tar xzf spdk-abi.tar.gz --strip 1
 
     - name: Restore qcow2 image from cache
-      if: contains(matrix.workflow.name, 'vm')  || contains(matrix.workflow.name, 'vfio-user')
+      if: contains(matrix.name, 'vm')  || contains(matrix.name, 'vfio-user')
       id: restore-qcow2
       uses: actions/cache/restore@v6
       with:
@@ -356,33 +326,33 @@ jobs:
 
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v8.0.1
-      if: (contains(matrix.workflow.name, 'vm')  || contains(matrix.workflow.name, 'vfio-user')) && hashFiles(format('{0}_x86_64.qcow2',
-        matrix.distro)) == ''
+      if: (contains(matrix.name, 'vm')  || contains(matrix.name, 'vfio-user')) && hashFiles(format('{0}_x86_64.qcow2', matrix.distro))
+        == ''
       with:
         name: vm-image-${{matrix.distro}}_x86_64
         github-token: ${{ github.token }}
         run-id: ${{ fromJson(needs.checkout_spdk.outputs.artifact_id)[ matrix.distro ] }}
 
     - name: qemu-guest, initialize
-      if: ${{ contains(matrix.workflow.name, 'vm') }}
+      if: ${{ contains(matrix.name, 'vm') }}
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_initialize guest_start guest_check \
-        --output report_${{ matrix.workflow.name }}_prep_guest \
+        --output report_${{ matrix.name }}_prep_guest \
         --monitor
 
     - name: qemu-guest, provision
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_check tgz_transfer abi_transfer ci_configs_transfer tgz_unpack output_create \
-        --output report_${{ matrix.workflow.name }}_provision \
+        --output report_${{ matrix.name }}_provision \
         --monitor
 
-    - name: qemu-guest, ${{ matrix.workflow.name }}
+    - name: qemu-guest, ${{ matrix.name }}
       run: |
         cd ci/cijoe
-        cijoe workflows/autorun.yaml ${{ matrix.workflow.name }} \
-        --output report_${{ matrix.workflow.name }} \
+        cijoe workflows/autorun.yaml ${{ matrix.name }} \
+        --output report_${{ matrix.name }} \
         --monitor
 
     - name: qemu-guest, cleanup
@@ -390,15 +360,15 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml output_listing retrieve_autorun_output \
-        --output report_${{ matrix.workflow.name }}_cleanup \
+        --output report_${{ matrix.name }}_cleanup \
         --monitor
 
     - name: qemu-guest, shutdown
-      if: ${{ contains(matrix.workflow.name, 'vm') && contains(runner.labels, 'self-hosted') || env.ACT == 'true' }}
+      if: ${{ contains(matrix.name, 'vm') && contains(runner.labels, 'self-hosted') || env.ACT == 'true' }}
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_shutdown \
-        --output report_${{ matrix.workflow.name }}_guest_shutdown \
+        --output report_${{ matrix.name }}_guest_shutdown \
         --monitor
 
     - name: Upload Artifacts
@@ -406,14 +376,14 @@ jobs:
       if: always()
       with:
         path: /tmp/autorun_output
-        name: common-job-${{ matrix.workflow.name }}
+        name: common-job-${{ matrix.name }}
 
     - name: Upload Report
       uses: actions/upload-artifact@v7.0.1
       if: always()
       with:
         path: |
-          ci/cijoe/report_${{ matrix.workflow.name }}
-          ci/cijoe/report_${{ matrix.workflow.name }}_cleanup
-          ci/cijoe/report_${{ matrix.workflow.name }}_prep_guest
-        name: common-cijoe-${{ matrix.workflow.name }}
+          ci/cijoe/report_${{ matrix.name }}
+          ci/cijoe/report_${{ matrix.name }}_cleanup
+          ci/cijoe/report_${{ matrix.name }}_prep_guest
+        name: common-cijoe-${{ matrix.name }}
