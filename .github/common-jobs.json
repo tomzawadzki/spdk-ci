@@ -1,0 +1,156 @@
+[
+  {
+    "name": "nvme-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "raid-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "bdev-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "nvmf-tcp-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "nvmf-tcp-uring-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "iscsi-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "iscsi-uring-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "short-fuzz-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "vfio-user-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true
+  },
+  {
+    "name": "check-format-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "unittest-gcc-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "unittest-clang-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "unittest-valgrind-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "release-build-gcc-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "release-build-clang-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "doc-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "build-files-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "scan-build-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "check-so-deps-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "packaging-container-autotest",
+    "guest": false,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": false
+  },
+  {
+    "name": "ftl-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "ftl",
+    "needs_vm_image": true
+  },
+  {
+    "name": "freebsd-vm-autotest",
+    "guest": true,
+    "distro": "freebsd_14",
+    "nvme_setup": "default",
+    "needs_vm_image": true
+  }
+]

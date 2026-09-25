@@ -50,6 +50,17 @@ jobs:
     - name: Checkout the spdk-ci repo locally
       uses: actions/checkout@v7
 
+    - name: Prepare common job matrix
+      id: matrix
+      run: |
+        jobs=$(jq -ec --arg repository "$GITHUB_REPOSITORY" '
+          map(. + {container_image:
+            if .guest then "ghcr.io/refenv/cijoe-docker:v0.9.54"
+            else "ghcr.io/\($repository):fedora_43" end})
+        ' .github/common-jobs.json)
+        matrix=$(jq -c '{include: .}' <<< "$jobs")
+        echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
     - name: Prepare SPDK repo by checking out from Gerrit
       uses: ./.github/actions/checkout_gerrit
       with:
@@ -94,6 +105,7 @@ jobs:
         [[ -z "${freebsd_14}" ]] && echo "freebsd_14 is empty" && exit 1
         echo "artifact_id={'fedora_43':$fedora_43,'freebsd_14':$freebsd_14}" >> "$GITHUB_OUTPUT"
     outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
   pkgdep:
@@ -170,30 +182,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
-      matrix:
-        include:
-        - {name: nvme-vm-autotest, guest: true, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: raid-vm-autotest, guest: true, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: bdev-vm-autotest, guest: true, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: nvmf-tcp-vm-autotest, guest: true, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: nvmf-tcp-uring-vm-autotest, guest: true, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: iscsi-vm-autotest, guest: true, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: iscsi-uring-vm-autotest, guest: true, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: short-fuzz-vm-autotest, guest: true, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: vfio-user-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: true}
-        - {name: check-format-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: unittest-gcc-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: unittest-clang-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: unittest-valgrind-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: release-build-gcc-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: release-build-clang-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: doc-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: build-files-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: scan-build-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: check-so-deps-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: packaging-container-autotest, guest: false, distro: fedora_43, nvme_setup: zns, needs_vm_image: false}
-        - {name: ftl-vm-autotest, guest: true, distro: fedora_43, nvme_setup: ftl, needs_vm_image: true}
-        - {name: freebsd-vm-autotest, guest: true, distro: freebsd_14, nvme_setup: default, needs_vm_image: true}
+      matrix: ${{ fromJSON(needs.checkout_spdk.outputs.matrix) }}
 
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
@@ -206,8 +195,7 @@ jobs:
 
     # TODO: Figure out how to pass volumes variable to container context
     container:
-      image: ${{ matrix.guest && 'ghcr.io/refenv/cijoe-docker:v0.9.54' || format('ghcr.io/{0}:fedora_43', github.repository)
-        }}
+      image: ${{ matrix.container_image }}
       options: --device=/dev/kvm --privileged
       volumes:
       - "/dev/hugepages:/dev/hugepages"
