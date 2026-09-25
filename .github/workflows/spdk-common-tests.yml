@@ -36,6 +36,11 @@ on:
         - packaging-container-autotest
         - ftl-vm-autotest
         - freebsd-vm-autotest
+      repeat:
+        description: 'Executions of the selected job (1-256)'
+        required: false
+        type: number
+        default: 1
       gerrit_ref:
         description: 'Gerrit refspec to test following refs/changes/${change_number: -2}/${change_number}/${patch_set} format'
         required: false
@@ -84,11 +89,23 @@ jobs:
       env:
         SELECTED_JOB: ${{ inputs.job }}
         FORCE_PKGDEP: ${{ inputs.force_pkgdep }}
+        REPEAT: ${{ inputs.repeat }}
       run: |
         if [[ "$SELECTED_JOB" == all ]]; then
           SELECTED_JOB=""
         fi
+        REPEAT=${REPEAT:-1}
+        if [[ ! "$REPEAT" =~ ^[0-9]{1,3}$ ]] || (( 10#$REPEAT < 1 || 10#$REPEAT > 256 )); then
+          echo "repeat must be a whole number from 1 to 256" >&2
+          exit 1
+        fi
+        count=$(( 10#$REPEAT ))
+        if [[ -z "$SELECTED_JOB" ]] && (( count != 1 )); then
+          echo "Repeating jobs requires selecting one common job" >&2
+          exit 1
+        fi
         source_suffix=""
+        max_parallel=256
         jobs=$(jq -ec --arg name "$SELECTED_JOB" --arg repository "$GITHUB_REPOSITORY" '
           (if $name == "" then . else map(select(.name == $name)) end)
           | map(. + {container_image:
@@ -104,10 +121,15 @@ jobs:
             echo "Unknown or ambiguous common job: $SELECTED_JOB" >&2
             exit 1
           fi
+          max_parallel=10
           image=$(jq -r '.[0].container_image' <<< "$jobs")
           manifest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}')
           digest=$(jq -er '.digest | select(. != null and . != "")' <<< "$manifest")
           jobs=$(jq -c --arg image "$image@$digest" 'map(. + {container_image: $image})' <<< "$jobs")
+          jobs=$(jq -c --argjson count "$count" '
+            .[0] as $job
+            | [range(1; $count + 1) as $sample | $job + {sample: $sample}]
+          ' <<< "$jobs")
           source_suffix="-a$GITHUB_RUN_ATTEMPT"
         fi
         matrix=$(jq -c '{include: .}' <<< "$jobs")
@@ -116,6 +138,7 @@ jobs:
           echo "matrix=$matrix"
           echo "vm_distros=$vm_distros"
           echo "source_suffix=$source_suffix"
+          echo "max_parallel=$max_parallel"
         } >> "$GITHUB_OUTPUT"
 
     - name: Prepare SPDK repo by checking out from Gerrit
@@ -184,6 +207,7 @@ jobs:
       if: inputs.job != '' && inputs.job != 'all'
       env:
         MATRIX: ${{ steps.matrix.outputs.matrix }}
+        MAX_PARALLEL: ${{ steps.matrix.outputs.max_parallel }}
         VM_IMAGES: >-
           {"fedora_43": ${{ toJSON(steps.fedora_image.outputs) }},
            "freebsd_14": ${{ toJSON(steps.freebsd_image.outputs) }}}
@@ -196,6 +220,8 @@ jobs:
         {
           echo "Selected common job inputs (preparation attempt $GITHUB_RUN_ATTEMPT):"
           echo ""
+          echo "- Samples: $(jq '.include | length' <<< "$MATRIX")"
+          echo "- Maximum parallelism: $MAX_PARALLEL"
           echo "- SPDK: $spdk_sha"
           echo "- SPDK ABI: $abi_sha"
           echo "- SPDK-CI: $ci_sha"
@@ -209,6 +235,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       source_suffix: ${{ steps.matrix.outputs.source_suffix }}
+      max_parallel: ${{ steps.matrix.outputs.max_parallel }}
       vm_images: >-
         {"fedora_43": ${{ toJSON(steps.fedora_image.outputs) }},
          "freebsd_14": ${{ toJSON(steps.freebsd_image.outputs) }}}
@@ -283,16 +310,18 @@ jobs:
         make -j
 
   autorun:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.sample && format('{0} sample {1}', matrix.name, matrix.sample) || matrix.name }}
     needs:
     - checkout_spdk
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
+      fail-fast: ${{ inputs.job == '' || inputs.job == 'all' }}
+      max-parallel: ${{ fromJSON(needs.checkout_spdk.outputs.max_parallel) }}
       matrix: ${{ fromJSON(needs.checkout_spdk.outputs.matrix) }}
 
     env:
-      ARTIFACT_SUFFIX: ${{ inputs.job != '' && inputs.job != 'all' && format('-a{0}', github.run_attempt) || '' }}
+      ARTIFACT_SUFFIX: ${{ matrix.sample && format('-r{0}-a{1}', matrix.sample, github.run_attempt) || '' }}
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
       ABI_TARBALL_PATH: ${{ github.workspace }}/spdk-abi.tar.gz
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs

@@ -34,27 +34,29 @@ The workflow `spdk-common-tests.yml` is the starting point for these tests.
 These runners have limited resources and, for the purpose of SPDK tests,
 can only suffice as VMs.
 
-To run one common job, dispatch `spdk-common-tests.yml` and select its
-name from the `job` dropdown. An optional `gerrit_ref` selects a patch set.
-A selected job requires `force_pkgdep=false`. Select `all`, or omit `job`,
-for the normal full matrix and pkgdep behavior. An empty `job` also selects
-the full matrix. Available jobs are listed in [the job catalog](.github/common-jobs.json).
+To run or repeat one common job, dispatch `spdk-common-tests.yml` and select
+its name from the `job` dropdown. An optional `gerrit_ref` selects a patch
+set. A selected job requires `force_pkgdep=false`. Available jobs are
+listed in [the job catalog](.github/common-jobs.json).
+
+`repeat` accepts whole numbers from 1 to 256 and defaults to 1. Selected
+runs allow up to 10 simultaneous samples, subject to runner availability.
+Select `all`, or omit or leave `job` empty, with `repeat=1` for the normal
+full matrix, including its pkgdep, concurrency and fail-fast behavior.
 
 ```bash
-gh workflow run spdk-common-tests.yml -f job=nvme-vm-autotest
+gh workflow run spdk-common-tests.yml -f job=nvme-vm-autotest -f repeat=10
 ```
 
 Independent selected dispatches do not cancel each other or ordinary CI.
 
-Preparation resolves the selected container image to an immutable digest.
-Workers use that digest even if its tag changes after preparation.
-
-Jobs that need a VM image use the exact unexpired artifact selected during
-preparation. A missing prepared image causes a failure.
+All samples use one prepared set of sources, a resolved container digest,
+and the selected VM image when needed. Sample failures do not cancel the
+other selected samples. Sample numbers distinguish jobs and their results.
 
 The preparation summary records the SPDK, SPDK ABI and SPDK-CI revisions,
-container digest, and any VM artifact identity. Runner hosts and runtime
-package downloads can still vary.
+container digest, any VM artifact identity, sample count and parallelism.
+Runner hosts and runtime package downloads can still vary.
 
 ## Community CI Workflows
 
