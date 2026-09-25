@@ -209,6 +209,7 @@ jobs:
       NVME_SETUP: ${{ matrix.nvme_setup }}
       DISTRO: ${{ matrix.distro }}
       GITHUB_WORKSPACE: ${{ github.workspace }}
+      CIJOE_DEFAULT_CONFIG: configs/${{ matrix.workflow.cijoe_config_prefix }}-${{ matrix.distro }}.toml
 
     # TODO: Figure out how to pass volumes variable to container context
     container:
@@ -322,7 +323,6 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_initialize guest_start guest_check \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }}_prep_guest \
         --monitor
 
@@ -330,7 +330,6 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_check tgz_transfer abi_transfer ci_configs_transfer tgz_unpack output_create \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }}_provision \
         --monitor
 
@@ -338,7 +337,6 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml ${{ matrix.workflow.name }} \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }} \
         --monitor
 
@@ -347,7 +345,6 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml output_listing retrieve_autorun_output \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }}_cleanup \
         --monitor
 
@@ -356,7 +353,6 @@ jobs:
       run: |
         cd ci/cijoe
         cijoe workflows/autorun.yaml guest_shutdown \
-        --config configs/${{ matrix.workflow.cijoe_config_prefix }}-${{matrix.distro}}.toml \
         --output report_${{ matrix.workflow.name }}_guest_shutdown \
         --monitor
 
