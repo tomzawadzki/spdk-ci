@@ -39,13 +39,16 @@ its name from the `job` dropdown. An optional `gerrit_ref` selects a patch
 set. A selected job requires `force_pkgdep=false`. Available jobs are
 listed in [the job catalog](.github/common-jobs.json).
 
-`repeat` accepts whole numbers from 1 to 256 and defaults to 1. Selected
-runs allow up to 10 simultaneous samples, subject to runner availability.
+`repeat` accepts whole numbers from 1 to 256 and defaults to 1.
+`max_parallel` accepts whole numbers from 1 to 20 and defaults to 10.
+It limits simultaneous selected samples per dispatch; actual parallelism
+also depends on runner availability.
 Select `all`, or omit or leave `job` empty, with `repeat=1` for the normal
 full matrix, including its pkgdep, concurrency and fail-fast behavior.
+Full-matrix execution ignores `max_parallel`.
 
 ```bash
-gh workflow run spdk-common-tests.yml -f job=nvme-vm-autotest -f repeat=10
+gh workflow run spdk-common-tests.yml -f job=nvme-vm-autotest -f repeat=10 -f max_parallel=2
 ```
 
 Independent selected dispatches do not cancel each other or ordinary CI.
