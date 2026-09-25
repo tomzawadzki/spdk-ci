@@ -88,6 +88,7 @@ jobs:
         if [[ "$SELECTED_JOB" == all ]]; then
           SELECTED_JOB=""
         fi
+        source_suffix=""
         jobs=$(jq -ec --arg name "$SELECTED_JOB" --arg repository "$GITHUB_REPOSITORY" '
           (if $name == "" then . else map(select(.name == $name)) end)
           | map(. + {container_image:
@@ -107,12 +108,14 @@ jobs:
           manifest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}')
           digest=$(jq -er '.digest | select(. != null and . != "")' <<< "$manifest")
           jobs=$(jq -c --arg image "$image@$digest" 'map(. + {container_image: $image})' <<< "$jobs")
+          source_suffix="-a$GITHUB_RUN_ATTEMPT"
         fi
         matrix=$(jq -c '{include: .}' <<< "$jobs")
         vm_distros=$(jq -c '[.[] | select(.needs_vm_image) | .distro] | unique' <<< "$jobs")
         {
           echo "matrix=$matrix"
           echo "vm_distros=$vm_distros"
+          echo "source_suffix=$source_suffix"
         } >> "$GITHUB_OUTPUT"
 
     - name: Prepare SPDK repo by checking out from Gerrit
@@ -127,7 +130,7 @@ jobs:
     - name: Upload the repository tarball as an artifact
       uses: actions/upload-artifact@v7.0.1
       with:
-        name: repo-spdk
+        name: repo-spdk${{ steps.matrix.outputs.source_suffix }}
         path: spdk.tar.gz
 
     - name: Checkout the spdk-abi repo
@@ -143,7 +146,7 @@ jobs:
     - name: Upload the abi tarball as an artifact
       uses: actions/upload-artifact@v7.0.1
       with:
-        name: repo-spdk-abi
+        name: repo-spdk-abi${{ steps.matrix.outputs.source_suffix }}
         path: spdk-abi.tar.gz
 
     - name: Select Fedora VM image
@@ -179,6 +182,7 @@ jobs:
 
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      source_suffix: ${{ steps.matrix.outputs.source_suffix }}
       vm_images: >-
         {"fedora_43": ${{ toJSON(steps.fedora_image.outputs) }},
          "freebsd_14": ${{ toJSON(steps.freebsd_image.outputs) }}}
@@ -349,12 +353,12 @@ jobs:
     - name: Download the SPDK repository
       uses: actions/download-artifact@v8.0.1
       with:
-        name: repo-spdk
+        name: repo-spdk${{ needs.checkout_spdk.outputs.source_suffix }}
 
     - name: Download the SPDK ABI repository
       uses: actions/download-artifact@v8.0.1
       with:
-        name: repo-spdk-abi
+        name: repo-spdk-abi${{ needs.checkout_spdk.outputs.source_suffix }}
 
     - name: Restore qcow2 image from cache
       if: matrix.needs_vm_image && (inputs.job == '' || inputs.job == 'all')
