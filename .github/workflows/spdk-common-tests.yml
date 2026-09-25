@@ -353,20 +353,22 @@ jobs:
         --output report_${{ matrix.name }}_retrieve \
         --monitor
 
-    - name: qemu-guest, shutdown
-      if: ${{ matrix.guest && contains(runner.labels, 'self-hosted') || env.ACT == 'true' }}
-      run: |
-        cd ci/cijoe
-        cijoe workflows/autorun.yaml guest_shutdown \
-        --output report_${{ matrix.name }}_guest_shutdown \
-        --monitor
-
     - name: Upload Artifacts
       uses: actions/upload-artifact@v7.0.1
       if: always()
       with:
         path: /tmp/autorun_output
         name: common-job-${{ matrix.name }}
+
+    - name: qemu-guest, shutdown
+      if: always() && matrix.guest && hashFiles('ci/cijoe/workflows/autorun.yaml') && (runner.environment == 'self-hosted'
+        || env.ACT == 'true')
+      timeout-minutes: 2
+      run: |
+        cd ci/cijoe
+        cijoe workflows/autorun.yaml guest_shutdown \
+        --output report_${{ matrix.name }}_guest_shutdown \
+        --monitor
 
     - name: Upload Cleanup Report
       uses: actions/upload-artifact@v7.0.1
@@ -375,4 +377,5 @@ jobs:
         path: |
           ci/cijoe/report_${{ matrix.name }}_cleanup
           ci/cijoe/report_${{ matrix.name }}_retrieve
+          ci/cijoe/report_${{ matrix.name }}_guest_shutdown
         name: common-cijoe-${{ matrix.name }}-cleanup
