@@ -49,6 +49,9 @@ Independent selected dispatches do not cancel each other or ordinary CI.
 Preparation resolves the selected container image to an immutable digest.
 Workers use that digest even if its tag changes after preparation.
 
+Jobs that need a VM image use the exact unexpired artifact selected during
+preparation. A missing prepared image causes a failure.
+
 ## Community CI Workflows
 
 Workflows to be executed on SPDK Community self-hosted runners should be

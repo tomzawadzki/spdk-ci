@@ -160,6 +160,23 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: bash .github/scripts/select_vm_image.sh freebsd_14 >> "$GITHUB_OUTPUT"
 
+    - name: Check selected VM image
+      if: inputs.job != '' && inputs.job != 'all'
+      env:
+        MATRIX: ${{ steps.matrix.outputs.matrix }}
+        VM_IMAGES: >-
+          {"fedora_43": ${{ toJSON(steps.fedora_image.outputs) }},
+           "freebsd_14": ${{ toJSON(steps.freebsd_image.outputs) }}}
+      run: |
+        distro=$(jq -r '.include[0] | select(.needs_vm_image) | .distro' <<< "$MATRIX")
+        if [[ -n "$distro" ]]; then
+          artifact_id=$(jq -r --arg distro "$distro" '.[$distro].artifact_id // empty' <<< "$VM_IMAGES")
+          if [[ -z "$artifact_id" ]]; then
+            echo "No unexpired VM artifact available for selected job ($distro)" >&2
+            exit 1
+          fi
+        fi
+
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       vm_images: >-
@@ -339,7 +356,7 @@ jobs:
         name: repo-spdk-abi
 
     - name: Restore qcow2 image from cache
-      if: matrix.needs_vm_image
+      if: matrix.needs_vm_image && (inputs.job == '' || inputs.job == 'all')
       id: restore-qcow2
       uses: actions/cache/restore@v6
       with:
@@ -348,8 +365,8 @@ jobs:
 
     - name: Download VM Qcow2 image artifact
       uses: actions/download-artifact@v8.0.1
-      if: matrix.needs_vm_image && fromJSON(needs.checkout_spdk.outputs.vm_images)[matrix.distro].artifact_id != '' && hashFiles(format('{0}_x86_64.qcow2',
-        matrix.distro)) == ''
+      if: matrix.needs_vm_image && fromJSON(needs.checkout_spdk.outputs.vm_images)[matrix.distro].artifact_id != '' && ((inputs.job
+        != '' && inputs.job != 'all') || hashFiles(format('{0}_x86_64.qcow2', matrix.distro)) == '')
       with:
         artifact-ids: ${{ fromJSON(needs.checkout_spdk.outputs.vm_images)[matrix.distro].artifact_id }}
         github-token: ${{ github.token }}
