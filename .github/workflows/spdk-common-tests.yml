@@ -7,6 +7,35 @@ name: SPDK per-patch common tests
 on:
   workflow_dispatch:
     inputs:
+      job:
+        description: 'Common job to run. Select all for the full matrix'
+        required: false
+        type: choice
+        default: all
+        options:
+        - all
+        - nvme-vm-autotest
+        - raid-vm-autotest
+        - bdev-vm-autotest
+        - nvmf-tcp-vm-autotest
+        - nvmf-tcp-uring-vm-autotest
+        - iscsi-vm-autotest
+        - iscsi-uring-vm-autotest
+        - short-fuzz-vm-autotest
+        - vfio-user-container-autotest
+        - check-format-container-autotest
+        - unittest-gcc-container-autotest
+        - unittest-clang-container-autotest
+        - unittest-valgrind-container-autotest
+        - release-build-gcc-container-autotest
+        - release-build-clang-container-autotest
+        - doc-container-autotest
+        - build-files-container-autotest
+        - scan-build-container-autotest
+        - check-so-deps-container-autotest
+        - packaging-container-autotest
+        - ftl-vm-autotest
+        - freebsd-vm-autotest
       gerrit_ref:
         description: 'Gerrit refspec to test following refs/changes/${change_number: -2}/${change_number}/${patch_set} format'
         required: false
@@ -52,12 +81,29 @@ jobs:
 
     - name: Prepare common job matrix
       id: matrix
+      env:
+        SELECTED_JOB: ${{ inputs.job }}
+        FORCE_PKGDEP: ${{ inputs.force_pkgdep }}
       run: |
-        jobs=$(jq -ec --arg repository "$GITHUB_REPOSITORY" '
-          map(. + {container_image:
+        if [[ "$SELECTED_JOB" == all ]]; then
+          SELECTED_JOB=""
+        fi
+        jobs=$(jq -ec --arg name "$SELECTED_JOB" --arg repository "$GITHUB_REPOSITORY" '
+          (if $name == "" then . else map(select(.name == $name)) end)
+          | map(. + {container_image:
             if .guest then "ghcr.io/refenv/cijoe-docker:v0.9.54"
             else "ghcr.io/\($repository):fedora_43" end})
         ' .github/common-jobs.json)
+        if [[ -n "$SELECTED_JOB" ]]; then
+          if [[ "$FORCE_PKGDEP" == true ]]; then
+            echo "A selected job requires force_pkgdep=false" >&2
+            exit 1
+          fi
+          if [[ $(jq length <<< "$jobs") != 1 ]]; then
+            echo "Unknown or ambiguous common job: $SELECTED_JOB" >&2
+            exit 1
+          fi
+        fi
         matrix=$(jq -c '{include: .}' <<< "$jobs")
         vm_distros=$(jq -c '[.[] | select(.needs_vm_image) | .distro] | unique' <<< "$jobs")
         {
@@ -118,9 +164,11 @@ jobs:
 
   pkgdep:
     if: |
-      contains(inputs.changed_files, 'pkgdep') ||
-      contains(inputs.changed_files, 'autotest_setup.sh') ||
-      inputs.force_pkgdep == true
+      (inputs.job == '' || inputs.job == 'all') && (
+        contains(inputs.changed_files, 'pkgdep') ||
+        contains(inputs.changed_files, 'autotest_setup.sh') ||
+        inputs.force_pkgdep == true
+      )
     needs:
     - checkout_spdk
     strategy:

@@ -34,6 +34,16 @@ The workflow `spdk-common-tests.yml` is the starting point for these tests.
 These runners have limited resources and, for the purpose of SPDK tests,
 can only suffice as VMs.
 
+To run one common job, dispatch `spdk-common-tests.yml` and select its
+name from the `job` dropdown. An optional `gerrit_ref` selects a patch set.
+A selected job requires `force_pkgdep=false`. Select `all`, or omit `job`,
+for the normal full matrix and pkgdep behavior. An empty `job` also selects
+the full matrix. Available jobs are listed in [the job catalog](.github/common-jobs.json).
+
+```bash
+gh workflow run spdk-common-tests.yml -f job=nvme-vm-autotest
+```
+
 ## Community CI Workflows
 
 Workflows to be executed on SPDK Community self-hosted runners should be
