@@ -324,6 +324,17 @@ jobs:
         --output report_${{ matrix.name }} \
         --monitor
 
+    # Preserve local reports before contacting a possibly unresponsive guest.
+    - name: Upload Report
+      uses: actions/upload-artifact@v7.0.1
+      if: always()
+      with:
+        path: |
+          ci/cijoe/report_${{ matrix.name }}
+          ci/cijoe/report_${{ matrix.name }}_prep_guest
+          ci/cijoe/report_${{ matrix.name }}_provision
+        name: common-cijoe-${{ matrix.name }}
+
     - name: qemu-guest, cleanup
       if: always() && hashFiles('ci/cijoe')
       run: |
@@ -347,12 +358,9 @@ jobs:
         path: /tmp/autorun_output
         name: common-job-${{ matrix.name }}
 
-    - name: Upload Report
+    - name: Upload Cleanup Report
       uses: actions/upload-artifact@v7.0.1
       if: always()
       with:
-        path: |
-          ci/cijoe/report_${{ matrix.name }}
-          ci/cijoe/report_${{ matrix.name }}_cleanup
-          ci/cijoe/report_${{ matrix.name }}_prep_guest
-        name: common-cijoe-${{ matrix.name }}
+        path: ci/cijoe/report_${{ matrix.name }}_cleanup
+        name: common-cijoe-${{ matrix.name }}-cleanup
