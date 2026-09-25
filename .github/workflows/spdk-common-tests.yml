@@ -171,36 +171,81 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        workflow:
-        - {name: nvme-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: raid-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: bdev-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: nvmf-tcp-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: nvmf-tcp-uring-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: iscsi-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: iscsi-uring-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: short-fuzz-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-        - {name: vfio-user-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: check-format-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: unittest-gcc-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: unittest-clang-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: unittest-valgrind-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: release-build-gcc-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: release-build-clang-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: doc-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: build-files-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: scan-build-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: check-so-deps-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
-        - {name: packaging-container-autotest, container_image: "ghcr.io/${{ github.repository }}:fedora_43", cijoe_config_prefix: container}
         include:
-        - distro: "fedora_43"
-        - nvme_setup: "zns"
-        - workflow: {name: ftl-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-          nvme_setup: "ftl"
-          distro: "fedora_43"
-        - workflow: {name: freebsd-vm-autotest, container_image: ghcr.io/refenv/cijoe-docker:v0.9.54, cijoe_config_prefix: qemuhost-with-guest}
-          nvme_setup: "default"
-          distro: "freebsd_14"
+        - workflow: {name: nvme-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: raid-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: bdev-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: nvmf-tcp-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: nvmf-tcp-uring-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: iscsi-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: iscsi-uring-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: short-fuzz-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: vfio-user-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: check-format-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
+            cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: unittest-gcc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
+            cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: unittest-clang-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
+            cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: unittest-valgrind-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
+            cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: release-build-gcc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
+            cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: release-build-clang-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
+            cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: doc-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: build-files-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
+            cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: scan-build-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: check-so-deps-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43',
+            cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: packaging-container-autotest, container_image: 'ghcr.io/${{ github.repository }}:fedora_43', cijoe_config_prefix: container}
+          distro: fedora_43
+          nvme_setup: zns
+        - workflow: {name: ftl-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: fedora_43
+          nvme_setup: ftl
+        - workflow: {name: freebsd-vm-autotest, container_image: 'ghcr.io/refenv/cijoe-docker:v0.9.54', cijoe_config_prefix: qemuhost-with-guest}
+          distro: freebsd_14
+          nvme_setup: default
 
     env:
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
