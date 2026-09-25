@@ -63,8 +63,8 @@ on:
         default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ inputs.client_payload != '' && fromJson(inputs.client_payload).change.number
-    || inputs.gerrit_ref }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}-${{ inputs.job != '' && inputs.job != 'all' && format('selected-{0}',
+    github.run_id) || inputs.client_payload != '' && fromJson(inputs.client_payload).change.number || inputs.gerrit_ref }}
   cancel-in-progress: true
 
 env:

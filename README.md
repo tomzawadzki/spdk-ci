@@ -44,6 +44,8 @@ the full matrix. Available jobs are listed in [the job catalog](.github/common-j
 gh workflow run spdk-common-tests.yml -f job=nvme-vm-autotest
 ```
 
+Independent selected dispatches do not cancel each other or ordinary CI.
+
 ## Community CI Workflows
 
 Workflows to be executed on SPDK Community self-hosted runners should be
