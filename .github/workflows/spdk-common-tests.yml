@@ -335,12 +335,22 @@ jobs:
           ci/cijoe/report_${{ matrix.name }}_provision
         name: common-cijoe-${{ matrix.name }}
 
-    - name: qemu-guest, cleanup
-      if: always() && hashFiles('ci/cijoe')
+    - name: qemu-guest, list output
+      if: always() && hashFiles('ci/cijoe/workflows/autorun.yaml')
+      timeout-minutes: 1
       run: |
         cd ci/cijoe
-        cijoe workflows/autorun.yaml output_listing retrieve_autorun_output \
+        cijoe workflows/autorun.yaml output_listing \
         --output report_${{ matrix.name }}_cleanup \
+        --monitor
+
+    - name: qemu-guest, retrieve output
+      if: always() && hashFiles('ci/cijoe/workflows/autorun.yaml')
+      timeout-minutes: 3
+      run: |
+        cd ci/cijoe
+        cijoe workflows/autorun.yaml retrieve_autorun_output \
+        --output report_${{ matrix.name }}_retrieve \
         --monitor
 
     - name: qemu-guest, shutdown
@@ -362,5 +372,7 @@ jobs:
       uses: actions/upload-artifact@v7.0.1
       if: always()
       with:
-        path: ci/cijoe/report_${{ matrix.name }}_cleanup
+        path: |
+          ci/cijoe/report_${{ matrix.name }}_cleanup
+          ci/cijoe/report_${{ matrix.name }}_retrieve
         name: common-cijoe-${{ matrix.name }}-cleanup
