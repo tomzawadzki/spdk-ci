@@ -278,11 +278,6 @@ jobs:
       with:
         name: repo-spdk-abi
 
-    - name: Extract the SPDK repository
-      run: |
-        tar xzf spdk.tar.gz --strip 1
-        tar xzf spdk-abi.tar.gz --strip 1
-
     - name: Restore qcow2 image from cache
       if: matrix.needs_vm_image
       id: restore-qcow2
