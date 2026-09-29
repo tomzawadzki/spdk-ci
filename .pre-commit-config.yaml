@@ -43,6 +43,7 @@ repos:
     name: Python-lint-mypy
     additional_dependencies:
     - types-requests
+    - types-PyYAML
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.10.0.1
@@ -54,3 +55,13 @@ repos:
     - '-sbash'
     types_or: [file, bash]
     files: \.(sh|bash)$
+
+- repo: local
+  hooks:
+  - id: common-job-choices
+    name: Common job choices
+    entry: python .github/scripts/check_common_jobs.py
+    language: python
+    additional_dependencies: [PyYAML==6.0.3]
+    pass_filenames: false
+    files: ^(\.github/common-jobs\.json|\.github/workflows/spdk-common-tests\.yml|\.github/scripts/check_common_jobs\.py)$
