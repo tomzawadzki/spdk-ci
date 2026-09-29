@@ -180,6 +180,32 @@ jobs:
           fi
         fi
 
+    - name: Record selected job inputs
+      if: inputs.job != '' && inputs.job != 'all'
+      env:
+        MATRIX: ${{ steps.matrix.outputs.matrix }}
+        VM_IMAGES: >-
+          {"fedora_43": ${{ toJSON(steps.fedora_image.outputs) }},
+           "freebsd_14": ${{ toJSON(steps.freebsd_image.outputs) }}}
+      run: |
+        spdk_sha=$(git -C "$spdk_path" rev-parse HEAD)
+        abi_sha=$(git -C spdk-abi rev-parse HEAD)
+        ci_sha=$(git rev-parse HEAD)
+        image=$(jq -r '.include[0].container_image' <<< "$MATRIX")
+        distro=$(jq -r '.include[0] | select(.needs_vm_image) | .distro' <<< "$MATRIX")
+        {
+          echo "Selected common job inputs (preparation attempt $GITHUB_RUN_ATTEMPT):"
+          echo ""
+          echo "- SPDK: $spdk_sha"
+          echo "- SPDK ABI: $abi_sha"
+          echo "- SPDK-CI: $ci_sha"
+          echo "- Container: $image"
+          if [[ -n "$distro" ]]; then
+            echo "- VM artifact: $(jq -r --arg distro "$distro" '.[$distro].artifact_id' <<< "$VM_IMAGES")"
+            echo "- VM artifact run: $(jq -r --arg distro "$distro" '.[$distro].run_id' <<< "$VM_IMAGES")"
+          fi
+        } >> "$GITHUB_STEP_SUMMARY"
+
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       source_suffix: ${{ steps.matrix.outputs.source_suffix }}
