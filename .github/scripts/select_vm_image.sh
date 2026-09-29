@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
-# Emit the workflow run containing the latest image for this distribution.
+# Emit artifact_id and run_id for GitHub step outputs, empty if no image exists.
 set -euo pipefail
 
 distro=${1:?distribution required}
 name="vm-image-${distro}_x86_64"
 
-run_id=$(gh api --paginate \
-  "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}" --jq '
-    .artifacts
-    | sort_by(.updated_at)
-    | last
-    | .workflow_run.id
-  ')
-if [[ -z "$run_id" ]]; then
-  echo "$distro is empty" >&2
-  exit 1
-fi
-echo "run_id=$run_id"
+# Finish pagination before selecting an image or publishing any output.
+pages=$(gh api --paginate --slurp \
+  "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}&per_page=100")
+
+image=$(jq -c --arg name "$name" '
+  [ .[].artifacts[]
+    | select(.name == $name)
+    | select(.expired == false)
+    | select(.workflow_run.id != null)
+  ]
+  | max_by([.created_at, .id])
+' <<< "$pages")
+
+artifact_id=$(jq -r '.id // empty' <<< "$image")
+run_id=$(jq -r '.workflow_run.id // empty' <<< "$image")
+printf 'artifact_id=%s\nrun_id=%s\n' "$artifact_id" "$run_id"
