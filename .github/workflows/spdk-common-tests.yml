@@ -111,7 +111,6 @@ jobs:
         - quay.io/centos/centos:10
         - docker.io/rockylinux/rockylinux:9
         - docker.io/rockylinux/rockylinux:10
-        - docker.io/library/ubuntu:20.04
         - docker.io/library/ubuntu:22.04
         - docker.io/library/ubuntu:24.04
         - docker.io/library/fedora:42
