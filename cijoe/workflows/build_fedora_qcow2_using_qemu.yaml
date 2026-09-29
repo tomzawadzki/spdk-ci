@@ -21,7 +21,7 @@ doc: |
   some other tool or script.
 
   * Convert the image (with compression)
-    - qemu-img convert boot.img /tmp/fedora_41-x86_64.qcow2 -O qcow2 -c
+    - qemu-img convert boot.img /tmp/fedora_43-x86_64.qcow2 -O qcow2 -c
 
   * Upload it to publically available storage
 

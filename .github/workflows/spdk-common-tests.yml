@@ -105,7 +105,7 @@ jobs:
     - checkout_spdk
     strategy:
       matrix:
-        # Keep latest 2 versions of each flavor here
+        # Keep releases receiving security updates through their default repositories.
         container:
         - quay.io/centos/centos:9
         - quay.io/centos/centos:10

@@ -15,9 +15,9 @@ on:
 
 jobs:
   merge_outputs:
-    # 22.04 used on purpose; it has lcov+gcov versions that are compatible with what
-    # is used in cijoe's Fedora 40 images. Using lcov+gcov from ubuntu-latest results
-    # in warnings and/or failures.
+    # Keep the summary runner on 22.04 until lcov+gcov compatibility
+    # with the coverage data produced by CIJOE has been checked for
+    # a newer runner.
     # ARM is used on purpose; it has separate queue, so those jobs can start immeditely
     # and the billing is exactly the same as x86 ubuntu runner (unlike macos or windows) so penalty is zero
     runs-on: ubuntu-22.04-arm
