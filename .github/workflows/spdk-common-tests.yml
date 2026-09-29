@@ -113,7 +113,6 @@ jobs:
         - docker.io/rockylinux/rockylinux:10
         - docker.io/library/ubuntu:22.04
         - docker.io/library/ubuntu:24.04
-        - docker.io/library/fedora:42
         - docker.io/library/fedora:43
         - docker.io/library/debian:12
         - docker.io/opensuse/leap:16.0
