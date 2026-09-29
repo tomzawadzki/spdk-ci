@@ -125,6 +125,8 @@ jobs:
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     env:
       DISTRO: ${{ matrix.container }}
+      TZ: Etc/UTC
+      DEBIAN_FRONTEND: noninteractive
     container: ${{ matrix.container != '' && matrix.container || null }}
     steps:
     - uses: actions/download-artifact@v8.0.1
@@ -134,13 +136,15 @@ jobs:
       run: ${{ matrix.container == '' && 'sudo' || '' }} apt-get update
     - if: matrix.container == 'mcr.microsoft.com/azurelinux/base/core:3.0'
       run: tdnf --noplugins install -y tar
-    - shell: bash
-      env:
-        TZ: Etc/UTC
-        DEBIAN_FRONTEND: noninteractive
+    - name: Extract SPDK source
+      shell: bash
       run: |
         set -x
         tar xzf spdk.tar.gz --strip 1
+    - name: Install SPDK dependencies
+      shell: bash
+      run: |
+        set -x
         # TODO: consider 'autorun.sh' or 'autobuild.sh' or 'autotest.sh'
         if [[ $DISTRO =~ "fedora:43" ]]; then
           ./test/common/config/autotest_setup.sh --install-deps \
@@ -148,6 +152,10 @@ jobs:
         else
           ${{ matrix.container == '' && 'sudo' || '' }} ./scripts/pkgdep.sh --all
         fi
+    - name: Configure and build SPDK
+      shell: bash
+      run: |
+        set -x
         ./configure --enable-coverage \
             --without-uring \
             --without-fio \
