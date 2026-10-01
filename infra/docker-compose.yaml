@@ -25,7 +25,7 @@ services:
       exec nginx -g 'daemon off;'
 
   gerrit:
-    image: gerritcodereview/gerrit:3.14.3
+    image: gerritcodereview/gerrit:3.14.4
     container_name: gerrit
     restart: always
     healthcheck:
