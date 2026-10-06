@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2b497d">
+    <link rel="icon" type="image/svg+xml" href="https://www.spdk.io/assets/img/spdk.svg">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,700,900&display=swap">
+    <title>{% block title %}SPDK{% endblock %}</title>
+    <style>
+{% include "spdk-infra.css" %}
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        {% block header_content %}{% endblock %}
+      </div>
+    </header>
+
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        Copyright &copy; SPDK a Series of LF Projects, LLC. For web site terms of use, trademark policy, and other
+        project policies please see <a href="https://lfprojects.org">https://lfprojects.org</a>.
+      </div>
+    </footer>
+  </body>
+</html>
