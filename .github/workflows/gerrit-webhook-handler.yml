@@ -43,6 +43,9 @@ on:
 jobs:
 
   patch_set_status:
+    permissions:
+      actions: write
+      contents: read
     name: Verify patch set state
     runs-on: ubuntu-latest
     if: github.event.client_payload != ''

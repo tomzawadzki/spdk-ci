@@ -29,6 +29,9 @@ on:
 
 jobs:
   parse_comment:
+    permissions:
+      actions: write
+      contents: read
     runs-on: ubuntu-latest
     if: github.event.client_payload || inputs.client_payload != ''
     env:
