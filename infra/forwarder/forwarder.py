@@ -80,7 +80,8 @@ def _get_workflow_runs():
             try:
                 response = requests.get(
                     url, headers=_github_headers(),
-                    params={"status": status, "per_page": 100})
+                    params={"status": status, "per_page": 100},
+                    timeout=30)
                 if response.status_code == 200:
                     runs.extend(response.json().get("workflow_runs", []))
                 else:
@@ -101,7 +102,7 @@ def post_event_to_github(event_type, payload):
         return True
 
     try:
-        response = requests.post(config.github_dispatch_url, headers=_github_headers(), json=body)
+        response = requests.post(config.github_dispatch_url, headers=_github_headers(), json=body, timeout=30)
     except requests.RequestException as exc:
         logging.warning(f"GitHub action trigger failed with request error: {exc}")
         return False
@@ -191,7 +192,7 @@ def _parse_gerrit_timestamp_to_unix(timestamp):
     if not timestamp:
         return None
     try:
-        return int(datetime.fromisoformat(timestamp).timestamp())
+        return int(datetime.fromisoformat(timestamp).replace(tzinfo=timezone.utc).timestamp())
     except Exception:
         logging.warning(f"Failed to parse Gerrit timestamp: {timestamp}")
         return None
