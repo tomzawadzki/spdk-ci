@@ -17,245 +17,55 @@
     </header>
 
     <main class="container my-4">
-      <!-- Section: Changes Ready for Merge -->
+      {% for section in sections %}
+      {% set bg = {"brand": "bg-primary text-white", "success": "bg-success text-white",
+                   "warning": "bg-warning text-dark", "danger": "bg-danger text-white"}[section.kind] %}
       <section class="mb-5">
         <div class="card shadow-sm">
-          <div class="card-header bg-success text-white">
-            <h5 class="mb-0">Changes ready for merge ({{ sections["Changes ready for merge"]|length }})</h5>
+          <div class="card-header {{ bg }}">
+            <h5 class="mb-0">{{ section.title }} ({{ section.changes|length }})</h5>
           </div>
           <div class="card-body">
-            {% if sections["Changes ready for merge"] %}
+            {% if section.changes %}
               <div class="table-responsive">
                 <table class="table table-striped">
                   <thead class="thead-dark">
                     <tr>
-                      <th>Number</th>
-                      <th>Project</th>
-                      <th>Subject</th>
-                      <th>Owner</th>
-                      <th>Age</th>
+                      {% for col in section.columns %}<th>{{ col }}</th>{% endfor %}
                     </tr>
                   </thead>
                   <tbody>
-                    {% for change in sections["Changes ready for merge"] %}
+                    {% for c in section.changes %}
                       <tr class="align-middle">
-                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
-                        <td>{{ change.project }}</td>
-                        <td>{{ change.subject }}</td>
-                        <td>{{ change.owner }}</td>
-                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
+                        {% for col in section.columns %}
+                        {% if col == "Number" %}
+                        <td><a href="{{ c.url }}" class="text-dark">{{ c.number }}</a></td>
+                        {% elif col == "Project" %}
+                        <td>{{ c.project }}</td>
+                        {% elif col == "Subject" %}
+                        <td>{{ c.subject }}</td>
+                        {% elif col == "Owner" %}
+                        <td>{{ c.owner }}</td>
+                        {% elif col == "Age" %}
+                        <td>{{ c.age.days }} days, {{ c.hours }} hours</td>
+                        {% elif col == "Reviewed by" %}
+                        <td>{{ c.reviewed_by }}</td>
+                        {% elif col == "Blocked by" %}
+                        <td><a href="{{ c.blocked_by.url }}">{{ c.blocked_by.number }} - {{ c.blocked_by.subject }}</a></td>
+                        {% endif %}
+                        {% endfor %}
                       </tr>
                     {% endfor %}
                   </tbody>
                 </table>
               </div>
             {% else %}
-              <p class="text-muted">No changes are ready for merge at this time.</p>
+              <p class="text-muted">{{ section.empty_msg }}</p>
             {% endif %}
           </div>
         </div>
       </section>
-
-      <!-- Section: Stale Changes Needing Another +2 (14+ days) -->
-      <section class="mb-5">
-        <div class="card shadow-sm">
-          <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Stale changes needing another +2 CR vote (14+ days old) ({{ sections["Stale changes needing another +2 CR vote"]|length }})</h5>
-          </div>
-          <div class="card-body">
-            {% if sections["Stale changes needing another +2 CR vote"] %}
-              <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead class="thead-dark">
-                    <tr>
-                      <th>Number</th>
-                      <th>Project</th>
-                      <th>Subject</th>
-                      <th>Owner</th>
-                      <th>Age</th>
-                      <th>Reviewed By</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for change in sections["Stale changes needing another +2 CR vote"] %}
-                      <tr class="align-middle">
-                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
-                        <td>{{ change.project }}</td>
-                        <td>{{ change.subject }}</td>
-                        <td>{{ change.owner }}</td>
-                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
-                        <td>{{ change.reviewed_by }}</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <p class="text-muted">No stale changes needing another +2 CR vote at this time.</p>
-            {% endif %}
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Changes Needing Another +2 -->
-      <section class="mb-5">
-        <div class="card shadow-sm">
-          <div class="card-header bg-warning text-dark">
-            <h5 class="mb-0">Changes needing another +2 CR vote ({{ sections["Changes needing another +2 CR vote"]|length }})</h5>
-          </div>
-          <div class="card-body">
-            {% if sections["Changes needing another +2 CR vote"] %}
-              <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead class="thead-dark">
-                    <tr>
-                      <th>Number</th>
-                      <th>Project</th>
-                      <th>Subject</th>
-                      <th>Owner</th>
-                      <th>Age</th>
-                      <th>Reviewed By</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for change in sections["Changes needing another +2 CR vote"] %}
-                      <tr class="align-middle">
-                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
-                        <td>{{ change.project }}</td>
-                        <td>{{ change.subject }}</td>
-                        <td>{{ change.owner }}</td>
-                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
-                        <td>{{ change.reviewed_by }}</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <p class="text-muted">No changes need another +2 CR vote at this time.</p>
-            {% endif %}
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Changes with -1 votes -->
-      <section class="mb-5">
-        <div class="card shadow-sm">
-          <div class="card-header bg-warning text-dark">
-            <h5 class="mb-0">Changes with -1 CR votes ({{ sections["Changes with a -1 CR vote"]|length }})</h5>
-          </div>
-          <div class="card-body">
-            {% if sections["Changes with a -1 CR vote"] %}
-              <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead class="thead-dark">
-                    <tr>
-                      <th>Number</th>
-                      <th>Project</th>
-                      <th>Subject</th>
-                      <th>Owner</th>
-                      <th>Age</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for change in sections["Changes with a -1 CR vote"] %}
-                      <tr class="align-middle">
-                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
-                        <td>{{ change.project }}</td>
-                        <td>{{ change.subject }}</td>
-                        <td>{{ change.owner }}</td>
-                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <p class="text-muted">No -1 CR voted changes at this time.</p>
-            {% endif %}
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Changes with Merge Conflicts -->
-      <section class="mb-5">
-        <div class="card shadow-sm">
-          <div class="card-header bg-danger text-white">
-            <h5 class="mb-0">Changes with merge conflicts ({{ sections["Changes with a merge conflict"]|length }})</h5>
-          </div>
-          <div class="card-body">
-            {% if sections["Changes with a merge conflict"] %}
-              <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead class="thead-dark">
-                    <tr>
-                      <th>Number</th>
-                      <th>Project</th>
-                      <th>Subject</th>
-                      <th>Owner</th>
-                      <th>Age</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for change in sections["Changes with a merge conflict"] %}
-                      <tr class="align-middle">
-                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
-                        <td>{{ change.project }}</td>
-                        <td>{{ change.subject }}</td>
-                        <td>{{ change.owner }}</td>
-                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <p class="text-muted">No changes have merge conflicts at this time.</p>
-            {% endif %}
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Changes blocked by parents -->
-      <section class="mb-5">
-        <div class="card shadow-sm">
-          <div class="card-header bg-danger text-white">
-            <h5 class="mb-0">Changes blocked by parent changes ({{ sections["Changes blocked by parents in series"]|length }})</h5>
-          </div>
-          <div class="card-body">
-            {% if sections["Changes blocked by parents in series"] %}
-              <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead class="thead-dark">
-                    <tr>
-                      <th>Number</th>
-                      <th>Project</th>
-                      <th>Subject</th>
-                      <th>Owner</th>
-                      <th>Age</th>
-                      <th>Blocked by</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for change in sections["Changes blocked by parents in series"] %}
-                      <tr class="align-middle">
-                        <td><a href="{{ change.url }}" class="text-dark">{{ change.number }}</a></td>
-                        <td>{{ change.project }}</td>
-                        <td>{{ change.subject }}</td>
-                        <td>{{ change.owner }}</td>
-                        <td>{{ change.age.days }} days, {{ change.hours }} hours</td>
-                        <td><a href="{{ change.blocked_by.url }}">{{ change.blocked_by.number }} - {{ change.blocked_by.subject }}</a></td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <p class="text-muted">No changes blocked by their parent changes.</p>
-            {% endif %}
-          </div>
-        </div>
-      </section>
+      {% endfor %}
     </main>
 
     <footer class="footer bg-dark text-white py-3">
