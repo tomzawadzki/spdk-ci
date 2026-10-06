@@ -60,6 +60,7 @@ jobs:
         CHANGE_NUM: ${{ fromJSON(env.client_payload).change.number }}
         PATCH_SET: ${{ fromJSON(env.client_payload).patchSet.number }}
         TITLE: ${{ fromJSON(env.client_payload).change.subject }}
+        GERRIT_PROJECT: ${{ fromJSON(env.client_payload).change.project }}
         GERRIT_BOT_USER: ${{ secrets.GERRIT_BOT_USER }}
       run: .github/scripts/parse_gerrit_webhook.sh
 
