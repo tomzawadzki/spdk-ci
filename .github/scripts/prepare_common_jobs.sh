@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Print the common job matrix for GitHub step outputs.
+#
+# SELECTED_JOB holds the workflow_dispatch input. Reusable callers leave
+# it empty and get the full matrix.
 set -euo pipefail
 shopt -s inherit_errexit
+
+job=${SELECTED_JOB:-all}
 
 # Print the newest unexpired artifact of a distribution's VM image, or null.
 vm_image() {
@@ -21,6 +26,14 @@ jobs=$(jq -c --arg repository "$GITHUB_REPOSITORY" '
 	map(. + {container_image: (if .guest then "ghcr.io/refenv/cijoe-docker:v0.9.54"
 		else "ghcr.io/\($repository):fedora_43" end)})
 ' .github/common-jobs.json)
+
+if [[ $job != all ]]; then
+	jobs=$(jq -c --arg name "$job" 'map(select(.name == $name))' <<< "$jobs")
+	if [[ $(jq length <<< "$jobs") != 1 ]]; then
+		echo "Unknown common job: $job" >&2
+		exit 1
+	fi
+fi
 
 for distro in $(jq -r '[.[] | select(.needs_vm_image) | .distro] | unique | .[]' <<< "$jobs"); do
 	vm=$(vm_image "$distro")

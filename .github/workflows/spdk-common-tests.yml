@@ -7,6 +7,35 @@ name: SPDK per-patch common tests
 on:
   workflow_dispatch:
     inputs:
+      job:
+        description: 'Common job to run. Select all for the full matrix'
+        required: false
+        type: choice
+        default: all
+        options:
+        - all
+        - nvme-vm-autotest
+        - raid-vm-autotest
+        - bdev-vm-autotest
+        - nvmf-tcp-vm-autotest
+        - nvmf-tcp-uring-vm-autotest
+        - iscsi-vm-autotest
+        - iscsi-uring-vm-autotest
+        - short-fuzz-vm-autotest
+        - vfio-user-container-autotest
+        - check-format-container-autotest
+        - unittest-gcc-container-autotest
+        - unittest-clang-container-autotest
+        - unittest-valgrind-container-autotest
+        - release-build-gcc-container-autotest
+        - release-build-clang-container-autotest
+        - doc-container-autotest
+        - build-files-container-autotest
+        - scan-build-container-autotest
+        - check-so-deps-container-autotest
+        - packaging-container-autotest
+        - ftl-vm-autotest
+        - freebsd-vm-autotest
       gerrit_ref:
         description: 'Gerrit refspec to test following refs/changes/${change_number: -2}/${change_number}/${patch_set} format'
         required: false
@@ -54,6 +83,7 @@ jobs:
       id: matrix
       env:
         GH_TOKEN: ${{ github.token }}
+        SELECTED_JOB: ${{ inputs.job }}
       run: .github/scripts/prepare_common_jobs.sh >> "$GITHUB_OUTPUT"
 
     - name: Prepare SPDK repo by checking out from Gerrit
