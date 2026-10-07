@@ -52,6 +52,8 @@ jobs:
 
     - name: Prepare common job matrix
       id: matrix
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: .github/scripts/prepare_common_jobs.sh >> "$GITHUB_OUTPUT"
 
     - name: Prepare SPDK repo by checking out from Gerrit
@@ -85,21 +87,8 @@ jobs:
         name: repo-spdk-abi
         path: spdk-abi.tar.gz
 
-    - name: Select latest qcow2 artifact
-      id: get_artifact_id
-      # TODO: make it a composite action for reuse
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        set -x
-        fedora_43=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-fedora_43_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
-        freebsd_14=$(gh api --paginate "/repos/${{ github.repository }}/actions/artifacts?name=vm-image-freebsd_14_x86_64" -q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
-        [[ -z "${fedora_43}" ]] && echo "fedora_43 is empty" && exit 1
-        [[ -z "${freebsd_14}" ]] && echo "freebsd_14 is empty" && exit 1
-        echo "artifact_id={'fedora_43':$fedora_43,'freebsd_14':$freebsd_14}" >> "$GITHUB_OUTPUT"
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
-      artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
 
   pkgdep:
     if: |
@@ -295,7 +284,7 @@ jobs:
       with:
         name: vm-image-${{matrix.distro}}_x86_64
         github-token: ${{ github.token }}
-        run-id: ${{ fromJson(needs.checkout_spdk.outputs.artifact_id)[ matrix.distro ] }}
+        run-id: ${{ matrix.vm_run_id }}
 
     - name: qemu-guest, initialize
       if: ${{ matrix.guest }}
