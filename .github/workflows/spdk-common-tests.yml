@@ -300,8 +300,9 @@ jobs:
       with:
         name: repo-spdk-abi
 
+    # Selected runs use only the VM artifact chosen during preparation.
     - name: Restore qcow2 image from cache
-      if: matrix.needs_vm_image
+      if: matrix.needs_vm_image && (inputs.job == '' || inputs.job == 'all')
       id: restore-qcow2
       uses: actions/cache/restore@v6
       with:
