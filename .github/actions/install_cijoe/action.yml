@@ -10,7 +10,7 @@ runs:
     env:
       # The only place that sets the CIJoe version. cijoe-docker images come with
       # their own CIJoe, which is replaced here, so their tag only picks the toolchain.
-      CIJOE_VERSION: '0.9.54'
+      CIJOE_VERSION: '0.9.60'
     run: |
       if pipx runpip cijoe --version >/dev/null 2>&1; then
         pip=(pipx runpip cijoe)

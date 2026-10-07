@@ -1,16 +1,15 @@
+[cijoe.task]
+fail_fast = true
+
 # The SSH options are passed verbatim to paramiko; see
 # https://www.paramiko.org/ This is common CIJOE infrastructure
 #
 # Used by: cijoe.run() / cijoe.get() / cijoe.put()
-
 [cijoe.transport.qemu_guest]
 username = "root"
 password = "root"
 hostname = "localhost"
 port = 4200
-
-[cijoe.workflow]
-fail_fast = true
 
 # Used by: the qemu.*.py scripts
 [qemu]

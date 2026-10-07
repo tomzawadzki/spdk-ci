@@ -131,7 +131,7 @@ jobs:
         cijoe \
         --monitor \
         --config configs/qemuhost-with-guest-${{ inputs.distro }}.toml \
-        --workflow workflows/build_docker_using_qcow2.yaml
+        workflows/build_docker_using_qcow2.yaml
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v7.0.1
