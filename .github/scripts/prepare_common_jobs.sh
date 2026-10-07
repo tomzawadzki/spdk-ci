@@ -33,10 +33,24 @@ if [[ $job != all ]]; then
 		echo "Unknown common job: $job" >&2
 		exit 1
 	fi
+
+	# A tag can move during a long run, so selected runs use the digest seen now.
+	image=$(jq -r '.[0].container_image' <<< "$jobs")
+	manifest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}')
+	if ! digest=$(jq -er '.digest | select(. != null and . != "")' <<< "$manifest"); then
+		echo "No digest found for $image" >&2
+		exit 1
+	fi
+	jobs=$(jq -c --arg image "$image@$digest" 'map(. + {container_image: $image})' <<< "$jobs")
 fi
 
 for distro in $(jq -r '[.[] | select(.needs_vm_image) | .distro] | unique | .[]' <<< "$jobs"); do
 	vm=$(vm_image "$distro")
+	# Selected runs skip the cache, so they need an artifact.
+	if [[ $vm == null && $job != all ]]; then
+		echo "No unexpired VM artifact available for $job ($distro)" >&2
+		exit 1
+	fi
 	jobs=$(jq -c --arg distro "$distro" --argjson vm "$vm" '
 		map(if .needs_vm_image and .distro == $distro then . + ($vm // {}) else . end)
 	' <<< "$jobs")
