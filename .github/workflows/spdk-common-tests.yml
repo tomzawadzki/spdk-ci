@@ -135,6 +135,34 @@ jobs:
         name: repo-spdk-abi
         path: spdk-abi.tar.gz
 
+    - name: Record selected job inputs
+      if: inputs.job != '' && inputs.job != 'all'
+      env:
+        MATRIX: ${{ steps.matrix.outputs.matrix }}
+        MAX_PARALLEL: ${{ steps.matrix.outputs.max_parallel }}
+        FAIL_FAST: ${{ steps.matrix.outputs.fail_fast }}
+      run: |
+        job=$(jq -c '.include[0]' <<< "$MATRIX")
+        samples=$(jq '.include | length' <<< "$MATRIX")
+        spdk_sha=$(git -C "$spdk_path" rev-parse HEAD)
+        abi_sha=$(git -C spdk-abi rev-parse HEAD)
+        ci_sha=$(git rev-parse HEAD)
+        {
+          echo "Selected common job inputs (preparation attempt $GITHUB_RUN_ATTEMPT):"
+          echo ""
+          echo "- Job: $(jq -r .name <<< "$job")"
+          echo "- Samples: $samples"
+          echo "- Maximum parallelism: $MAX_PARALLEL"
+          echo "- Fail fast: $FAIL_FAST"
+          echo "- SPDK: $spdk_sha"
+          echo "- SPDK ABI: $abi_sha"
+          echo "- SPDK-CI: $ci_sha"
+          echo "- Container: $(jq -r .container_image <<< "$job")"
+          if jq -e .needs_vm_image <<< "$job" > /dev/null; then
+            echo "- VM artifact: $(jq -r .vm_artifact_id <<< "$job") from run $(jq -r .vm_run_id <<< "$job")"
+          fi
+        } >> "$GITHUB_STEP_SUMMARY"
+
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       max_parallel: ${{ steps.matrix.outputs.max_parallel }}
