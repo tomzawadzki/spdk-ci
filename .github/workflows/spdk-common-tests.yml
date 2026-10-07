@@ -36,6 +36,11 @@ on:
         - packaging-container-autotest
         - ftl-vm-autotest
         - freebsd-vm-autotest
+      fail_fast:
+        description: 'Cancel the remaining jobs after the first failure'
+        required: false
+        type: boolean
+        default: false
       gerrit_ref:
         description: 'Gerrit refspec to test following refs/changes/${change_number: -2}/${change_number}/${patch_set} format'
         required: false
@@ -84,6 +89,7 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
         SELECTED_JOB: ${{ inputs.job }}
+        FAIL_FAST: ${{ inputs.fail_fast }}
       run: .github/scripts/prepare_common_jobs.sh >> "$GITHUB_OUTPUT"
 
     - name: Prepare SPDK repo by checking out from Gerrit
@@ -119,6 +125,7 @@ jobs:
 
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      fail_fast: ${{ steps.matrix.outputs.fail_fast }}
 
   pkgdep:
     if: |
@@ -204,6 +211,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
+      fail-fast: ${{ fromJSON(needs.checkout_spdk.outputs.fail_fast) }}
       matrix: ${{ fromJSON(needs.checkout_spdk.outputs.matrix) }}
 
     env:
