@@ -3,17 +3,18 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-# Print the run holding the latest VM image of a distribution.
+# Print the newest unexpired artifact of a distribution's VM image, or null.
 vm_image() {
-	local run_id
+	local name="vm-image-$1_x86_64" pages
 
-	run_id=$(gh api --paginate "/repos/$GITHUB_REPOSITORY/actions/artifacts?name=vm-image-$1_x86_64" \
-		-q '.artifacts |= sort_by(.updated_at)[-1] | .artifacts.workflow_run.id')
-	if [[ -z $run_id ]]; then
-		echo "No VM image artifact found for $1" >&2
-		exit 1
-	fi
-	jq -cn --arg run_id "$run_id" '{vm_run_id: $run_id}'
+	# Read every page before choosing, so the result cannot depend on paging.
+	pages=$(gh api --paginate --slurp \
+		"/repos/$GITHUB_REPOSITORY/actions/artifacts?name=$name&per_page=100")
+	jq -c --arg name "$name" '
+		[.[].artifacts[] | select(.name == $name and .expired == false and .workflow_run.id != null)]
+		| max_by([.created_at, .id])
+		| if . then {vm_artifact_id: (.id | tostring), vm_run_id: (.workflow_run.id | tostring)} else null end
+	' <<< "$pages"
 }
 
 jobs=$(jq -c --arg repository "$GITHUB_REPOSITORY" '
@@ -24,7 +25,7 @@ jobs=$(jq -c --arg repository "$GITHUB_REPOSITORY" '
 for distro in $(jq -r '[.[] | select(.needs_vm_image) | .distro] | unique | .[]' <<< "$jobs"); do
 	vm=$(vm_image "$distro")
 	jobs=$(jq -c --arg distro "$distro" --argjson vm "$vm" '
-		map(if .needs_vm_image and .distro == $distro then . + $vm else . end)
+		map(if .needs_vm_image and .distro == $distro then . + ($vm // {}) else . end)
 	' <<< "$jobs")
 done
 
