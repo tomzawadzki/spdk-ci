@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Print the common job matrix and its scheduling for GitHub step outputs.
 #
-# SELECTED_JOB and FAIL_FAST hold workflow_dispatch inputs. Reusable
-# callers leave them empty and get the full matrix with fail-fast.
+# SELECTED_JOB, REPEAT, MAX_PARALLEL and FAIL_FAST hold workflow_dispatch
+# inputs. Reusable callers leave them empty and get the full matrix.
 set -euo pipefail
 shopt -s inherit_errexit
 
 job=${SELECTED_JOB:-all}
+repeat=${REPEAT:-1}
+max_parallel=${MAX_PARALLEL:-10}
 fail_fast=${FAIL_FAST:-true}
 
 # Print the newest unexpired artifact of a distribution's VM image, or null.
@@ -23,6 +25,14 @@ vm_image() {
 	' <<< "$pages"
 }
 
+whole_number() {
+	[[ $1 =~ ^[0-9]{1,3}$ ]] && ((10#$1 >= $2 && 10#$1 <= $3))
+}
+
+if ! whole_number "$repeat" 1 256; then
+	echo "repeat must be a whole number from 1 to 256" >&2
+	exit 1
+fi
 if [[ $fail_fast != true && $fail_fast != false ]]; then
 	echo "fail_fast must be true or false" >&2
 	exit 1
@@ -33,12 +43,24 @@ jobs=$(jq -c --arg repository "$GITHUB_REPOSITORY" '
 		else "ghcr.io/\($repository):fedora_43" end)})
 ' .github/common-jobs.json)
 
-if [[ $job != all ]]; then
+if [[ $job == all ]]; then
+	if ((10#$repeat != 1)); then
+		echo "Repeating jobs requires selecting one common job" >&2
+		exit 1
+	fi
+	# The full matrix keeps its unthrottled scheduling.
+	max_parallel=256
+else
 	jobs=$(jq -c --arg name "$job" 'map(select(.name == $name))' <<< "$jobs")
 	if [[ $(jq length <<< "$jobs") != 1 ]]; then
 		echo "Unknown common job: $job" >&2
 		exit 1
 	fi
+	if ! whole_number "$max_parallel" 1 20; then
+		echo "max_parallel must be a whole number from 1 to 20" >&2
+		exit 1
+	fi
+	max_parallel=$((10#$max_parallel))
 
 	# A tag can move during a long run, so selected runs use the digest seen now.
 	image=$(jq -r '.[0].container_image' <<< "$jobs")
@@ -62,6 +84,13 @@ for distro in $(jq -r '[.[] | select(.needs_vm_image) | .distro] | unique | .[]'
 	' <<< "$jobs")
 done
 
+if [[ $job != all ]]; then
+	jobs=$(jq -c --argjson count "$((10#$repeat))" '
+		.[0] as $job | [range(1; $count + 1) as $sample | $job + {sample: $sample}]
+	' <<< "$jobs")
+fi
+
 matrix=$(jq -c '{include: .}' <<< "$jobs")
 echo "matrix=$matrix"
+echo "max_parallel=$max_parallel"
 echo "fail_fast=$fail_fast"

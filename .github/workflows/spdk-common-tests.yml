@@ -36,6 +36,16 @@ on:
         - packaging-container-autotest
         - ftl-vm-autotest
         - freebsd-vm-autotest
+      repeat:
+        description: 'Executions of the selected job (1-256)'
+        required: false
+        type: number
+        default: 1
+      max_parallel:
+        description: 'Maximum simultaneous executions of the selected job (1-20)'
+        required: false
+        type: number
+        default: 10
       fail_fast:
         description: 'Cancel the remaining jobs after the first failure'
         required: false
@@ -89,6 +99,8 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
         SELECTED_JOB: ${{ inputs.job }}
+        REPEAT: ${{ inputs.repeat }}
+        MAX_PARALLEL: ${{ inputs.max_parallel }}
         FAIL_FAST: ${{ inputs.fail_fast }}
       run: .github/scripts/prepare_common_jobs.sh >> "$GITHUB_OUTPUT"
 
@@ -125,6 +137,7 @@ jobs:
 
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      max_parallel: ${{ steps.matrix.outputs.max_parallel }}
       fail_fast: ${{ steps.matrix.outputs.fail_fast }}
 
   pkgdep:
@@ -205,16 +218,18 @@ jobs:
         make -j
 
   autorun:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.sample && format('{0} sample {1}', matrix.name, matrix.sample) || matrix.name }}
     needs:
     - checkout_spdk
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: ${{ fromJSON(needs.checkout_spdk.outputs.fail_fast) }}
+      max-parallel: ${{ fromJSON(needs.checkout_spdk.outputs.max_parallel) }}
       matrix: ${{ fromJSON(needs.checkout_spdk.outputs.matrix) }}
 
     env:
+      ARTIFACT_SUFFIX: ${{ matrix.sample && format('-r{0}-a{1}', matrix.sample, github.run_attempt) || '' }}
       REPOSITORY_TARBALL_PATH: ${{ github.workspace }}/spdk.tar.gz
       ABI_TARBALL_PATH: ${{ github.workspace }}/spdk-abi.tar.gz
       CI_CFGS_REPOSITORY_PATH: ${{ github.workspace }}/ci/cijoe/configs/autorun_configs
@@ -364,7 +379,7 @@ jobs:
           ci/cijoe/report_${{ matrix.name }}
           ci/cijoe/report_${{ matrix.name }}_prep_guest
           ci/cijoe/report_${{ matrix.name }}_provision
-        name: common-cijoe-${{ matrix.name }}
+        name: common-cijoe-${{ matrix.name }}${{ env.ARTIFACT_SUFFIX }}
 
     - name: qemu-guest, list output
       if: always() && hashFiles('ci/cijoe/workflows/autorun.yaml')
@@ -389,7 +404,7 @@ jobs:
       if: always()
       with:
         path: /tmp/autorun_output
-        name: common-job-${{ matrix.name }}
+        name: common-job-${{ matrix.name }}${{ env.ARTIFACT_SUFFIX }}
 
     - name: qemu-guest, shutdown
       if: always() && matrix.guest && hashFiles('ci/cijoe/workflows/autorun.yaml') && (runner.environment == 'self-hosted'
@@ -409,4 +424,4 @@ jobs:
           ci/cijoe/report_${{ matrix.name }}_cleanup
           ci/cijoe/report_${{ matrix.name }}_retrieve
           ci/cijoe/report_${{ matrix.name }}_guest_shutdown
-        name: common-cijoe-${{ matrix.name }}-cleanup
+        name: common-cijoe-${{ matrix.name }}-cleanup${{ env.ARTIFACT_SUFFIX }}
