@@ -146,6 +146,9 @@ jobs:
       with:
         path: ci
 
+    - name: Install cijoe
+      uses: ./ci/.github/actions/install_cijoe
+
     - name: Build
       env:
         DISTRO: ${{ matrix.distro }}

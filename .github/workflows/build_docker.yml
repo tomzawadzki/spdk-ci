@@ -107,6 +107,9 @@ jobs:
       with:
         path: ci
 
+    - name: Install cijoe
+      uses: ./ci/.github/actions/install_cijoe
+
     - name: Restore qcow2 image from cache
       id: restore-qcow2
       uses: actions/cache/restore@v6

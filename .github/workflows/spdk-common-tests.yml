@@ -308,13 +308,6 @@ jobs:
         done
         exit 1
 
-    # cijoe - for running cijoe workflows instead of writing own manual scrits;
-    #         TODO: Installation doesn't take long but we should bake it into the container image.
-    - name: Install cijoe
-      if: ${{ !matrix.guest }}
-      run: |
-        pip install cijoe==0.9.54
-
     # ghcr.io/spdk/spdk-ci:fedora_43 is about ~10GB in size, leaving us with not much space
     # for tests after pulling the image. Reclaim some by removing features not used in SPDK tests
     # See: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
@@ -340,6 +333,9 @@ jobs:
       uses: actions/checkout@v7
       with:
         path: ci
+
+    - name: Install cijoe
+      uses: ./ci/.github/actions/install_cijoe
 
     - name: Download the SPDK repository
       uses: actions/download-artifact@v8.0.1
