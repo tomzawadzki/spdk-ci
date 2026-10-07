@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Print the common job matrix for GitHub step outputs.
+# Print the common job matrix and its scheduling for GitHub step outputs.
 #
-# SELECTED_JOB holds the workflow_dispatch input. Reusable callers leave
-# it empty and get the full matrix.
+# SELECTED_JOB and FAIL_FAST hold workflow_dispatch inputs. Reusable
+# callers leave them empty and get the full matrix with fail-fast.
 set -euo pipefail
 shopt -s inherit_errexit
 
 job=${SELECTED_JOB:-all}
+fail_fast=${FAIL_FAST:-true}
 
 # Print the newest unexpired artifact of a distribution's VM image, or null.
 vm_image() {
@@ -21,6 +22,11 @@ vm_image() {
 		| if . then {vm_artifact_id: (.id | tostring), vm_run_id: (.workflow_run.id | tostring)} else null end
 	' <<< "$pages"
 }
+
+if [[ $fail_fast != true && $fail_fast != false ]]; then
+	echo "fail_fast must be true or false" >&2
+	exit 1
+fi
 
 jobs=$(jq -c --arg repository "$GITHUB_REPOSITORY" '
 	map(. + {container_image: (if .guest then "ghcr.io/refenv/cijoe-docker:v0.9.54"
@@ -58,3 +64,4 @@ done
 
 matrix=$(jq -c '{include: .}' <<< "$jobs")
 echo "matrix=$matrix"
+echo "fail_fast=$fail_fast"
