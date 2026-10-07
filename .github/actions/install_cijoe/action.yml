@@ -18,4 +18,9 @@ runs:
         pip=(pip)
       fi
       "${pip[@]}" install "cijoe==$CIJOE_VERSION"
+      # Carry the upstream fix for slow, garbled command output until a release has
+      # it. git apply fails on a CIJoe that changed the patched code, such as one that
+      # already has the fix.
+      site=$("${pip[@]}" show cijoe | sed -n 's/^Location: //p')
+      git -C "$site" apply "$GITHUB_ACTION_PATH/cijoe-read-output-in-blocks.patch"
       cijoe --version

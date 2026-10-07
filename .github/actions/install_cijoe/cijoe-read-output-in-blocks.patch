@@ -1,0 +1,83 @@
+CIJoe 0.9.60 with the upstream change that reads command output in blocks
+and decodes it across reads. install_cijoe applies it until a CIJoe release
+includes it.
+
+diff --git a/cijoe/core/command.py b/cijoe/core/command.py
+index 6778ba6..748f8b1 100644
+--- a/cijoe/core/command.py
++++ b/cijoe/core/command.py
+@@ -2,6 +2,7 @@
+ 
+ """
+ 
++import codecs
+ import logging as log
+ import os
+ import sys
+@@ -52,8 +53,12 @@ class Tee:
+         self.buffer = []
+         self.buffer_size = 0
+ 
++        # A read can end inside a multi-byte character. The decoder holds on to
++        # those bytes until the rest of the character arrives.
++        self.decoder = codecs.getincrementaldecoder(ENCODING)(errors="replace")
++
+     def write(self, data: bytes):
+-        decoded = data.decode(ENCODING, errors="replace")
++        decoded = self.decoder.decode(data)
+         self.buffer.append(decoded)
+         self.buffer_size += len(decoded)
+ 
+@@ -74,6 +79,10 @@ class Tee:
+         self.buffer_size = 0
+ 
+     def close(self):
++        # Pass on what the decoder still holds, as U+FFFD if the output was cut
++        # off inside a character
++        self.buffer.append(self.decoder.decode(b"", final=True))
++        self.flush()
+         self.file.close()
+ 
+     def __enter__(self):
+diff --git a/cijoe/core/transport.py b/cijoe/core/transport.py
+index 6d36539..5dfc9b8 100644
+--- a/cijoe/core/transport.py
++++ b/cijoe/core/transport.py
+@@ -11,6 +11,10 @@ from scp import SCPClient
+ 
+ from cijoe.core.resources import Config
+ 
++# Upper bound for one read of command output. Reads return whatever is available
++# instead of waiting for this much, so output still streams as it is produced.
++READ_SIZE = 65536
++
+ 
+ class Transport(ABC):
+     @abstractmethod
+@@ -48,10 +52,8 @@ class Local(Transport):
+             cwd=cwd,
+             env=env,
+         ) as process:
+-            while process.poll() is None:
+-                cmd_output.write(process.stdout.read(1))
+-
+-            cmd_output.write(process.stdout.read())
++            while data := process.stdout.read1(READ_SIZE):
++                cmd_output.write(data)
+             cmd_output.flush()
+             process.wait()
+ 
+@@ -166,10 +168,9 @@ class SSH(Transport):
+             _, stdout, _ = self.ssh.exec_command(cmd, environment=env)
+             stdout.channel.set_combine_stderr(True)
+ 
+-            while not stdout.channel.exit_status_ready():
+-                cmd_output.write(stdout.read(1))
+-
+-            cmd_output.write(stdout.read())
++            # Not stdout.read(), which waits until it has READ_SIZE bytes or EOF
++            while data := stdout.channel.recv(READ_SIZE):
++                cmd_output.write(data)
+             cmd_output.flush()
+ 
+             err = stdout.channel.recv_exit_status()
