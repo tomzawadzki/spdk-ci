@@ -34,6 +34,39 @@ The workflow `spdk-common-tests.yml` is the starting point for these tests.
 These runners have limited resources and, for the purpose of SPDK tests,
 can only suffice as VMs.
 
+### Running common jobs from a fork
+
+Running the workflow manually in this repository needs write access and uses
+the organization's runners. To run or repeat common jobs yourself, use a fork
+named `spdk-ci`:
+
+1. Fork the repository and enable workflows on the fork's Actions tab.
+2. Run "SPDK-CI build VM image" once for `fedora_43` and once for `freebsd_14`.
+3. Run "SPDK-CI build Docker image" for `fedora_43` with `push_to_registry`
+   checked. New packages are private, so make the `spdk-ci` package public.
+   The common jobs pull it without credentials.
+
+Then run "SPDK per-patch common tests" from the Actions tab, or with `gh`:
+
+```bash
+gh workflow run spdk-common-tests.yml --repo <user>/spdk-ci \
+  -f job=nvmf-tcp-vm-autotest -f repeat=20 -f max_parallel=5 \
+  -f gerrit_ref=refs/changes/45/12345/2
+```
+
+- `job` is a name from [the job catalog](.github/common-jobs.json), or `all`.
+- `repeat` runs the selected job 1 to 256 times. All samples use the same
+  SPDK checkout, container digest and VM image artifact, which the run
+  summary lists.
+- `max_parallel` limits how many samples run at once, from 1 to 20.
+- `fail_fast` cancels the remaining jobs after the first failure. It is off
+  by default, so every job reports its result.
+- An empty `gerrit_ref` tests the SPDK master branch.
+
+Sample artifacts are named with a `-r<sample>-a<attempt>` suffix. VM image
+artifacts expire after 90 days unless the weekly "Reupload qcow2 vm images"
+workflow renews them.
+
 ## Community CI Workflows
 
 Workflows to be executed on SPDK Community self-hosted runners should be
