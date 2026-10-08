@@ -26,7 +26,7 @@ jobs:
       matrix:
         distro:
         - fedora_43
-        - freebsd_14
+        - freebsd_15
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:

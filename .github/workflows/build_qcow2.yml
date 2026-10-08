@@ -39,7 +39,7 @@ on:
         type: choice
         options:
         - fedora_43
-        - freebsd_14
+        - freebsd_15
         default: 'fedora_43'
   push:
     branches: ["main"]
