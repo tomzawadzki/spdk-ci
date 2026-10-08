@@ -53,7 +53,7 @@ jobs:
     name: Dependabot Skip Notice
     if: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, 'dependabot[bot]') || github.event.head_commit.author.name
       == 'dependabot[bot]') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -66,7 +66,7 @@ jobs:
   determine-distros:
     if: ${{ github.event_name != 'push' || (!contains(github.event.head_commit.message, 'dependabot[bot]') && github.event.head_commit.author.name
       != 'dependabot[bot]') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       distro: ${{ steps.set-distro.outputs.distro }}
     steps:
@@ -87,7 +87,7 @@ jobs:
 
   source-archive:
     needs: determine-distros
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     concurrency:
       group: build_qcow2_source_archive
@@ -116,7 +116,7 @@ jobs:
     needs:
     - determine-distros
     - source-archive
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         distro: ${{ fromJson(needs.determine-distros.outputs.distro) }}
@@ -178,7 +178,7 @@ jobs:
     needs:
     - determine-distros
     - build-qcow2
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     strategy:
       matrix:

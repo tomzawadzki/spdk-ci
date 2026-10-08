@@ -42,7 +42,7 @@ env:
   spdk_path: './spdk'
 jobs:
   checkout_spdk:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       gerrit_ref: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload).patchSet.ref || inputs.gerrit_ref }}
     steps:
@@ -122,7 +122,7 @@ jobs:
         # TODO: consider also [macos-latest, windows-2022]
         - os: ubuntu-22.04-arm
           container: ""   # no container for this one
-    runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
+    runs-on: ${{ matrix.os || 'ubuntu-26.04' }}
     env:
       DISTRO: ${{ matrix.container }}
       TZ: Etc/UTC
@@ -177,7 +177,7 @@ jobs:
     name: ${{ matrix.workflow.name }}
     needs:
     - checkout_spdk
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     strategy:
       matrix:
@@ -271,7 +271,7 @@ jobs:
 
     # ghcr.io/spdk/spdk-ci:fedora_43 is about ~10GB in size, leaving us with not much space
     # for tests after pulling the image. Reclaim some by removing features not used in SPDK tests
-    # See: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
+    # See: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2604-Readme.md
     # Run this ONLY on self-hosted runners and make sure it's not a local GH ACT runner (these
     # identify themselves as "github-hosted" runners!)
     - name: Cleanup runner
