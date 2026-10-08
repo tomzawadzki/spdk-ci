@@ -120,7 +120,7 @@ jobs:
         # - docker.io/library/archlinux:base-20250907.0.417472
         include:
         # TODO: consider also [macos-latest, windows-2022]
-        - os: ubuntu-22.04-arm
+        - os: ubuntu-26.04-arm
           container: ""   # no container for this one
     runs-on: ${{ matrix.os || 'ubuntu-26.04' }}
     env:
@@ -133,7 +133,7 @@ jobs:
       with:
         name: repo-spdk
     - name: Refresh APT package indexes
-      if: contains(matrix.container, 'ubuntu') || contains(matrix.container, 'debian') || contains(matrix.os, 'ubuntu-22.04-arm')
+      if: contains(matrix.container, 'ubuntu') || contains(matrix.container, 'debian') || contains(matrix.os, 'ubuntu')
       run: |
         ${{ matrix.container == '' && 'sudo' || '' }} apt-get \
           -o Acquire::Retries=3 \
