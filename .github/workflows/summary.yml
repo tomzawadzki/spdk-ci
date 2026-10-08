@@ -15,12 +15,9 @@ on:
 
 jobs:
   merge_outputs:
-    # Keep the summary runner on 22.04 until lcov+gcov compatibility
-    # with the coverage data produced by CIJOE has been checked for
-    # a newer runner.
     # ARM is used on purpose; it has separate queue, so those jobs can start immeditely
     # and the billing is exactly the same as x86 ubuntu runner (unlike macos or windows) so penalty is zero
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
     - name: Download the SPDK repository
       uses: actions/download-artifact@v8.0.1
@@ -76,9 +73,9 @@ jobs:
 
   report:
     if: ${{ always() }}
-    # ubuntu-22.04-arm is used on purpose; it has separate queue, so those jobs can start immeditely
+    # ARM is used on purpose; it has separate queue, so those jobs can start immeditely
     # and the billing is exactly the same as x86 ubuntu runner (unlike macos or windows) so penalty is zero
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-26.04-arm
     needs: merge_outputs
     steps:
     - name: Vote count from workflows
