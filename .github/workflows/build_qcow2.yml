@@ -192,9 +192,9 @@ jobs:
 
     - name: Delete previous cache
       run: |
-        gh extension install actions/gh-actions-cache
-        if gh actions-cache list --repo ${{ github.repository }} | grep -q "vm-image-${{ matrix.distro }}_x86_64"; then
-          gh actions-cache delete "vm-image-${{ matrix.distro }}_x86_64" --repo ${{ github.repository }} --confirm
+        key="vm-image-${{ matrix.distro }}_x86_64"
+        if gh cache list --repo ${{ github.repository }} --key "$key" --json key --jq '.[].key' | grep -x "$key" >/dev/null; then
+          gh cache delete --repo ${{ github.repository }} "$key"
         fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
