@@ -1,0 +1,19 @@
+#cloud-config
+# nuageinit has no power_state, so power off from runcmd. Remove /firstboot
+# first, since shutdown can stop /etc/rc before it does, and every later boot
+# would power off again.
+chpasswd:
+  expire: false
+  users:
+    - name: root
+      password: root
+      type: text
+
+packages:
+  - bash
+  - sudo
+
+runcmd:
+  - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  - rm -f /firstboot
+  - shutdown -p now
