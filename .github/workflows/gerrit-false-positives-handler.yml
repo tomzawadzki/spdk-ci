@@ -29,7 +29,7 @@ on:
 
 jobs:
   parse_comment:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event.client_payload || inputs.client_payload != ''
     env:
       client_payload: ${{ github.event.client_payload && toJson(github.event.client_payload) || inputs.client_payload }}
