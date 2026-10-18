@@ -33,6 +33,6 @@ The Python scripts use fail-fast validation for these variables, meaning they wi
 
 ## Gerrit plugins
 
-`gerrit_stacks` is a Gerrit plugin with search operators for series of changes, see its
+`gerrit_stacks` is a Gerrit plugin with search operators for series of changes and outdated changes, see its
 `src/main/resources/Documentation/about.md` and `config.md`. Build and test it with `mvn -B package` in that directory,
 with JDK 25. The tests start a Gerrit of `gerrit.version` inside the JVM, and the jar is `target/stacks.jar`.

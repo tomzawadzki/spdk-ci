@@ -11,5 +11,8 @@ public class Module extends AbstractModule {
     bind(ChangeOperatorFactory.class)
         .annotatedWith(Exports.named(StackOperator.EXPORT))
         .to(StackOperator.class);
+    bind(ChangeOperatorFactory.class)
+        .annotatedWith(Exports.named(BehindOperator.EXPORT))
+        .to(BehindOperator.class);
   }
 }

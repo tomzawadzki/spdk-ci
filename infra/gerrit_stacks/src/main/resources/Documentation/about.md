@@ -1,6 +1,7 @@
 # stacks
 
-Search operators for series of open changes.
+Search operators for series of open changes and for changes that fell behind
+their branch.
 
 ## stack_stacks:
 
@@ -40,6 +41,14 @@ the setting in [config.md](config.md).
 Other terms of a search filter only the matching changes, not their series.
 The negation is the plain complement, so `-stack_stacks:leaf` matches closed
 changes too. Submit requirements and watch filters cannot use the operator.
+
+## behind_stacks:
+
+`behind_stacks:<N>w` matches the open changes whose current patch set was
+created more than N weeks before the commit time of the tip of their branch.
+The branch tip and not the current time is the reference, so nothing gets
+outdated on a quiet branch. Submit requirements and watch filters cannot use
+the operator.
 
 ## Limits
 
