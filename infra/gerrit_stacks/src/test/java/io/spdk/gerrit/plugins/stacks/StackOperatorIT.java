@@ -6,6 +6,7 @@ import static com.google.gerrit.testing.GerritJUnit.assertThrows;
 import static java.util.stream.Collectors.toSet;
 
 import com.google.gerrit.acceptance.LightweightPluginDaemonTest;
+import com.google.gerrit.acceptance.RestResponse;
 import com.google.gerrit.acceptance.TestAccount;
 import com.google.gerrit.acceptance.TestPlugin;
 import com.google.gerrit.acceptance.testsuite.change.ChangeOperations;
@@ -19,7 +20,10 @@ import com.google.gerrit.extensions.common.SubmitRequirementInput;
 import com.google.gerrit.extensions.restapi.BadRequestException;
 import com.google.gerrit.testing.ConfigSuite;
 import com.google.inject.Inject;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import org.eclipse.jgit.lib.Config;
 import org.junit.Test;
@@ -191,6 +195,21 @@ public class StackOperatorIT extends LightweightPluginDaemonTest {
         .contains(
             "stack_stacks does not accept Ready, use one of leaf, ready, submit, blocked,"
                 + " broken");
+  }
+
+  @Test
+  public void limitOfUsesPerRequest() throws Exception {
+    // A dashboard sends each section as its own REST request.
+    restQuery(StackOperator.MAX_USES).assertOK();
+    RestResponse r = restQuery(StackOperator.MAX_USES + 1);
+    r.assertBadRequest();
+    assertThat(r.getEntityContent())
+        .contains("stack_stacks can be used at most 6 times per request");
+  }
+
+  private RestResponse restQuery(int uses) throws Exception {
+    String q = String.join(" OR ", Collections.nCopies(uses, "stack_stacks:leaf"));
+    return adminRestSession.get("/changes/?q=" + URLEncoder.encode(q, StandardCharsets.UTF_8));
   }
 
   @Test

@@ -47,3 +47,7 @@ A search builds the graph of each branch it visits from all its open changes.
 If `index.maxLimit` is set and a branch has that many open changes, the search
 fails with a message such as
 `master of spdk/spdk has at least index.maxLimit (500) open changes`.
+
+A request can use `stack_stacks:` at most 6 times, since each OR branch that
+holds it scans all open changes again. A dashboard sends each section as its
+own request.

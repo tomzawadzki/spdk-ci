@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /** Creates {@code stack_stacks:<value>}, which matches a change by its place in its series. */
@@ -47,6 +48,12 @@ final class StackOperator implements ChangeOperatorFactory {
    */
   static final String CRITERIA = "status:open is:submittable is:mergeable -is:wip";
 
+  /**
+   * Most uses in one request. Each OR branch that holds the operator scans all open changes, and
+   * many of them exhaust the heap.
+   */
+  static final int MAX_USES = 6;
+
   private final BranchLoader loader;
 
   @Inject
@@ -59,6 +66,16 @@ final class StackOperator implements ChangeOperatorFactory {
       throws QueryParseException {
     SearchOnly.check(builder, NAME);
     Value v = parse(value);
+    // Outside a request PerThreadCache gives a new counter each time, so internal callers are not
+    // limited.
+    AtomicInteger uses =
+        PerThreadCache.getOrCompute(
+            PerThreadCache.Key.create(AtomicInteger.class, StackOperator.class),
+            AtomicInteger::new);
+    if (uses.incrementAndGet() > MAX_USES) {
+      throw new QueryParseException(
+          String.format("%s can be used at most %d times per request", NAME, MAX_USES));
+    }
     // A post filter alone makes Gerrit scan open and closed changes.
     return Predicate.and(
         builder.statusOpen(),
