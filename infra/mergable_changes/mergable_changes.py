@@ -110,12 +110,11 @@ class GerritChange:
                     "/changes/", str(self.number), "/submitted_together", "?o=DETAILED_ACCOUNTS" 
                 ])
                 change_series = gerrit.get(query)
-            except RequestException:
+            except RequestException as exception:
                 # GET operation on /submitted_together can fail with 403 if there are patches which
-                # the caller cannot read, e.g. private changes. Bail out if this happens.
-                # TODO: Check if using NON_VISIBLE_CHANGES option could help.
-                # https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#submitted-together
-                pass
+                # the caller cannot read, e.g. private changes.
+                logging.warning("Cannot get the series of change %d: %s", self.number, exception)
+                return
 
             for change in reversed(change_series):
                 # submitted_together contains a list data for changes submitted together including the
