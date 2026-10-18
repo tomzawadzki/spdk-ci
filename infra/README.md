@@ -30,3 +30,9 @@ To set up the environment:
 - `OUTPUT_DIR`: The directory where the forwarder and mergable_changes scripts write their output files (mapped to `/output` inside containers).
 
 The Python scripts use fail-fast validation for these variables, meaning they will exit immediately with a clear error message if a required variable is missing or if a variable has an invalid type (e.g., a non-integer for `FORWARDER_QUEUE_PROCESS_INTERVAL`).
+
+## Gerrit plugins
+
+`gerrit_stacks` is a Gerrit plugin with search operators for series of changes, see its
+`src/main/resources/Documentation/about.md` and `config.md`. Build and test it with `mvn -B package` in that directory,
+with JDK 25. The tests start a Gerrit of `gerrit.version` inside the JVM, and the jar is `target/stacks.jar`.
