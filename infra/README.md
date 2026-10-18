@@ -46,3 +46,13 @@ it into the `plugins` directory that `docker-compose.yaml` mounts:
 Gerrit loads the jar within a minute, without a restart, and unloads it within a minute once it is deleted. The plugin
 needs the `gerrit.config` setting in its `config.md`. Gerrit's plugin list, `GET /plugins/`, shows the commit the jar
 was built from as its version. After a Gerrit upgrade, run the workflow again and replace the jar.
+
+The menus the plugin adds to the menu bar come from `stacks.config` on `refs/meta/config` of All-Projects, see its
+`config.md`. To install `gerrit_stacks/stacks.config`, or a change to it, upload it as a change for `refs/meta/config`
+and submit it:
+
+    git init all-projects && cd all-projects
+    scp -O -P 29418 <admin>@<host>:hooks/commit-msg .git/hooks/
+    git fetch ssh://<admin>@<host>:29418/All-Projects refs/meta/config && git checkout FETCH_HEAD
+    cp <spdk-ci>/infra/gerrit_stacks/stacks.config . && git add stacks.config && git commit
+    git push ssh://<admin>@<host>:29418/All-Projects HEAD:refs/for/refs/meta/config
