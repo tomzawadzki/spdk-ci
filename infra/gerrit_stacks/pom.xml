@@ -12,6 +12,8 @@
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- The workflow sets the commit the jar is built from. -->
+    <stacks.revision>dev</stacks.revision>
     <gerrit.version>3.14.4</gerrit.version>
     <!-- The version in WEB-INF/lib of gerrit.war. -->
     <bouncycastle.version>1.84</bouncycastle.version>
@@ -82,7 +84,7 @@
               <Gerrit-ApiType>plugin</Gerrit-ApiType>
               <Gerrit-ApiVersion>${gerrit.version}</Gerrit-ApiVersion>
               <Gerrit-Module>io.spdk.gerrit.plugins.stacks.Module</Gerrit-Module>
-              <Implementation-Version>${project.version}</Implementation-Version>
+              <Implementation-Version>${project.version}-${stacks.revision}</Implementation-Version>
             </manifestEntries>
           </archive>
         </configuration>

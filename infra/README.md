@@ -36,3 +36,13 @@ The Python scripts use fail-fast validation for these variables, meaning they wi
 `gerrit_stacks` is a Gerrit plugin with search operators for series of changes and outdated changes, see its
 `src/main/resources/Documentation/about.md` and `config.md`. Build and test it with `mvn -B package` in that directory,
 with JDK 25. The tests start a Gerrit of `gerrit.version` inside the JVM, and the jar is `target/stacks.jar`.
+
+The `SPDK-CI build Gerrit plugin` workflow builds and tests it for the Gerrit tag in `docker-compose.yaml`, on demand
+and on pull requests that change the plugin or that tag, and uploads the jar as the `stacks-plugin` artifact. To install
+it into the `plugins` directory that `docker-compose.yaml` mounts:
+
+    gh run download <run-id> -R spdk/spdk-ci -n stacks-plugin -D "${GERRIT_DIR}/plugins"
+
+Gerrit loads the jar within a minute, without a restart, and unloads it within a minute once it is deleted. The plugin
+needs the `gerrit.config` setting in its `config.md`. Gerrit's plugin list, `GET /plugins/`, shows the commit the jar
+was built from as its version. After a Gerrit upgrade, run the workflow again and replace the jar.
