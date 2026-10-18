@@ -2,46 +2,27 @@
 
 import os
 import logging
-from datetime import datetime, timezone, timedelta
 from pygerrit2 import GerritRestAPI, HTTPBasicAuth
+from requests import HTTPError
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 GERRIT_USERNAME = os.getenv("GERRIT_USERNAME")
 GERRIT_PASSWORD = os.getenv("GERRIT_PASSWORD")
 GERRIT_BASE_URL = os.getenv("GERRIT_BASE_URL", "https://review.spdk.io")
 
-def parse_datetime(datetime_str):
-    return datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S.%f000").replace(tzinfo=timezone.utc)
+SEVERE = " This makes it severely outdated. Please rebase your change."
+STALE = " Please consider rebasing, make sure you're working with latest code base."
 
-def get_open_changes(gerrit):
+def get_changes(gerrit, behind):
+    # behind_stacks:<N>w of the stacks plugin matches the changes whose current patch set was
+    # created more than N weeks before the commit time of the tip of their branch.
     query = "".join([
         "/changes/",
-        "?q=project:spdk/spdk status:open -is:private -is:wip",
+        f"?q=project:spdk/spdk status:open -is:private -is:wip {behind}",
         "&o=CURRENT_REVISION&o=MESSAGES",
     ])
     logging.info(f"Querying Gerrit with: {query}")
     return gerrit.get(query)
-
-def get_branch_tip_date(gerrit, branch):
-    try:
-        query = f"/projects/spdk%2Fspdk/branches/{branch.replace('.', '%2E')}"
-        logging.info(f"Querying Gerrit for branch tip: {query}")
-
-        branch_info = gerrit.get(query)
-        latest_revsion = branch_info.get("revision")
-
-        query = f"/projects/spdk%2Fspdk/commits/{latest_revsion}"
-        commit_info = gerrit.get(query)
-        commit_date_str = commit_info.get("committer", {}).get("date")
-
-        if not commit_date_str:
-            logging.warning(f"No commit date found for branch {branch}.")
-            return None
-
-        return parse_datetime(commit_date_str)
-    except Exception as e:
-        logging.error(f"Failed to get branch tip date for {branch}: {e}")
-        return None
 
 def get_current_patch_comments(messages, current_revision_number):
     comments = []
@@ -50,65 +31,22 @@ def get_current_patch_comments(messages, current_revision_number):
             comments.append(message["message"])
     return comments
 
-def process_changes(gerrit, changes):
-    branch_tip_dates = {}
-    two_weeks = timedelta(weeks=2)
-    four_weeks = timedelta(weeks=4)
-    twelve_weeks = timedelta(weeks=12)
-
+def process_changes(gerrit, changes, weeks, message_substr, vote):
     for change in changes:
         change_id = change.get("_number")
         project = change.get("project")
-        branch = change.get("branch")
         subject = change.get("subject", "N/A")
         owner = change.get("owner", {}).get("name", "Unknown")
         url = os.path.join(GERRIT_BASE_URL, "c", project, '+', str(change_id))
-        revisions = change.get("revisions", {})
-        current_revision = next(iter(revisions.values()), {})
-        current_revision_number = change.get("current_revision_number")
-        created_str = current_revision.get("created")
 
-        if not created_str:
-            logging.warning(f"Change {change_id} has no 'created' field in the current revision.")
+        existing_comments = get_current_patch_comments(change["messages"], change.get("current_revision_number"))
+        if any(message_substr in comment for comment in existing_comments):
+            # We already sent this comment, skip.
             continue
-        created = parse_datetime(created_str)
-
-        if branch_tip_dates.get(branch):
-            branch_tip_date = branch_tip_dates[branch]
-        else:
-            branch_tip_date = get_branch_tip_date(gerrit, branch)
-            branch_tip_dates[branch] = branch_tip_date
-            logging.info(f"Saved branch tip date for {branch}: {branch_tip_date}")
-
-        time_since_branch_tip = branch_tip_date - created
-        if time_since_branch_tip <= timedelta(0):
-            # Change is newer than branch tip; skip it.
-            continue
-        if time_since_branch_tip > twelve_weeks:
-            # Change is older than twelve weeks; we don't want VERY old changes to flood Gerrit dashboard,
-            # so skip them.
-            continue
-
-        existing_comments = get_current_patch_comments(change["messages"], current_revision_number)
 
         logging.info(f"Processing change {url} - {subject} by {owner}")
-        logging.info(f"Time since last update: {time_since_branch_tip.days} days")
-        message = "OUTDATED PATCH WARNING: Your change has not been updated for at least"
-        message += f" {time_since_branch_tip.days // 7} weeks ({time_since_branch_tip.days} days)."
-        if time_since_branch_tip > four_weeks:
-            message_substr = " This makes it severely outdated. Please rebase your change."
-            if any(message_substr in comment for comment in existing_comments):
-                # We already sent this comment, skip.
-                continue
-            message += message_substr
-            send_comment(gerrit, change_id, message, -1)
-        elif time_since_branch_tip > two_weeks:
-            message_substr = " Please consider rebasing, make sure you're working with latest code base."
-            if any(message_substr in comment for comment in existing_comments):
-                # We already sent this comment, skip.
-                continue
-            message += message_substr
-            send_comment(gerrit, change_id, message, None)
+        message = f"OUTDATED PATCH WARNING: Your change has not been updated for at least {weeks} weeks."
+        send_comment(gerrit, change_id, message + message_substr, vote)
 
 def send_comment(gerrit, change_id, message, vote):
     json_data = {"message": message}
@@ -132,8 +70,19 @@ def main():
     gerrit = GerritRestAPI(url=GERRIT_BASE_URL, auth=auth)
 
     try:
-        changes = get_open_changes(gerrit)
-        process_changes(gerrit, changes)
+        # Changes more than twelve weeks behind are skipped, we don't want VERY old changes to
+        # flood Gerrit dashboard.
+        severe = get_changes(gerrit, "behind_stacks:4w -behind_stacks:12w")
+        stale = get_changes(gerrit, "behind_stacks:2w -behind_stacks:4w")
+        process_changes(gerrit, severe, 4, SEVERE, -1)
+        process_changes(gerrit, stale, 2, STALE, None)
+    except HTTPError as e:
+        # Without the stacks plugin Gerrit does not know behind_stacks:, so there is nothing to do.
+        if e.response is not None and e.response.status_code == 400 and "Unsupported operator" in e.response.text:
+            print(f"::warning::Skipping the scan: {e.response.text.strip()}")
+            return
+        logging.error(f"An error occurred: {e}")
+        exit(1)
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         exit(1)

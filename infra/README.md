@@ -61,5 +61,5 @@ and submit it:
     cp <spdk-ci>/infra/gerrit_stacks/stacks.config . && git add stacks.config && git commit
     git push ssh://<admin>@<host>:29418/All-Projects HEAD:refs/for/refs/meta/config
 
-The `mergable_changes` page needs the plugin on the Gerrit it queries. Without it, the page shows what Gerrit answered
-instead of the changes.
+The `mergable_changes` page and the outdated changes job need the plugin on the Gerrit they query. Without it, the page
+shows what Gerrit answered instead of the changes, and the job skips its scan.
