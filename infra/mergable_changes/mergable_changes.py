@@ -212,7 +212,7 @@ def write_text_summary(all_changes):
             else:
                 write_and_log("No changes in this category.\n", fh)
 
-    template = jinja2.Environment(loader=jinja2.FileSystemLoader('./')).get_template("template.html")
+    template = jinja2.Environment(loader=jinja2.FileSystemLoader('./'), autoescape=True).get_template("template.html")
     with open(os.path.join(config.output_dir, "mergable_changes.html"), "w+") as output:
         output.write(template.render(sections=sections, timestamp=timestamp.strftime("%B %d %H:%M")))
 
