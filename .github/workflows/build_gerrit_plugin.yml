@@ -2,8 +2,9 @@
 # Build and test the Gerrit stacks plugin
 #
 # Builds infra/gerrit_stacks for the Gerrit tag of infra/docker-compose.yaml,
-# runs its tests and uploads stacks.jar as an artifact, see infra/README.md for
-# installing it. Pull requests that change the plugin or that tag run it too.
+# runs its tests, runs the jar in that Gerrit image and uploads stacks.jar as an
+# artifact, see infra/README.md for installing it. Pull requests that change the
+# plugin or that tag run it too.
 #
 name: SPDK-CI build Gerrit plugin
 
@@ -37,7 +38,12 @@ jobs:
         REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
       run: |
         version=$(sed -n 's|^ *image: gerritcodereview/gerrit:||p' ../docker-compose.yaml)
+        echo "GERRIT_IMAGE=gerritcodereview/gerrit:$version" >> "$GITHUB_ENV"
         mvn -B -ntp -Dgerrit.version="$version" -Dstacks.revision="${REVISION::7}" package
+
+    - name: Run plugin in Gerrit
+      working-directory: infra/gerrit_stacks
+      run: ./smoke.sh "$GERRIT_IMAGE"
 
     - name: Upload plugin
       uses: actions/upload-artifact@v7.0.1
