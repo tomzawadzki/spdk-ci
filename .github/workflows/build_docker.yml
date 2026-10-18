@@ -50,7 +50,7 @@ on:
 
 jobs:
   select_vm_image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -65,7 +65,7 @@ jobs:
 
   build-docker:
     needs: select_vm_image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write

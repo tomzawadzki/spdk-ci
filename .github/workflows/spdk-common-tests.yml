@@ -42,7 +42,7 @@ env:
   spdk_path: './spdk'
 jobs:
   checkout_spdk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       gerrit_ref: ${{ inputs.client_payload != '' && fromJson(inputs.client_payload).patchSet.ref || inputs.gerrit_ref }}
     steps:
@@ -122,7 +122,7 @@ jobs:
         # TODO: consider also [macos-latest, windows-2022]
         - os: ubuntu-22.04-arm
           container: ""   # no container for this one
-    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
     env:
       DISTRO: ${{ matrix.container }}
       TZ: Etc/UTC
@@ -177,7 +177,7 @@ jobs:
     name: ${{ matrix.workflow.name }}
     needs:
     - checkout_spdk
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
       matrix:
