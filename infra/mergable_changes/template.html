@@ -17,6 +17,9 @@
     </header>
 
     <main class="container my-4">
+      {% if notice %}
+      <div class="alert alert-warning">{{ notice }}</div>
+      {% else %}
       <!-- Section: Changes Ready for Merge -->
       <section class="mb-5">
         <div class="card shadow-sm">
@@ -256,6 +259,7 @@
           </div>
         </div>
       </section>
+      {% endif %}
     </main>
 
     <footer class="footer bg-dark text-white py-3">

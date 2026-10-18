@@ -31,6 +31,10 @@ class MergableChangesConfig:
 
 config = MergableChangesConfig()
 
+# The approved changes, which every section starts from.
+APPROVED = ("(project:spdk/spdk status:open label:Code-Review=2 label:Verified=1)"
+            " OR (-project:spdk/spdk status:open label:Code-Review=2)")
+
 @dataclass
 class GerritChange:
     number: int
@@ -92,7 +96,7 @@ class GerritChange:
             number=change_json['_number'],
             project=change_json['project'],
             subject=change_json['subject'],
-            owner=change_json['owner']['name'],
+            owner=change_json['owner'].get('name', 'Owner not set'),
             revisions=change_json['revisions'].values(),
             blocked_by="",
             reviewed_by="",
@@ -103,41 +107,38 @@ class GerritChange:
         )
 
 
-    def check_parents_ready(self, gerrit, all_changes):
-        if self.ready:
-            try:
-                query = "".join([
-                    "/changes/", str(self.number), "/submitted_together", "?o=DETAILED_ACCOUNTS" 
-                ])
-                change_series = gerrit.get(query)
-            except RequestException as exception:
-                # GET operation on /submitted_together can fail with 403 if there are patches which
-                # the caller cannot read, e.g. private changes.
-                logging.warning("Cannot get the series of change %d: %s", self.number, exception)
-                return
+    def check_parents_ready(self, gerrit, ready_numbers):
+        # The stacks plugin finds the changes that are ready together with all their open ancestors.
+        # The series of any other change tells which change blocks it.
+        if not self.ready or self.number in ready_numbers:
+            return
+        self.ready = False
+        try:
+            query = "".join([
+                "/changes/", str(self.number), "/submitted_together", "?o=DETAILED_ACCOUNTS"
+            ])
+            change_series = gerrit.get(query)
+        except RequestException as exception:
+            # GET operation on /submitted_together can fail with 403 if there are patches which
+            # the caller cannot read, e.g. private changes.
+            logging.warning("Cannot get the series of change %d: %s", self.number, exception)
+            return
 
-            for change in reversed(change_series):
-                # submitted_together contains a list data for changes submitted together including the
-                # one currently inspected - skip it.
-                if self.number == change['_number']:
-                    continue
+        for change in reversed(change_series):
+            # submitted_together contains a list data for changes submitted together including the
+            # one currently inspected - skip it.
+            if self.number == change['_number']:
+                continue
 
-                parent_change = get_change_by_number(all_changes, change['_number'])
-                if not parent_change:
-                    # Looks like there's no +2'd parent changes so create a "blocking" one
-                    parent_change = GerritChange.blocking_change(change)
-
-                if parent_change.ready is False:
-                    self.ready = False
-                    self.needs_plus_two = False
-                    self.blocked_by = parent_change
-                    break
+            if change['_number'] not in ready_numbers:
+                self.needs_plus_two = False
+                self.blocked_by = GerritChange.blocking_change(change)
+                break
 
 def get_gerrit_changes(gerrit, all_changes):
     query = "".join([
         "/changes/",
-        "?q=(project:spdk/spdk status:open label:Code-Review=2 label:Verified=1)",
-        " OR (-project:spdk/spdk status:open label:Code-Review=2)",
+        "?q=", APPROVED,
         "&o=CURRENT_REVISION", "&o=DETAILED_LABELS", "&o=DETAILED_ACCOUNTS", "&o=SUBMITTABLE"
     ])
     try:
@@ -150,10 +151,9 @@ def get_gerrit_changes(gerrit, all_changes):
         change = GerritChange.from_json(change_json)
         all_changes.append(change)
 
-def get_change_by_number(all_changes, number):
-    for change in all_changes:
-        if change.number == number:
-            return change
+def get_ready_numbers(gerrit):
+    query = "".join(["/changes/", "?q=(", APPROVED, ") stack_stacks:ready"])
+    return {change['_number'] for change in gerrit.get(query)}
 
 def get_ready_changes(all_changes):
     return [c for c in all_changes if c.ready]
@@ -173,12 +173,12 @@ def get_merge_conflict_changes(all_changes):
 def get_blocked_by_changes(all_changes):
     return [c for c in all_changes if c.blocked_by]
 
-def write_text_summary(all_changes):
+def write_text_summary(all_changes, notice=None):
     def write_and_log(line, fh):
         fh.write(line + "\n")
         logging.debug(line)
 
-    sections = {
+    sections = {} if notice else {
         "Changes ready for merge": get_ready_changes(all_changes),
         "Stale changes needing another +2 CR vote": get_stale_needs_plus_two_changes(all_changes),
         "Changes needing another +2 CR vote": get_needs_plus_two_changes(all_changes),
@@ -191,6 +191,8 @@ def write_text_summary(all_changes):
     with open(os.path.join(config.output_dir, "mergable_changes.txt"), "w") as fh:
         fh.write(f"Generated at {timestamp}\n")
         fh.write("Contents are re-generated every 5 minutes.\n\n\n")
+        if notice:
+            write_and_log(notice, fh)
         for section_name, changes in sections.items():
             write_and_log(f"{section_name}", fh)
             write_and_log("-" * len(section_name), fh)
@@ -214,7 +216,7 @@ def write_text_summary(all_changes):
 
     template = jinja2.Environment(loader=jinja2.FileSystemLoader('./'), autoescape=True).get_template("template.html")
     with open(os.path.join(config.output_dir, "mergable_changes.html"), "w+") as output:
-        output.write(template.render(sections=sections, timestamp=timestamp.strftime("%B %d %H:%M")))
+        output.write(template.render(sections=sections, notice=notice, timestamp=timestamp.strftime("%B %d %H:%M")))
 
 
 def main():
@@ -230,11 +232,20 @@ def main():
     while True:
         all_changes = []
         gerrit = GerritRestAPI(url=config.gerrit_url)
-        get_gerrit_changes(gerrit, all_changes)
-        for change in all_changes:
-            change.check_parents_ready(gerrit, all_changes)
-        all_changes.sort(key=lambda c: c.age, reverse=True)
-        write_text_summary(all_changes)
+        try:
+            ready_numbers = get_ready_numbers(gerrit)
+        except RequestException as exception:
+            # Gerrit names the cause, e.g. an unknown operator when the stacks plugin is off.
+            detail = exception.response.text.strip() if exception.response is not None else str(exception)
+            logging.warning("Cannot get the ready changes: %s", detail)
+            write_text_summary(all_changes, "This page needs the stacks plugin of Gerrit, "
+                               f"and the query for ready changes failed: {detail}")
+        else:
+            get_gerrit_changes(gerrit, all_changes)
+            for change in all_changes:
+                change.check_parents_ready(gerrit, ready_numbers)
+            all_changes.sort(key=lambda c: c.age, reverse=True)
+            write_text_summary(all_changes)
         if config.run_once:
             break
         time.sleep(300)

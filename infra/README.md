@@ -60,3 +60,6 @@ and submit it:
     git fetch ssh://<admin>@<host>:29418/All-Projects refs/meta/config && git checkout FETCH_HEAD
     cp <spdk-ci>/infra/gerrit_stacks/stacks.config . && git add stacks.config && git commit
     git push ssh://<admin>@<host>:29418/All-Projects HEAD:refs/for/refs/meta/config
+
+The `mergable_changes` page needs the plugin on the Gerrit it queries. Without it, the page shows what Gerrit answered
+instead of the changes.
