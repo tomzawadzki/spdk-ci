@@ -7,13 +7,21 @@ import static java.util.stream.Collectors.toList;
 import com.google.gerrit.acceptance.GitUtil;
 import com.google.gerrit.acceptance.LightweightPluginDaemonTest;
 import com.google.gerrit.acceptance.PushOneCommit;
+import com.google.gerrit.acceptance.RestResponse;
 import com.google.gerrit.acceptance.TestPlugin;
+import com.google.gerrit.acceptance.testsuite.request.RequestScopeOperations;
 import com.google.gerrit.entities.RefNames;
 import com.google.gerrit.extensions.api.changes.ReviewInput;
 import com.google.gerrit.extensions.client.MenuItem;
 import com.google.gerrit.extensions.webui.TopMenu;
+import com.google.gerrit.testing.ConfigSuite;
+import com.google.inject.Inject;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +32,16 @@ import org.junit.Test;
 
 @TestPlugin(name = "stacks", sysModule = "io.spdk.gerrit.plugins.stacks.Module")
 public class ConfigMenuIT extends LightweightPluginDaemonTest {
+  @Inject private RequestScopeOperations requestScopeOperations;
+
+  @ConfigSuite.Default
+  public static Config defaultConfig() {
+    Config cfg = new Config();
+    cfg.setString(
+        "change", null, "mergeabilityComputationBehavior", "API_REF_UPDATED_AND_CHANGE_REINDEX");
+    return cfg;
+  }
+
   @Test
   public void noFileNoMenus() throws Exception {
     assertThat(gApi.config().server().topMenus()).isEmpty();
@@ -55,18 +73,101 @@ public class ConfigMenuIT extends LightweightPluginDaemonTest {
   }
 
   @Test
+  public void dashboards() throws Exception {
+    setConfig(
+        String.join(
+            "\n",
+            "[fragment]",
+            "  rebase = (-is:mergeable OR ${broken})",
+            "  broken = stack_stacks:broken",
+            "[menu \"Review\"]",
+            "  item = Mine",
+            "  item = All",
+            "  item = Queue",
+            "[dashboard \"Mine\"]",
+            "  signedIn = true",
+            "  foreach = owner:self",
+            "  section = Rebase now",
+            "  query = -is:wip ${rebase}",
+            "  section = Work in progress",
+            "  query = is:wip",
+            "[dashboard \"All\"]",
+            "  section = Open",
+            "  query = is:open",
+            "[link \"Queue\"]",
+            "  url = /queue_status.html"));
+
+    List<TopMenu.MenuEntry> menus = gApi.config().server().topMenus();
+    MenuItem mine = menus.get(0).items.get(0);
+    assertThat(mine.url)
+        .isEqualTo(
+            "/dashboard/?title=Mine&foreach=status%3Aopen+%28owner%3Aself%29"
+                + "&Rebase+now=%28-is%3Awip+%28-is%3Amergeable+OR+stack_stacks%3Abroken%29%29"
+                + "&Work+in+progress=%28is%3Awip%29");
+    assertThat(mine.target).isNull();
+    assertThat(menus.get(0).items.get(1).url)
+        .isEqualTo("/dashboard/?title=All&foreach=status%3Aopen&Open=%28is%3Aopen%29");
+
+    requestScopeOperations.setApiUserAnonymous();
+    assertThat(itemNames(gApi.config().server().topMenus(), "Review"))
+        .containsExactly("All", "Queue")
+        .inOrder();
+  }
+
+  @Test
+  public void orStaysInsideForeachAndSection() throws Exception {
+    int a = createChange().getChange().getId().get();
+    int b = createChange().getChange().getId().get();
+    int c = createChange().getChange().getId().get();
+    setConfig(
+        String.join(
+            "\n",
+            "[menu \"Review\"]",
+            "  item = Or",
+            "[dashboard \"Or\"]",
+            String.format("  foreach = change:%d OR change:%d", a, b),
+            "  section = S",
+            String.format("  query = change:%d OR change:%d", b, c)));
+
+    List<String> queries = sectionQueries(gApi.config().server().topMenus().get(0).items.get(0));
+    assertThat(queries).hasSize(1);
+    assertThat(
+            gApi.changes().query(queries.get(0)).get().stream()
+                .map(i -> i._number)
+                .collect(toList()))
+        .containsExactly(b);
+  }
+
+  @Test
   public void mistakesLeaveOutTheItem() throws Exception {
     setConfig(
         String.join(
             "\n",
             "[menu \"Review\"]",
             "  item = Missing",
+            "  item = Unknown fragment",
+            "  item = No query",
             "  item = No url",
+            "  item = Loop",
+            "  item = Bad signedIn",
             "  item = Good",
             "[menu \"Empty\"]",
             "  item = Missing",
+            "[fragment]",
+            "  loop = ${loop}",
+            "[dashboard \"Unknown fragment\"]",
+            "  section = S",
+            "  query = ${nope}",
+            "[dashboard \"No query\"]",
+            "  section = S",
+            "[dashboard \"Loop\"]",
+            "  section = S",
+            "  query = ${loop}",
             "[link \"No url\"]",
             "  target = _blank",
+            "[link \"Bad signedIn\"]",
+            "  url = /bad",
+            "  signedIn = maybe",
             "[link \"Good\"]",
             "  url = /good"));
 
@@ -84,7 +185,10 @@ public class ConfigMenuIT extends LightweightPluginDaemonTest {
         .containsExactly("B");
   }
 
-  /** The file that review.spdk.io runs: every menu and item shows up, in order. */
+  /**
+   * The file that review.spdk.io runs: every menu and item shows up in order, and every section
+   * works as a search, the way a dashboard sends it.
+   */
   @Test
   public void spdkConfig() throws Exception {
     String file = Files.readString(Path.of("stacks.config"));
@@ -101,7 +205,51 @@ public class ConfigMenuIT extends LightweightPluginDaemonTest {
           .that(menu.items.stream().map(i -> i.name).collect(toList()))
           .containsExactlyElementsIn(Arrays.asList(cfg.getStringList("menu", menu.name, "item")))
           .inOrder();
+      for (MenuItem item : menu.items) {
+        if (item.url.startsWith("/dashboard/")) {
+          assertSectionsWork(item);
+        }
+      }
     }
+  }
+
+  private void assertSectionsWork(MenuItem dashboard) throws Exception {
+    for (String q : sectionQueries(dashboard)) {
+      RestResponse r =
+          adminRestSession.get("/changes/?q=" + URLEncoder.encode(q, StandardCharsets.UTF_8));
+      assertWithMessage(dashboard.name + ", " + q + ": " + r.getEntityContent())
+          .that(r.getStatusCode())
+          .isEqualTo(200);
+    }
+  }
+
+  /**
+   * The search of each section, as the web UI makes it from the URL: it decodes the whole query
+   * string, splits it into parameters, decodes each again, and joins foreach and a section query
+   * with a space.
+   */
+  private static List<String> sectionQueries(MenuItem dashboard) {
+    String query = dashboard.url.substring(dashboard.url.indexOf('?') + 1);
+    String foreach = "";
+    List<String> sections = new ArrayList<>();
+    for (String param : decode(query).split("&")) {
+      int eq = param.indexOf('=');
+      String key = decode(eq < 0 ? param : param.substring(0, eq));
+      String value = eq < 0 ? "" : decode(param.substring(eq + 1));
+      if (key.equals("title")) {
+        continue;
+      } else if (key.equals("foreach")) {
+        foreach = value + " ";
+      } else if (!key.isEmpty() && !value.isEmpty()) {
+        sections.add(value);
+      }
+    }
+    String prefix = foreach;
+    return sections.stream().map(s -> prefix + s).collect(toList());
+  }
+
+  private static String decode(String s) {
+    return URLDecoder.decode(s, StandardCharsets.UTF_8);
   }
 
   private static List<String> itemNames(List<TopMenu.MenuEntry> menus, String menu) {
