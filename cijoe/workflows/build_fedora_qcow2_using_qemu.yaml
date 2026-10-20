@@ -21,7 +21,7 @@ doc: |
   some other tool or script.
 
   * Convert the image (with compression)
-    - qemu-img convert boot.img /tmp/fedora_43-x86_64.qcow2 -O qcow2 -c
+    - qemu-img convert boot.img /tmp/<distro>-x86_64.qcow2 -O qcow2 -c
 
   * Upload it to publically available storage
 
@@ -47,7 +47,8 @@ steps:
     hostname
     uname -a
     df -h
-    growpart /dev/vda 4 || true
+    # The root file system is not on the same partition in every Fedora release
+    growpart /dev/vda $(lsblk -no PARTN "$(findmnt -nvo SOURCE /)") || true
     btrfs filesystem resize max / || true
     df -h
 

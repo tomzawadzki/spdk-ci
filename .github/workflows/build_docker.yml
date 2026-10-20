@@ -45,6 +45,7 @@ on:
         type: choice
         options:
         - fedora_43
+        - fedora_44
         default: 'fedora_43'
 
 jobs:
