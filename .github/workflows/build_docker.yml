@@ -46,7 +46,7 @@ on:
         options:
         - fedora_43
         - fedora_44
-        default: 'fedora_43'
+        default: 'fedora_44'
 
 jobs:
   select_vm_image:

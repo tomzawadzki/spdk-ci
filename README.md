@@ -41,8 +41,8 @@ the organization's runners. To run or repeat common jobs yourself, use a fork
 named `spdk-ci`:
 
 1. Fork the repository and enable workflows on the fork's Actions tab.
-2. Run "SPDK-CI build VM image" once for `fedora_43` and once for `freebsd_15`.
-3. Run "SPDK-CI build Docker image" for `fedora_43` with `push_to_registry`
+2. Run "SPDK-CI build VM image" once for `fedora_44` and once for `freebsd_15`.
+3. Run "SPDK-CI build Docker image" for `fedora_44` with `push_to_registry`
    checked. New packages are private, so make the `spdk-ci` package public.
    The common jobs pull it without credentials.
 
