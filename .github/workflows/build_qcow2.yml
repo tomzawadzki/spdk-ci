@@ -38,11 +38,10 @@ on:
         required: false
         type: choice
         options:
-        - fedora_43
         - fedora_44
         - fedora_45
         - freebsd_15
-        default: 'fedora_43'
+        default: 'fedora_45'
   push:
     branches: ["main"]
     paths:

@@ -25,7 +25,6 @@ jobs:
     strategy:
       matrix:
         distro:
-        - fedora_43
         - fedora_44
         - fedora_45
         - freebsd_15
