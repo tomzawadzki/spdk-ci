@@ -43,7 +43,7 @@ jobs:
       run:
         shell: bash
     container:
-      image: ghcr.io/spdk/spdk-ci:fedora_44
+      image: ghcr.io/spdk/spdk-ci:fedora_45
       options: --privileged
       volumes:
       - "/dev/hugepages:/dev/hugepages"
