@@ -45,7 +45,6 @@ on:
         type: choice
         options:
         - fedora_43
-        - freebsd_14
         default: 'fedora_43'
 
 jobs:
