@@ -143,7 +143,7 @@ steps:
     /opt/spdk/autorun.sh /opt/configs/short-fuzz-vm-autotest.conf
 
 # TODO: Figure out sudo hack.
-# Sudo doesn't work spdk/spdk-ci:fedora_43 container image, resulting in PAM errors.
+# Sudo can fail with PAM errors in the spdk-ci Fedora container image.
 # For now work around the issue by "masking" sudo and any options (e.g. -E) passed to it.
 - name: vfio-user-container-autotest
   run: |

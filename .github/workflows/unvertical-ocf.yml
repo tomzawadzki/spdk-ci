@@ -43,7 +43,7 @@ jobs:
       run:
         shell: bash
     container:
-      image: ghcr.io/spdk/spdk-ci:fedora_43
+      image: ghcr.io/spdk/spdk-ci:fedora_44
       options: --privileged
       volumes:
       - "/dev/hugepages:/dev/hugepages"
@@ -103,7 +103,7 @@ jobs:
         SPDK_RUN_UBSAN=1
         AUTOTEST_COLORS_ENABLED=no
         EOF
-        # sudo fails with PAM errors in the fedora_43 image and we run as root
+        # sudo can fail with PAM errors in the spdk-ci Fedora image and we run as root
         # anyway, so drop it and its -E, as the cijoe container jobs do.
         sudo() { "${@:2}"; }
         export -f sudo
