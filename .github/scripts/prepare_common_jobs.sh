@@ -40,7 +40,7 @@ fi
 
 jobs=$(jq -c --arg repository "$GITHUB_REPOSITORY" '
 	map(. + {container_image: (if .guest then "ghcr.io/refenv/cijoe-docker:v0.9.54"
-		else "ghcr.io/\($repository):fedora_43" end)})
+		else "ghcr.io/\($repository):\(.distro)" end)})
 ' .github/common-jobs.json)
 
 if [[ $job == all ]]; then
