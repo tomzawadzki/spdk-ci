@@ -3,13 +3,13 @@
 #
 # Used by: cijoe.run() / cijoe.get() / cijoe.put()
 
-[cijoe.transport.qemu_guest]
+[cijoe.targets.qemu_guest.ssh]
 username = "root"
 password = "root"
 hostname = "localhost"
 port = 4200
 
-[cijoe.workflow]
+[cijoe.task]
 fail_fast = true
 
 # Used by: the qemu.*.py scripts

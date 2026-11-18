@@ -36,6 +36,9 @@ steps:
   with:
     guest_name: generic-bios-kvm-x86_64
     system_image_name: "{{ local.env.DISTRO }}-x86_64"
+    # build_qcow2.yml converts boot.img into the file that an overlay would be
+    # backed by, so boot from a copy.
+    overlay: false
 
 - name: guest_start
   uses: qemu.guest_start
