@@ -1,0 +1,151 @@
+fix(core): decode command output across reads
+
+From: Tomasz Zawadzki <tomasz.zawadzki@nutanix.com>
+
+Tee decoded each write() on its own, and while a command runs the
+transports pass it one byte at a time. Each byte of a multi-byte UTF-8
+character was then decoded alone and written as U+FFFD, so "blåbær"
+came out as "bl��b��r". Only the output read after the command had
+exited was decoded in one piece.
+
+Decode with an incremental decoder, which keeps the bytes of an
+unfinished character until later writes complete it. close() writes
+what the decoder still holds, as U+FFFD if the output ends inside a
+character, and with it any text still in the buffer.
+
+flush() now empties the buffer before it writes, so that close() does
+not repeat output that a failed flush() already wrote to the file.
+
+Signed-off-by: Tomasz Zawadzki <tomasz.zawadzki@nutanix.com>
+---
+ src/cijoe/core/command.py   |   23 +++++++++++++----
+ tests/core/test_commands.py |   58 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 76 insertions(+), 5 deletions(-)
+
+diff --git a/src/cijoe/core/command.py b/src/cijoe/core/command.py
+index f5c7f71..b623052 100644
+--- a/src/cijoe/core/command.py
++++ b/src/cijoe/core/command.py
+@@ -2,6 +2,7 @@
+ 
+ """
+ 
++import codecs
+ import logging as log
+ import os
+ import sys
+@@ -53,8 +54,11 @@ class Tee:
+         self.buffer = []
+         self.buffer_size = 0
+ 
++        # Keeps the bytes of an unfinished character until later writes complete it
++        self.decoder = codecs.getincrementaldecoder(ENCODING)(errors="replace")
++
+     def write(self, data: bytes):
+-        decoded = data.decode(ENCODING, errors="replace")
++        decoded = self.decoder.decode(data)
+         self.buffer.append(decoded)
+         self.buffer_size += len(decoded)
+ 
+@@ -64,6 +68,10 @@ class Tee:
+     def flush(self):
+         output = "".join(self.buffer)
+ 
++        # Emptied first, so that a flush after a failed one does not repeat the output
++        self.buffer = []
++        self.buffer_size = 0
++
+         self.file.write(output)
+         self.file.flush()
+ 
+@@ -71,11 +79,16 @@ class Tee:
+             sys.stdout.write(output)
+             sys.stdout.flush()
+ 
+-        self.buffer = []
+-        self.buffer_size = 0
+-
+     def close(self):
+-        self.file.close()
++        if self.file.closed:
++            return
++
++        try:
++            # Output that ends inside a character ends with U+FFFD
++            self.buffer.append(self.decoder.decode(b"", final=True))
++            self.flush()
++        finally:
++            self.file.close()
+ 
+     def __enter__(self):
+         return self
+diff --git a/tests/core/test_commands.py b/tests/core/test_commands.py
+index 8c7ea38..ff30b00 100644
+--- a/tests/core/test_commands.py
++++ b/tests/core/test_commands.py
+@@ -1,3 +1,11 @@
++import contextlib
++import os
++
++import pytest
++
++from cijoe.core.command import Tee
++
++
+ def test_hello():
+     assert True
+ 
+@@ -12,3 +20,53 @@ def test_default_again(cijoe):
+     err, state = cijoe.run("ls")
+ 
+     assert err == 0
++
++
++def test_output_keeps_multibyte_characters(cijoe):
++    """A character of several bytes comes out as it went in"""
++
++    err, state = cijoe.run(r"printf 'bl\303\245b\303\246r \342\202\254\n'")
++
++    assert err == 0
++    assert state.output() == "blåbær €\n"
++
++
++def test_tee_joins_a_character_split_across_writes(tmp_path):
++    """The bytes of one character may arrive in separate writes"""
++
++    path = tmp_path / "output"
++    with Tee(path, False) as tee:
++        for byte in "€\n".encode():
++            tee.write(bytes([byte]))
++
++    assert path.read_text() == "€\n"
++
++
++def test_tee_replaces_a_character_cut_off_at_the_end(tmp_path):
++    """Output that ends inside a character ends with U+FFFD, and closing again adds
++    nothing"""
++
++    path = tmp_path / "output"
++    with Tee(path, False) as tee:
++        tee.write("€".encode()[:2])
++    tee.close()
++
++    assert path.read_text() == "\ufffd"
++
++
++def test_tee_writes_output_once_when_the_monitor_fails(tmp_path):
++    """close() does not repeat what a failed flush() wrote, and closes the file"""
++
++    path = tmp_path / "output"
++    reader, writer = os.pipe()
++    os.close(reader)
++    monitor = open(writer, "w")
++
++    with contextlib.redirect_stdout(monitor), pytest.raises(BrokenPipeError):
++        with Tee(path, True) as tee:
++            tee.write(b"line\n")
++    with contextlib.suppress(BrokenPipeError):
++        monitor.close()
++
++    assert tee.file.closed
++    assert path.read_text() == "line\n"

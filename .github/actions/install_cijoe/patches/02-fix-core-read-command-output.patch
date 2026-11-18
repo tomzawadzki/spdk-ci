@@ -1,0 +1,262 @@
+fix(core): read command output in blocks
+
+From: Tomasz Zawadzki <tomasz.zawadzki@nutanix.com>
+
+Both transports read the output of a running command one byte at a
+time. Over SSH each byte is a Channel.recv(1), which takes the lock
+that paramiko's receive thread needs and then moves the rest of the
+receive buffer up by one byte. Unthrottled, cijoe read 8 MiB from an
+sshd on localhost at about 1.2 MiB/s.
+
+A command that writes faster than cijoe reads fills the SSH window and
+then blocks in write(). With cijoe limited to a quarter of a core, a
+command writing 1.2 MiB/s got through at about 25 KiB/s, and single
+writes blocked for up to 23 s. CI runners where cijoe shares the CPUs
+with the QEMU guest it reads from are in that position. In the SPDK CI,
+tests in the guest then failed on timeouts unrelated to what they test,
+such as NVMe-oF keep-alive timeouts.
+
+Read up to 64 KiB per call, with Channel.recv() over SSH and read1()
+locally. Both return what has arrived instead of waiting for a full
+block, so output is still passed on while the command runs. The same
+8 MiB now reads at over 20 MiB/s over SSH, and locally at about
+195 MiB/s where it was 2.6 MiB/s. On a quarter of a core cijoe keeps up
+with the 1.2 MiB/s command, and none of its writes took longer than
+0.1 s.
+
+Channel.recv() raises EOFError if the connection is lost while it sends
+a window update, which paramiko's file object used to catch. run()
+handles it like an SSHException, closing the connection and returning
+an error.
+
+Signed-off-by: Tomasz Zawadzki <tomasz.zawadzki@nutanix.com>
+---
+ src/cijoe/core/transport.py      |   22 ++++++----
+ tests/core/test_commands.py      |   45 +++++++++++++++++++++
+ tests/core/test_ssh_localhost.py |   83 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 141 insertions(+), 9 deletions(-)
+
+diff --git a/src/cijoe/core/transport.py b/src/cijoe/core/transport.py
+index 104b176..52cd720 100644
+--- a/src/cijoe/core/transport.py
++++ b/src/cijoe/core/transport.py
+@@ -14,6 +14,10 @@ from scp import SCPClient
+ from cijoe.core.misc import deprecated
+ from cijoe.core.resources import Config
+ 
++# The most command output taken per read. A read returns what has arrived, without
++# waiting for this much, so output is passed on while the command runs.
++READ_SIZE = 65536
++
+ 
+ class Transport(ABC):
+     @abstractmethod
+@@ -54,10 +58,8 @@ class Local(Transport):
+             cwd=cwd,
+             env=env,
+         ) as process:
+-            while process.poll() is None:
+-                cmd_output.write(process.stdout.read(1))
+-
+-            cmd_output.write(process.stdout.read())
++            while data := process.stdout.read1(READ_SIZE):
++                cmd_output.write(data)
+             cmd_output.flush()
+             process.wait()
+ 
+@@ -199,15 +201,17 @@ class SSH(Transport):
+             _, stdout, _ = self.ssh.exec_command(cmd, environment=env)
+             stdout.channel.set_combine_stderr(True)
+ 
+-            while not stdout.channel.exit_status_ready():
+-                cmd_output.write(stdout.read(1))
+-
+-            cmd_output.write(stdout.read())
++            # Not stdout.read(READ_SIZE), which waits for that many bytes or the end of
++            # the output
++            while data := stdout.channel.recv(READ_SIZE):
++                cmd_output.write(data)
+             cmd_output.flush()
+ 
+             err = stdout.channel.recv_exit_status()
+             stdout.channel.close()
+-        except paramiko.ssh_exception.SSHException as exc:
++        except (paramiko.ssh_exception.SSHException, EOFError) as exc:
++            # recv() raises EOFError if the connection is lost while it sends a window
++            # update
+             self.close()
+             err = (
+                 exc.errno
+diff --git a/tests/core/test_commands.py b/tests/core/test_commands.py
+index ff30b00..9c57019 100644
+--- a/tests/core/test_commands.py
++++ b/tests/core/test_commands.py
+@@ -1,9 +1,27 @@
+ import contextlib
+ import os
++import shlex
+ 
+ import pytest
+ 
+ from cijoe.core.command import Tee
++from cijoe.core.transport import READ_SIZE
++
++
++class Writes:
++    """Takes a command's output as a Tee does, keeping each write"""
++
++    def __init__(self, on_write=None):
++        self.data = []
++        self.on_write = on_write
++
++    def write(self, data):
++        self.data.append(data)
++        if self.on_write:
++            self.on_write()
++
++    def flush(self):
++        pass
+ 
+ 
+ def test_hello():
+@@ -70,3 +88,30 @@ def test_tee_writes_output_once_when_the_monitor_fails(tmp_path):
+ 
+     assert tee.file.closed
+     assert path.read_text() == "line\n"
++
++
++def test_local_reads_output_in_blocks(cijoe):
++    """All of the output arrives, in reads of many bytes and at most READ_SIZE"""
++
++    expected = "".join(f"{n}\n" for n in range(1, 100001)).encode()
++    output = Writes()
++
++    assert cijoe.targets["initiator"].run("seq 1 100000", None, {}, output) == 0
++    assert b"".join(output.data) == expected
++    assert len(output.data) < len(expected) / 100
++    assert max(len(data) for data in output.data) <= READ_SIZE
++
++
++def test_local_passes_output_on_while_the_command_runs(cijoe, tmp_path):
++    """The command prints its second line only once its first has been read"""
++
++    seen = tmp_path / "seen"
++    path = shlex.quote(str(seen))
++    output = Writes(seen.touch)
++    command = (
++        f"echo first; for i in $(seq 100); do [ -e {path} ] && break; sleep 0.1; done; "
++        f"[ -e {path} ] && echo second"
++    )
++
++    assert cijoe.targets["initiator"].run(command, None, {}, output) == 0
++    assert b"".join(output.data) == b"first\nsecond\n"
+diff --git a/tests/core/test_ssh_localhost.py b/tests/core/test_ssh_localhost.py
+index b3a13ce..698c460 100644
+--- a/tests/core/test_ssh_localhost.py
++++ b/tests/core/test_ssh_localhost.py
+@@ -4,8 +4,10 @@ user, with keys of its own; skipped where there is no sshd or ssh-keygen
+ """
+ 
+ import contextlib
++import errno
+ import getpass
+ import os
++import shlex
+ import shutil
+ import signal
+ import socket
+@@ -22,6 +24,7 @@ import yaml
+ from cijoe.core.command import Cijoe
+ from cijoe.core.processing import runlog_from_path
+ from cijoe.core.resources import Config, dict_to_tomlfile
++from cijoe.core.transport import READ_SIZE, SSH
+ 
+ SSHD = shutil.which("sshd") or "/usr/sbin/sshd"
+ 
+@@ -132,6 +135,86 @@ def test_run(ssh_cijoe):
+     assert err == 3
+ 
+ 
++class Writes:
++    """Takes a command's output as a Tee does, keeping each write"""
++
++    def __init__(self, on_write=None):
++        self.data = []
++        self.on_write = on_write
++
++    def write(self, data):
++        self.data.append(data)
++        if self.on_write:
++            self.on_write()
++
++    def flush(self):
++        pass
++
++
++def test_run_reads_output_in_blocks(ssh_cijoe):
++    """All of the output arrives, in reads of many bytes and at most READ_SIZE"""
++
++    expected = "".join(f"{n}\n" for n in range(1, 100001)).encode()
++    output = Writes()
++
++    assert ssh_cijoe.targets["localhost"].run("seq 1 100000", None, {}, output) == 0
++    assert b"".join(output.data) == expected
++    assert len(output.data) < len(expected) / 100
++    assert max(len(data) for data in output.data) <= READ_SIZE
++
++
++def test_run_passes_output_on_while_the_command_runs(ssh_cijoe, tmp_path):
++    """The command prints its second line only once its first has been read"""
++
++    seen = tmp_path / "seen"
++    path = shlex.quote(str(seen))
++    output = Writes(seen.touch)
++    command = (
++        f"echo first; for i in $(seq 100); do [ -e {path} ] && break; sleep 0.1; done; "
++        f"[ -e {path} ] && echo second"
++    )
++    # The login shell need not be a POSIX one
++    command = f"sh -c {shlex.quote(command)}"
++
++    assert ssh_cijoe.targets["localhost"].run(command, None, {}, output) == 0
++    assert b"".join(output.data) == b"first\nsecond\n"
++
++
++class LosesConnection:
++    """A connected socket that, once armed, is shut down as its next send begins"""
++
++    def __init__(self, address):
++        self.sock = socket.create_connection(address)
++        self.armed = False
++        self.lost = False
++
++    def __getattr__(self, name):
++        return getattr(self.sock, name)
++
++    def send(self, data):
++        if self.armed and not self.lost:
++            self.lost = True
++            self.sock.shutdown(socket.SHUT_RDWR)
++        return self.sock.send(data)
++
++
++def test_run_fails_when_the_connection_is_lost_while_reading(sshd, tmp_path):
++    """The connection is lost as recv() sends a window update: run() returns an
++    error instead of raising, and closes the connection"""
++
++    sock = LosesConnection((sshd["hostname"], sshd["port"]))
++    target = SSH(Config(tmp_path / "config.toml"), tmp_path, {**sshd, "sock": sock})
++
++    def arm():
++        sock.armed = True
++
++    command = "head -c 4000000 /dev/zero; sleep 2"
++
++    assert target.run(command, None, {}, Writes(arm)) == errno.EIO
++    assert sock.lost
++    assert target.ssh.get_transport() is None
++
++
+ def test_put_and_get(ssh_cijoe, tmp_path):
+     """A file goes to the target and comes back as it was"""
+ 

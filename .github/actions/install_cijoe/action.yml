@@ -18,4 +18,10 @@ runs:
         pip=(pip)
       fi
       "${pip[@]}" install "cijoe==$CIJOE_VERSION"
+      # CIJoe reads command output one byte at a time, which is too slow for the
+      # tests' logs. Carry the fix until a release has it. git apply fails once
+      # CIJoe changes the patched code, and the patches then have to be dropped.
+      site=$("${pip[@]}" show cijoe | sed -n 's/^Location: //p')
+      git -C "$site" apply -p2 --include='cijoe/*' "$GITHUB_ACTION_PATH"/patches/*.patch
+      grep -q READ_SIZE "$site/cijoe/core/transport.py"
       cijoe --version
