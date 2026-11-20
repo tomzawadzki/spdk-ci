@@ -14,6 +14,13 @@ if [[ ! -s change.json ]]; then
     gh run cancel "${GITHUB_RUN_ID}" -R "${GITHUB_REPOSITORY}"
 fi
 
+# Do not test abandoned or merged changes
+status="$(jq -r '.status' change.json)"
+if [[ "$status" == "ABANDONED" || "$status" == "MERGED" ]]; then
+    echo "Ignore. Change is $status." >> "${GITHUB_STEP_SUMMARY}"
+    gh run cancel "${GITHUB_RUN_ID}" -R "${GITHUB_REPOSITORY}"
+fi
+
 # Do not test any change marked as WIP
 # .work_in_progress is not set when false
 work_in_progress="$(jq -r '.work_in_progress' change.json)"

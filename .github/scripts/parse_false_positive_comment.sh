@@ -53,6 +53,13 @@ if [[ ! -s change.json ]]; then
 	exit 0
 fi
 
+# Do not rerun tests for abandoned or merged changes
+status="$(jq -r '.status' change.json)"
+if [[ "$status" == "ABANDONED" || "$status" == "MERGED" ]]; then
+	echo "::notice title=Skipped::Comment posted to $status change."
+	exit 0
+fi
+
 # Do not test any change marked as WIP
 # .work_in_progress is not set when false
 work_in_progress="$(jq -r '.work_in_progress' change.json)"
