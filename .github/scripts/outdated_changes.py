@@ -66,6 +66,7 @@ def process_changes(gerrit, changes):
         revisions = change.get("revisions", {})
         current_revision = next(iter(revisions.values()), {})
         current_revision_number = change.get("current_revision_number")
+        current_revision_id = change.get("current_revision")
         created_str = current_revision.get("created")
 
         if not created_str:
@@ -101,23 +102,23 @@ def process_changes(gerrit, changes):
                 # We already sent this comment, skip.
                 continue
             message += message_substr
-            send_comment(gerrit, change_id, message, -1)
+            send_comment(gerrit, change_id, current_revision_id, message, -1)
         elif time_since_branch_tip > two_weeks:
             message_substr = " Please consider rebasing, make sure you're working with latest code base."
             if any(message_substr in comment for comment in existing_comments):
                 # We already sent this comment, skip.
                 continue
             message += message_substr
-            send_comment(gerrit, change_id, message, None)
+            send_comment(gerrit, change_id, current_revision_id, message, None)
 
-def send_comment(gerrit, change_id, message, vote):
+def send_comment(gerrit, change_id, revision_id, message, vote):
     json_data = {"message": message}
     if vote is not None:
         json_data["labels"] = {"Verified": vote}
 
     logging.info(f"Sending comment to change {change_id}: {message} (Verified={vote})")
     try:
-        gerrit.post(f"/changes/{change_id}/revisions/current/review", json=json_data)
+        gerrit.post(f"/changes/{change_id}/revisions/{revision_id}/review", json=json_data)
         logging.info(f"Comment sent successfully to change {change_id}.")
     except Exception as e:
         logging.error(f"Failed to send comment to change {change_id}: {e}")
