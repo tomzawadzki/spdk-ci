@@ -118,8 +118,17 @@ jobs:
         message="${{ steps.vote_count.outputs.message }}"
         message+="\nTests finished in $patch_set_turnaround after patch set submission."
 
-        curl -L -X POST https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review \
+        code=$(curl -sS -L -X POST https://review.spdk.io/a/changes/$change_num/revisions/$patch_set/review \
         --user "${{ secrets.GERRIT_BOT_USER }}:${{ secrets.GERRIT_BOT_HTTP_PASSWD }}" \
         --header "Content-Type: application/json" \
         --data "{'message': '$message', 'labels': {'Verified': ${{ steps.vote_count.outputs.vote }}}}" \
-        --fail-with-body
+        --output response --write-out '%{http_code}')
+
+        # The change can be abandoned while the tests run.
+        if [[ $code == 409 && $(< response) == "change is closed" ]]; then
+            echo "::notice::Change $change_num is closed, the vote was not posted."
+        elif [[ $code != 2?? ]]; then
+            cat response
+            echo "::error::Gerrit returned HTTP $code."
+            exit 1
+        fi
