@@ -149,7 +149,7 @@
   {
     "name": "freebsd-vm-autotest",
     "guest": true,
-    "distro": "freebsd_14",
+    "distro": "freebsd_15",
     "nvme_setup": "default",
     "needs_vm_image": true
   }
