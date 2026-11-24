@@ -187,6 +187,7 @@ jobs:
         - docker.io/library/ubuntu:24.04
         - docker.io/library/fedora:43
         - docker.io/library/fedora:44
+        - docker.io/library/fedora:45
         - docker.io/library/debian:12
         - docker.io/opensuse/leap:16.0
         - mcr.microsoft.com/azurelinux/base/core:3.0
