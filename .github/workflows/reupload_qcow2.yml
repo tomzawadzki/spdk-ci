@@ -27,6 +27,7 @@ jobs:
         distro:
         - fedora_43
         - fedora_44
+        - fedora_45
         - freebsd_15
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
