@@ -186,6 +186,7 @@ jobs:
         - docker.io/library/ubuntu:22.04
         - docker.io/library/ubuntu:24.04
         - docker.io/library/fedora:43
+        - docker.io/library/fedora:44
         - docker.io/library/debian:12
         - docker.io/opensuse/leap:16.0
         - mcr.microsoft.com/azurelinux/base/core:3.0
@@ -223,7 +224,7 @@ jobs:
       run: |
         set -x
         # TODO: consider 'autorun.sh' or 'autobuild.sh' or 'autotest.sh'
-        if [[ $DISTRO =~ "fedora:43" ]]; then
+        if [[ $DISTRO =~ "fedora:" ]]; then
           ./test/common/config/autotest_setup.sh --install-deps \
             --test-conf="fio,flamegraph,qemu,libiscsi,nvmecli,spdk,refspdk,lcov,bpftrace,doxygen"
         else
