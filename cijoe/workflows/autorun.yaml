@@ -85,6 +85,10 @@ steps:
   run: |
     bash /opt/configs/run_with_rxe.sh bash /opt/configs/run_autorun.sh /opt/configs/nvmf-rdma-rxe-vm-autotest.conf
 
+- name: nvmf-rdma-rxe-tests-vm-autotest
+  run: |
+    bash /opt/configs/run_rxe_tests.sh /opt/configs/nvmf-rdma-rxe-tests-vm-autotest.conf
+
 - name: iscsi-vm-autotest
   run: |
     bash /opt/configs/run_autorun.sh /opt/configs/iscsi-vm-autotest.conf

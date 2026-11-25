@@ -43,6 +43,14 @@
     "manual": true
   },
   {
+    "name": "nvmf-rdma-rxe-tests-vm-autotest",
+    "guest": true,
+    "distro": "fedora_43",
+    "nvme_setup": "zns",
+    "needs_vm_image": true,
+    "manual": true
+  },
+  {
     "name": "iscsi-vm-autotest",
     "guest": true,
     "distro": "fedora_43",

@@ -20,6 +20,7 @@ on:
         - nvmf-tcp-vm-autotest
         - nvmf-tcp-uring-vm-autotest
         - nvmf-rdma-rxe-vm-autotest
+        - nvmf-rdma-rxe-tests-vm-autotest
         - iscsi-vm-autotest
         - iscsi-uring-vm-autotest
         - short-fuzz-vm-autotest
