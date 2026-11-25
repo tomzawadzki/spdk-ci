@@ -50,6 +50,7 @@ if [[ $job == all ]]; then
 	fi
 	# The full matrix keeps its unthrottled scheduling.
 	max_parallel=256
+	jobs=$(jq -c 'map(select(.manual != true))' <<< "$jobs")
 else
 	jobs=$(jq -c --arg name "$job" 'map(select(.name == $name))' <<< "$jobs")
 	if [[ $(jq length <<< "$jobs") != 1 ]]; then

@@ -55,6 +55,7 @@ gh workflow run spdk-common-tests.yml --repo <user>/spdk-ci \
 ```
 
 - `job` is a name from [the job catalog](.github/common-jobs.json), or `all`.
+  `all` and the per-patch runs skip jobs with `"manual": true`.
 - `repeat` runs the selected job 1 to 256 times. All samples use the same
   SPDK checkout, container digest and VM image artifact, which the run
   summary lists.
